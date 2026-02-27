@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- res/values/strings.xml  — Français (langue par défaut) -->
+<resources>
+    <string name="app_name">Bounce Ball</string>
+
+    <!-- Menu principal -->
+    <string name="menu_play">▶ JOUER</string>
+    <string name="menu_shop">🏪 BOUTIQUE</string>
+    <string name="menu_settings">⚙ PARAMÈTRES</string>
+    <string name="menu_record">🏆 Record : %.1f m</string>
+
+    <!-- HUD jeu -->
+    <string name="hud_height">%.1f m</string>
+    <string name="hud_record">Record : %.1f m</string>
+    <string name="hud_gold">Or : %d</string>
+
+    <!-- Game Over -->
+    <string name="gameover_title">PARTIE TERMINÉE</string>
+    <string name="gameover_height">Hauteur : %.1f m</string>
+    <string name="gameover_gold">Or gagné : %d</string>
+    <string name="gameover_new_record">🏆 NOUVEAU RECORD !</string>
+    <string name="gameover_retry">REJOUER</string>
+
+    <!-- Boutique / Upgrades -->
+    <string name="shop_title">BOUTIQUE</string>
+    <string name="shop_tab_upgrades">⚡ Améliorations</string>
+    <string name="shop_tab_diamonds">💎 Acheter Diamants</string>
+    <string name="shop_diamonds_desc">Les diamants permettent d\'acheter des améliorations plus efficacement (×2) !</string>
+    <string name="shop_buy">Acheter</string>
+    <string name="shop_max">MAX</string>
+    <string name="shop_level">Niveau : %1$d / %2$d</string>
+    <string name="shop_legal">Les achats sont définitifs et non remboursables. Gérés par Google Play.</string>
+    <string name="shop_unavailable">Service d\'achat non disponible</string>
+
+    <!-- Paramètres -->
+    <string name="settings_title">PARAMÈTRES</string>
+    <string name="settings_sound">🔊 Son</string>
+    <string name="settings_sound_toggle">Effets sonores activés</string>
+    <string name="settings_language">🌍 Langue</string>
+    <string name="settings_back">← Retour</string>
+</resources>
