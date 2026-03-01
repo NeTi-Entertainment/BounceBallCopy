@@ -94,6 +94,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private static final float SCROLL_EASE = 0.09f;
     private static final float SCROLL_MIN  = 4f;
 
+    private final Paint blobPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint warpPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
     // ──────────────────────────────────────────────────
 
     public void setHudVisible(boolean visible) { hudShouldBeVisible = visible; }
@@ -365,7 +368,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         canvas.drawColor(Color.WHITE);
 
         // Billes d'encre
-        Paint blobPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         blobPaint.setStyle(Paint.Style.FILL);
         for (float[] blob : inkBlobs) {
             blobPaint.setColor(Color.BLACK);
@@ -379,13 +381,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         }
 
         // Warps en jeu
-        Paint wp = new Paint(Paint.ANTI_ALIAS_FLAG);
-        wp.setStyle(Paint.Style.FILL);
-        for (float[] w : warps) drawWarpPortal(canvas, wp, w[0], w[1], false);
+        warpPaint.setStyle(Paint.Style.FILL);
+        for (float[] w : warps) drawWarpPortal(canvas, warpPaint, w[0], w[1], false);
 
         // Portail de sortie (SCROLL + EJECT)
         if (warpState == WARP_SCROLL || warpState == WARP_EJECT) {
-            drawWarpPortal(canvas, wp, exitPortalX, exitPortalY, true);
+            drawWarpPortal(canvas, warpPaint, exitPortalX, exitPortalY, true);
         }
 
         // Balle
@@ -453,16 +454,16 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private void drawWarpPortal(Canvas canvas, Paint wp, float cx, float cy, boolean flipped) {
         canvas.save();
         if (flipped) canvas.rotate(180f, cx, cy);
-        wp.setColor(Color.parseColor("#7B1FA2")); wp.setAlpha(200);
+        warpPaint.setColor(Color.parseColor("#7B1FA2")); warpPaint.setAlpha(200);
         canvas.drawOval(new RectF(cx - WARP_WIDTH/2f, cy - WARP_HEIGHT/2f,
                 cx + WARP_WIDTH/2f, cy + WARP_HEIGHT/2f), wp);
-        wp.setColor(Color.parseColor("#CE93D8")); wp.setAlpha(100);
+        warpPaint.setColor(Color.parseColor("#CE93D8")); warpPaint.setAlpha(100);
         canvas.drawOval(new RectF(cx - WARP_WIDTH/2f - 8f, cy - WARP_HEIGHT/2f - 8f,
                 cx + WARP_WIDTH/2f + 8f, cy + WARP_HEIGHT/2f + 8f), wp);
-        wp.setColor(Color.WHITE); wp.setAlpha(180);
+        warpPaint.setColor(Color.WHITE); warpPaint.setAlpha(180);
         canvas.drawOval(new RectF(cx - WARP_WIDTH/4f, cy - WARP_HEIGHT/4f,
                 cx + WARP_WIDTH/4f, cy + WARP_HEIGHT/4f), wp);
-        wp.setAlpha(255);
+        warpPaint.setAlpha(255);
         canvas.restore();
     }
 

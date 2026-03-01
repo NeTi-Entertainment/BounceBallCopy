@@ -439,16 +439,8 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         upgradesScroll.addView(upgradesPage);
         content.addView(upgradesScroll, matchParentFl());
 
-        LinearLayout cosmeticsPage = new LinearLayout(this);
-        cosmeticsPage.setOrientation(LinearLayout.VERTICAL);
-        cosmeticsPage.setGravity(Gravity.CENTER);
+        ScrollView cosmeticsPage = CosmeticsPage.build(this, prefs);
         cosmeticsPage.setVisibility(View.GONE);
-        TextView soon = new TextView(this);
-        soon.setText("Bientôt disponible");
-        soon.setTextColor(Color.parseColor("#AAAAAA"));
-        soon.setTextSize(18f);
-        soon.setGravity(Gravity.CENTER);
-        cosmeticsPage.addView(soon);
         content.addView(cosmeticsPage, matchParentFl());
         sheet.addView(content);
 
