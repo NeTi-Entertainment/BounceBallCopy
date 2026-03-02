@@ -254,8 +254,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 float nx  = -dy / len, ny = dx / len;
                 if (ny > 0) { nx = -nx; ny = -ny; }
                 float mult = Math.max(0.2f, Math.min(3f, screenWidth / len));
-                ballVelocityX = nx * trampElasticity * mult;
-                ballVelocityY = ny * trampElasticity * mult;
+                float incomingSpeed = (float) Math.hypot(ballVelocityX, ballVelocityY);
+                float bounceForce = (trampElasticity * mult) + (incomingSpeed * 0.5f);
+                ballVelocityX = nx * bounceForce;
+                ballVelocityY = ny * bounceForce;
                 hasTrampoline = false;
             }
         }
@@ -499,7 +501,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 performClick();
-                if (currentInk > 0) {
+                if (currentInk > 0 && !hasTrampoline) {
                     if (!isGameStarted) {
                         isGameStarted      = true;
                         hudShouldBeVisible = true;
