@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- res/values-es/strings.xml  — Español -->
+<resources>
+    <string name="app_name">Bounce Ball</string>
+
+    <string name="menu_play">▶ JUGAR</string>
+    <string name="menu_shop">🏪 TIENDA</string>
+    <string name="menu_settings">⚙ AJUSTES</string>
+    <string name="menu_record">🏆 Récord: %.1f m</string>
+
+    <string name="hud_height">%.1f m</string>
+    <string name="hud_record">Récord: %.1f m</string>
+    <string name="hud_gold">Oro: %d</string>
+
+    <string name="gameover_title">FIN DE PARTIDA</string>
+    <string name="gameover_height">Altura: %.1f m</string>
+    <string name="gameover_gold">Oro ganado: %d</string>
+    <string name="gameover_new_record">🏆 ¡NUEVO RÉCORD!</string>
+    <string name="gameover_retry">REINTENTAR</string>
+
+    <string name="shop_title">TIENDA</string>
+    <string name="shop_tab_upgrades">⚡ Mejoras</string>
+    <string name="shop_tab_diamonds">💎 Comprar Diamantes</string>
+    <string name="shop_diamonds_desc">¡Los diamantes permiten comprar mejoras de forma más eficiente (×2)!</string>
+    <string name="shop_buy">Comprar</string>
+    <string name="shop_max">MÁX</string>
+    <string name="shop_level">Nivel: %1$d / %2$d</string>
+    <string name="shop_legal">Las compras son definitivas y no reembolsables. Gestionadas por Google Play.</string>
+    <string name="shop_unavailable">Servicio de compra no disponible</string>
+
+    <string name="settings_title">AJUSTES</string>
+    <string name="settings_sound">🔊 Sonido</string>
+    <string name="settings_sound_toggle">Efectos de sonido activados</string>
+    <string name="settings_language">🌍 Idioma</string>
+    <string name="settings_back">← Volver</string>
+</resources>

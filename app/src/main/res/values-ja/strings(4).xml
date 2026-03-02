@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- res/values-ja/strings.xml  — 日本語 -->
+<resources>
+    <string name="app_name">バウンスボール</string>
+
+    <string name="menu_play">▶ プレイ</string>
+    <string name="menu_shop">🏪 ショップ</string>
+    <string name="menu_settings">⚙ 設定</string>
+    <string name="menu_record">🏆 記録: %.1f m</string>
+
+    <string name="hud_height">%.1f m</string>
+    <string name="hud_record">記録: %.1f m</string>
+    <string name="hud_gold">ゴールド: %d</string>
+
+    <string name="gameover_title">ゲームオーバー</string>
+    <string name="gameover_height">高さ: %.1f m</string>
+    <string name="gameover_gold">獲得ゴールド: %d</string>
+    <string name="gameover_new_record">🏆 新記録!</string>
+    <string name="gameover_retry">もう一度</string>
+
+    <string name="shop_title">ショップ</string>
+    <string name="shop_tab_upgrades">⚡ アップグレード</string>
+    <string name="shop_tab_diamonds">💎 ダイヤを購入</string>
+    <string name="shop_diamonds_desc">ダイヤはアップグレードをより効率よく購入できます（×2）！</string>
+    <string name="shop_buy">購入</string>
+    <string name="shop_max">最大</string>
+    <string name="shop_level">レベル: %1$d / %2$d</string>
+    <string name="shop_legal">購入は確定後の返金不可。Google Playが管理します。</string>
+    <string name="shop_unavailable">購入サービスが利用できません</string>
+
+    <string name="settings_title">設定</string>
+    <string name="settings_sound">🔊 サウンド</string>
+    <string name="settings_sound_toggle">効果音を有効にする</string>
+    <string name="settings_language">🌍 言語</string>
+    <string name="settings_back">← 戻る</string>
+</resources>
