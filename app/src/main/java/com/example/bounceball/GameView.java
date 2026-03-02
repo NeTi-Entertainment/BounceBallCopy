@@ -50,7 +50,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private boolean hasTrampoline;
     private float lastTouchX, lastTouchY;
 
-    private Bitmap ballSprite;
+    private final Paint ballPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint ballShinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Bitmap gaugeSprite;
     private float gaugeOffsetX = -500f;
     private float statsOffsetY = -250f;
@@ -97,6 +98,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private final Paint blobPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint warpPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
+    private float currentRunGold = 0f;
+
     // ──────────────────────────────────────────────────
 
     public void setHudVisible(boolean visible) { hudShouldBeVisible = visible; }
@@ -117,7 +120,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         surfaceHolder.addCallback(this);
         paint = new Paint();
         paint.setAntiAlias(false);
-        ballSprite  = BitmapFactory.decodeResource(getResources(), R.drawable.ball);
+        loadBallSkin();
+        ballShinePaint.setColor(Color.WHITE);
+        ballShinePaint.setAlpha(120);
         gaugeSprite = BitmapFactory.decodeResource(getResources(), R.drawable.gauge);
         currentInk        = maxInk;
         isGameStarted     = false;
@@ -130,6 +135,20 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         trampElasticity    = 25f   + upgrades.elasticity    * 3f;
         maxInk             = 1000f + upgrades.inkReserve     * 150f;
         inkConsumptionRate = Math.max(0.1f, 0.4f - upgrades.inkEfficiency * 0.03f);
+    }
+
+    public void loadBallSkin() {
+        String skinId = prefs.getRaw().getString("equipped_ball", "ball_basic");
+        int color;
+        switch (skinId) {
+            case "ball_emerald":  color = Color.parseColor("#43A047"); break;
+            case "ball_sapphire": color = Color.parseColor("#1E88E5"); break;
+            case "ball_gold":     color = Color.parseColor("#FFD700"); break;
+            case "ball_void":     color = Color.parseColor("#212121"); break;
+            case "ball_rose":     color = Color.parseColor("#E91E63"); break;
+            default:              color = Color.parseColor("#E53935"); break;
+        }
+        ballPaint.setColor(color);
     }
 
     private void resetGame() {
@@ -218,6 +237,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             for (float[] b : inkBlobs) b[1] += shift;
             for (float[] w : warps)    w[1] += shift;
             totalHeightMeters += shift / 100f;
+            currentRunGold += shift / 100f * upgrades.goldMultiplier;
         }
 
         // Rebond trampoline
@@ -391,13 +411,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
         // Balle
         if (warpState == WARP_NONE || warpState == WARP_EJECT) {
-            canvas.drawBitmap(ballSprite, null,
-                    new RectF(ballX - ballRadius, ballY - ballRadius,
-                            ballX + ballRadius, ballY + ballRadius), paint);
+            canvas.drawCircle(ballX, ballY, ballRadius, ballPaint);
+            canvas.drawCircle(ballX - ballRadius * 0.3f, ballY - ballRadius * 0.3f, ballRadius * 0.35f, ballShinePaint);
         } else if (warpState == WARP_ABSORB && warpBallScale > 0f) {
             float sr = ballRadius * warpBallScale;
-            canvas.drawBitmap(ballSprite, null,
-                    new RectF(ballX - sr, ballY - sr, ballX + sr, ballY + sr), paint);
+            canvas.drawCircle(ballX, ballY, sr, ballPaint);
+            canvas.drawCircle(ballX - sr * 0.3f, ballY - sr * 0.3f, sr * 0.35f, ballShinePaint);
         }
 
         // Jauge d'encre
@@ -437,7 +456,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         canvas.drawText(String.format(Locale.getDefault(), "Record: %.1fm", prefs.getMaxHeight()), screenWidth / 2f, 150, paint);
         paint.setColor(Color.BLACK);
         paint.setTextSize(40);
-        canvas.drawText("Or: " + prefs.getGold(), screenWidth / 2f, 200, paint);
+        canvas.drawText("Or: " + prefs.getGold() + " (+" + (int)currentRunGold + ")", screenWidth / 2f, 200, paint);
         canvas.restore();
 
         // Trampoline

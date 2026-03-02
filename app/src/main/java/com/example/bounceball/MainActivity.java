@@ -28,6 +28,8 @@ public class MainActivity extends Activity implements GameView.GameStateListener
     private FrameLayout shopOverlay;
     private FrameLayout eggOverlay;
 
+    private ScrollView cosmeticsScrollView;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -155,6 +157,12 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         });
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (gameView != null) gameView.loadBallSkin();
+    }
+
     /** Met à jour le TextView du record avec la valeur persistée. */
     private void refreshRecordDisplay() {
         float maxH = prefs.getMaxHeight();
@@ -174,10 +182,14 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         tapText.setVisibility(View.GONE);
         recordText.setVisibility(View.GONE);
         overlay.setVisibility(View.VISIBLE);
+        if (overlay == shopOverlay && cosmeticsScrollView != null) {
+            CosmeticsPage.refreshAll(cosmeticsScrollView);
+        }
     }
 
     private void hideOverlay(FrameLayout overlay) {
         overlay.setVisibility(View.GONE);
+        gameView.loadBallSkin();
         if (!inGame) {
             tapText.setVisibility(View.VISIBLE);
             recordText.setVisibility(View.VISIBLE);
@@ -439,7 +451,8 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         upgradesScroll.addView(upgradesPage);
         content.addView(upgradesScroll, matchParentFl());
 
-        ScrollView cosmeticsPage = CosmeticsPage.build(this, prefs);
+        cosmeticsScrollView = CosmeticsPage.build(this, prefs);
+        ScrollView cosmeticsPage = cosmeticsScrollView;
         cosmeticsPage.setVisibility(View.GONE);
         content.addView(cosmeticsPage, matchParentFl());
         sheet.addView(content);
@@ -473,6 +486,7 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         Runnable selCosmetics = () -> {
             upgradesScroll.setVisibility(View.GONE);
             cosmeticsPage.setVisibility(View.VISIBLE);
+            CosmeticsPage.refreshAll(cosmeticsPage);
             cosmeticsTab.setBackgroundColor(Color.parseColor("#111E2C"));
             cosmeticsTab.setTextColor(Color.WHITE);
             cosmeticsTab.setAlpha(1f);

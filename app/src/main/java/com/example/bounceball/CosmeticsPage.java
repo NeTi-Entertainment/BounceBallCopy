@@ -106,6 +106,7 @@ public class CosmeticsPage {
             diamTv.setText("◆ " + prefs.getDiamonds() + " Diam");
         };
         refreshCurr.run();
+        scroll.setTag(R.id.tag_refresh, refreshCurr);
 
         // ── Section Balles ──
         addSectionHeader(ctx, page, "Balles");
@@ -255,7 +256,17 @@ public class CosmeticsPage {
                         prefs.spendGold(goldCost);
                         raw.edit().putBoolean("owned_" + id, true)
                                 .putString(equippedKey, id).apply();
-                        r[0].run();
+                        View pageView = (View) row.getParent();
+                        if (pageView instanceof LinearLayout) {
+                            LinearLayout ll = (LinearLayout) pageView;
+                            for (int i = 0; i < ll.getChildCount(); i++) {
+                                View child = ll.getChildAt(i);
+                                if (child.getTag() != null && child.getTag().equals(equippedKey)) {
+                                    Object tag2 = child.getTag(R.id.tag_refresh);
+                                    if (tag2 instanceof Runnable) ((Runnable) tag2).run();
+                                }
+                            }
+                        }
                         refreshCurr.run();
                     }
                 });
@@ -264,7 +275,17 @@ public class CosmeticsPage {
                         prefs.spendDiamonds(diamCost);
                         raw.edit().putBoolean("owned_" + id, true)
                                 .putString(equippedKey, id).apply();
-                        r[0].run();
+                        View pageView = (View) row.getParent();
+                        if (pageView instanceof LinearLayout) {
+                            LinearLayout ll = (LinearLayout) pageView;
+                            for (int i = 0; i < ll.getChildCount(); i++) {
+                                View child = ll.getChildAt(i);
+                                if (child.getTag() != null && child.getTag().equals(equippedKey)) {
+                                    Object tag2 = child.getTag(R.id.tag_refresh);
+                                    if (tag2 instanceof Runnable) ((Runnable) tag2).run();
+                                }
+                            }
+                        }
                         refreshCurr.run();
                     }
                 });
@@ -316,5 +337,16 @@ public class CosmeticsPage {
 
     private static int px(Context ctx, int dp) {
         return (int) (dp * ctx.getResources().getDisplayMetrics().density);
+    }
+
+    public static void refreshAll(ScrollView scroll) {
+        Object currRefresh = scroll.getTag(R.id.tag_refresh);
+        if (currRefresh instanceof Runnable) ((Runnable) currRefresh).run();
+        LinearLayout page = (LinearLayout) scroll.getChildAt(0);
+        for (int i = 0; i < page.getChildCount(); i++) {
+            View child = page.getChildAt(i);
+            Object r = child.getTag(R.id.tag_refresh);
+            if (r instanceof Runnable) ((Runnable) r).run();
+        }
     }
 }

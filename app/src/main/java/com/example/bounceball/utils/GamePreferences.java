@@ -29,11 +29,11 @@ public class GamePreferences {
     public int getGold() { return prefs.getInt("gold", 0); }
 
     public void addGold(int amount) {
-        prefs.edit().putInt("gold", getGold() + amount).apply();
+        prefs.edit().putInt("gold", getGold() + amount).commit();
     }
 
     public void spendGold(int amount) {
-        prefs.edit().putInt("gold", Math.max(0, getGold() - amount)).apply();
+        prefs.edit().putInt("gold", Math.max(0, getGold() - amount)).commit();
     }
 
     // ─────────────────────────────────────────
