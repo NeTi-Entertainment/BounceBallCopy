@@ -17,6 +17,9 @@ import android.graphics.BitmapFactory;
 import android.graphics.RectF;
 import com.example.bounceball.upgrade.UpgradeStats;
 import com.example.bounceball.utils.GamePreferences;
+import android.graphics.Path;
+import android.graphics.RadialGradient;
+import android.graphics.Shader;
 
 public class GameView extends SurfaceView implements SurfaceHolder.Callback, Runnable {
 
@@ -52,6 +55,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
     private final Paint ballPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint ballShinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+    private String currentBallSkin = "ball_basic";
     private Bitmap gaugeSprite;
     private float gaugeOffsetX = -500f;
     private float statsOffsetY = -250f;
@@ -140,12 +145,34 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     public void loadBallSkin() {
         String skinId = prefs.getRaw().getString("equipped_ball", "ball_basic");
         int color;
+        currentBallSkin = skinId;
         switch (skinId) {
+            // Classic
+            case "ball_rose":     color = Color.parseColor("#E91E63"); break;
+            case "ball_cream":    color = Color.parseColor("#FFF8E1"); break;
+            case "ball_navy":     color = Color.parseColor("#1A237E"); break;
+            // Metal
+            case "ball_gold":     color = Color.parseColor("#FFD700"); break;
+            case "ball_silver":   color = Color.parseColor("#B0BEC5"); break;
+            case "ball_copper":   color = Color.parseColor("#BF6830"); break;
+            case "ball_chrome":   color = Color.parseColor("#90CAF9"); break;
+            // Space
+            case "ball_void":     color = Color.parseColor("#212121"); break;
+            case "ball_nebula":   color = Color.parseColor("#7B1FA2"); break;
+            case "ball_comet":    color = Color.parseColor("#4FC3F7"); break;
+            case "ball_moon":     color = Color.parseColor("#ECEFF1"); break;
+            // Sport
+            case "ball_soccer":   color = Color.parseColor("#F5F5F5"); break;
+            case "ball_basket":   color = Color.parseColor("#E65100"); break;
+            case "ball_tennis":   color = Color.parseColor("#CDDC39"); break;
+            case "ball_bowling":  color = Color.parseColor("#311B92"); break;
+            // Elemental
             case "ball_emerald":  color = Color.parseColor("#43A047"); break;
             case "ball_sapphire": color = Color.parseColor("#1E88E5"); break;
-            case "ball_gold":     color = Color.parseColor("#FFD700"); break;
-            case "ball_void":     color = Color.parseColor("#212121"); break;
-            case "ball_rose":     color = Color.parseColor("#E91E63"); break;
+            case "ball_fire":     color = Color.parseColor("#FF5722"); break;
+            case "ball_ice":      color = Color.parseColor("#80DEEA"); break;
+            case "ball_thunder":  color = Color.parseColor("#FDD835"); break;
+            // Défaut
             default:              color = Color.parseColor("#E53935"); break;
         }
         ballPaint.setColor(color);
@@ -413,13 +440,18 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
         // Balle
         if (warpState == WARP_NONE || warpState == WARP_EJECT) {
-            canvas.drawCircle(ballX, ballY, ballRadius, ballPaint);
-            canvas.drawCircle(ballX - ballRadius * 0.3f, ballY - ballRadius * 0.3f, ballRadius * 0.35f, ballShinePaint);
+            drawBall(canvas, ballX, ballY, ballRadius);
         } else if (warpState == WARP_ABSORB && warpBallScale > 0f) {
-            float sr = ballRadius * warpBallScale;
-            canvas.drawCircle(ballX, ballY, sr, ballPaint);
-            canvas.drawCircle(ballX - sr * 0.3f, ballY - sr * 0.3f, sr * 0.35f, ballShinePaint);
+            drawBall(canvas, ballX, ballY, ballRadius * warpBallScale);
         }
+        //if (warpState == WARP_NONE || warpState == WARP_EJECT) {
+        //    canvas.drawCircle(ballX, ballY, ballRadius, ballPaint);
+        //    canvas.drawCircle(ballX - ballRadius * 0.3f, ballY - ballRadius * 0.3f, ballRadius * 0.35f, ballShinePaint);
+        //} else if (warpState == WARP_ABSORB && warpBallScale > 0f) {
+        //    float sr = ballRadius * warpBallScale;
+        //    canvas.drawCircle(ballX, ballY, sr, ballPaint);
+        //    canvas.drawCircle(ballX - sr * 0.3f, ballY - sr * 0.3f, sr * 0.35f, ballShinePaint);
+        //}
 
         // Jauge d'encre
         canvas.save();
@@ -470,6 +502,221 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         }
 
         surfaceHolder.unlockCanvasAndPost(canvas);
+    }
+    private void drawBall(Canvas canvas, float cx, float cy, float r) {
+        switch (currentBallSkin) {
+            case "ball_basket":  drawBasketball(canvas, cx, cy, r);  break;
+            case "ball_tennis":  drawTennisBall(canvas, cx, cy, r);  break;
+            case "ball_bowling": drawBowlingBall(canvas, cx, cy, r); break;
+            case "ball_soccer":  drawSoccerBall(canvas, cx, cy, r);  break;
+            default:
+                canvas.drawCircle(cx, cy, r, ballPaint);
+                canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+                break;
+        }
+    }
+
+    private void drawBasketball(Canvas canvas, float cx, float cy, float r) {
+        // Base orange
+        ballPaint.setStyle(Paint.Style.FILL);
+        canvas.drawCircle(cx, cy, r, ballPaint);
+
+        canvas.save();
+        Path clip = new Path();
+        clip.addCircle(cx, cy, r, Path.Direction.CW);
+        canvas.clipPath(clip);
+
+        Paint seam = new Paint(Paint.ANTI_ALIAS_FLAG);
+        seam.setColor(Color.parseColor("#3E1F00"));
+        seam.setStyle(Paint.Style.STROKE);
+        seam.setStrokeWidth(r * 0.07f);
+
+        // Ligne horizontale centrale
+        canvas.drawLine(cx - r, cy, cx + r, cy, seam);
+
+        // Ligne verticale centrale (légèrement courbée à gauche)
+        Path left = new Path();
+        left.moveTo(cx, cy - r);
+        left.cubicTo(cx - r * 0.55f, cy - r * 0.4f,
+                cx - r * 0.55f, cy + r * 0.4f,
+                cx, cy + r);
+        canvas.drawPath(left, seam);
+
+        // Ligne courbée symétrique à droite
+        Path right = new Path();
+        right.moveTo(cx, cy - r);
+        right.cubicTo(cx + r * 0.55f, cy - r * 0.4f,
+                cx + r * 0.55f, cy + r * 0.4f,
+                cx, cy + r);
+        canvas.drawPath(right, seam);
+
+        canvas.restore();
+
+        // Reflet
+        canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+    }
+
+    private void drawTennisBall(Canvas canvas, float cx, float cy, float r) {
+        // Base jaune-vert
+        ballPaint.setStyle(Paint.Style.FILL);
+        canvas.drawCircle(cx, cy, r, ballPaint);
+
+        canvas.save();
+        Path clip = new Path();
+        clip.addCircle(cx, cy, r, Path.Direction.CW);
+        canvas.clipPath(clip);
+
+        Paint line = new Paint(Paint.ANTI_ALIAS_FLAG);
+        line.setColor(Color.WHITE);
+        line.setStyle(Paint.Style.STROKE);
+        line.setStrokeWidth(r * 0.13f);
+
+        // Courbe haute : part du bas-gauche, monte au centre, redescend en haut-droite
+        Path top = new Path();
+        top.moveTo(cx - r * 0.85f, cy + r * 0.35f);
+        top.cubicTo(cx - r * 0.2f,  cy - r * 0.75f,
+                cx + r * 0.2f,  cy - r * 0.75f,
+                cx + r * 0.85f, cy + r * 0.35f);
+        canvas.drawPath(top, line);
+
+        // Courbe basse : miroir vertical de la première
+        Path bot = new Path();
+        bot.moveTo(cx - r * 0.85f, cy - r * 0.35f);
+        bot.cubicTo(cx - r * 0.2f,  cy + r * 0.75f,
+                cx + r * 0.2f,  cy + r * 0.75f,
+                cx + r * 0.85f, cy - r * 0.35f);
+        canvas.drawPath(bot, line);
+
+        canvas.restore();
+
+        canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+    }
+
+    private void drawBowlingBall(Canvas canvas, float cx, float cy, float r) {
+        // Base violet foncé
+        ballPaint.setStyle(Paint.Style.FILL);
+        canvas.drawCircle(cx, cy, r, ballPaint);
+
+        canvas.save();
+        Path clip = new Path();
+        clip.addCircle(cx, cy, r, Path.Direction.CW);
+        canvas.clipPath(clip);
+
+        // Taches blanchâtres de marbrure
+        Paint marble = new Paint(Paint.ANTI_ALIAS_FLAG);
+        marble.setStyle(Paint.Style.FILL);
+        marble.setColor(Color.WHITE);
+
+        marble.setAlpha(22);
+        canvas.drawOval(new RectF(cx - r * 0.55f, cy - r * 0.75f,
+                cx + r * 0.15f,  cy + r * 0.05f), marble);
+        marble.setAlpha(14);
+        canvas.drawOval(new RectF(cx - r * 0.05f, cy - r * 0.15f,
+                cx + r * 0.65f,  cy + r * 0.55f), marble);
+        marble.setAlpha(10);
+        canvas.drawOval(new RectF(cx - r * 0.3f,  cy + r * 0.2f,
+                cx + r * 0.4f,   cy + r * 0.75f), marble);
+
+        canvas.restore();
+
+        // 3 trous décalés vers le haut-droite (pas centrés, pour voir la rotation)
+        Paint hole = new Paint(Paint.ANTI_ALIAS_FLAG);
+        hole.setStyle(Paint.Style.FILL);
+        hole.setColor(Color.parseColor("#1A0A60"));
+        float hr = r * 0.095f;
+        float hcx = cx + r * 0.18f;
+        float hcy = cy - r * 0.22f;
+        canvas.drawCircle(hcx,              hcy,              hr, hole);
+        canvas.drawCircle(hcx + r * 0.27f,  hcy + r * 0.14f,  hr, hole);
+        canvas.drawCircle(hcx - r * 0.06f,  hcy + r * 0.28f,  hr, hole);
+
+        // Ombre intérieure sur chaque trou pour l'effet de profondeur
+        Paint holeShadow = new Paint(Paint.ANTI_ALIAS_FLAG);
+        holeShadow.setStyle(Paint.Style.STROKE);
+        holeShadow.setStrokeWidth(hr * 0.4f);
+        holeShadow.setColor(Color.BLACK);
+        holeShadow.setAlpha(80);
+        canvas.drawCircle(hcx,              hcy,              hr * 0.6f, holeShadow);
+        canvas.drawCircle(hcx + r * 0.27f,  hcy + r * 0.14f,  hr * 0.6f, holeShadow);
+        canvas.drawCircle(hcx - r * 0.06f,  hcy + r * 0.28f,  hr * 0.6f, holeShadow);
+
+        canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+    }
+
+    private void drawSoccerBall(Canvas canvas, float cx, float cy, float r) {
+        // ── Fond avec gradient radial (lumière en haut-gauche) ──
+        float lightX = cx - r * 0.25f;
+        float lightY = cy - r * 0.25f;
+        Paint base = new Paint(Paint.ANTI_ALIAS_FLAG);
+        base.setStyle(Paint.Style.FILL);
+        base.setShader(new RadialGradient(
+                lightX, lightY, r * 1.2f,
+                new int[]{ 0xFFFFFFFF, 0xFFE8E8E8, 0xFFCCCCCC },
+                new float[]{ 0f, 0.55f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, base);
+
+        canvas.save();
+        Path clip = new Path();
+        clip.addCircle(cx, cy, r, Path.Direction.CW);
+        canvas.clipPath(clip);
+
+        // ── Pentagone central ──
+        float pr = r * 0.28f;
+        Paint pent = new Paint(Paint.ANTI_ALIAS_FLAG);
+        pent.setStyle(Paint.Style.FILL);
+        // Le pentagone central est légèrement plus clair (il est "devant" sur la sphère)
+        pent.setColor(Color.parseColor("#222222"));
+        canvas.drawPath(regularPentagon(cx, cy, pr, -(float)Math.PI / 2), pent);
+
+        // ── 5 pentagones externes ──
+        // Chacun rétrécit proportionnellement à son éloignement du point lumineux
+        float ringDist = r * 0.74f;
+        for (int i = 0; i < 5; i++) {
+            float angle    = -(float)Math.PI / 2 + (float)(Math.PI * 2 * i / 5);
+            float px       = cx + (float)Math.cos(angle) * ringDist;
+            float py       = cy + (float)Math.sin(angle) * ringDist;
+
+            // Distance normalisée au point lumineux → facteur d'échelle (0.82 à 1.0)
+            float dxL = px - lightX;
+            float dyL = py - lightY;
+            float distToLight = (float)Math.sqrt(dxL * dxL + dyL * dyL);
+            float scale = 1.0f - 0.18f * Math.min(1f, distToLight / (2f * r));
+
+            float outerPr = r * 0.26f * scale;
+
+            // Teinte plus sombre pour les pentagones côté ombre
+            float brightness = 1f - 0.25f * Math.min(1f, distToLight / (2f * r));
+            int grey = (int)(0x22 * brightness); // de #222 à #191919
+            pent.setColor(Color.rgb(grey, grey, grey));
+
+            float startAngle = angle + (float)Math.PI;
+            canvas.drawPath(regularPentagon(px, py, outerPr, startAngle), pent);
+        }
+
+        // ── Ombre interne en bas-droite (donne le volume) ──
+        Paint shadow = new Paint(Paint.ANTI_ALIAS_FLAG);
+        shadow.setStyle(Paint.Style.FILL);
+        shadow.setShader(new RadialGradient(
+                cx + r * 0.35f, cy + r * 0.35f, r * 0.9f,
+                new int[]{ 0x00000000, 0x00000000, 0x22000000 },
+                new float[]{ 0f, 0.5f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, shadow);
+
+        canvas.restore();
+
+        // ── Contour ──
+        Paint stroke = new Paint(Paint.ANTI_ALIAS_FLAG);
+        stroke.setStyle(Paint.Style.STROKE);
+        stroke.setColor(Color.parseColor("#BBBBBB"));
+        stroke.setStrokeWidth(r * 0.025f);
+        canvas.drawCircle(cx, cy, r * 0.988f, stroke);
+
+        // ── Reflet ──
+        canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
     }
 
     private void drawWarpPortal(Canvas canvas, Paint wp, float cx, float cy, boolean flipped) {
@@ -533,6 +780,63 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 break;
         }
         return true;
+    }
+
+    private Path soccerPentagon(float cx, float cy, float r, float startAngle) {
+        Path path = new Path();
+        for (int i = 0; i < 5; i++) {
+            double a = startAngle + Math.PI * 2 * i / 5;
+            float x = cx + (float)Math.cos(a) * r;
+            float y = cy + (float)Math.sin(a) * r;
+            if (i == 0) path.moveTo(x, y);
+            else path.lineTo(x, y);
+        }
+        path.close();
+        return path;
+    }
+
+    private Path soccerPentagonDistorted(float cx, float cy, float r, float startAngle,
+                                         float radDx, float radDy, float depth) {
+        // radDx, radDy : vecteur du centre du ballon vers le centre du pentagone
+        // depth        : composante Z (0 = bord, 1 = pôle face à l'écran)
+        // L'axe radial est compressé par `depth`, l'axe tangentiel reste intact.
+        float radLen = (float)Math.hypot(radDx, radDy);
+        float rnx = radLen > 0.001f ? radDx / radLen : 0f;
+        float rny = radLen > 0.001f ? radDy / radLen : 1f;
+
+        Path path = new Path();
+        for (int i = 0; i < 5; i++) {
+            double a = startAngle + Math.PI * 2 * i / 5;
+            float vx = (float)Math.cos(a) * r;
+            float vy = (float)Math.sin(a) * r;
+
+            // Décomposition radiale / tangentielle
+            float radComp = vx * rnx + vy * rny;
+            float tanVx   = vx - radComp * rnx;
+            float tanVy   = vy - radComp * rny;
+
+            // Compression radiale simulant la courbure de la sphère
+            float fx = cx + tanVx + radComp * depth;
+            float fy = cy + tanVy + radComp * depth;
+
+            if (i == 0) path.moveTo(fx, fy);
+            else path.lineTo(fx, fy);
+        }
+        path.close();
+        return path;
+    }
+
+    private Path regularPentagon(float cx, float cy, float r, float startAngle) {
+        Path path = new Path();
+        for (int i = 0; i < 5; i++) {
+            double a = startAngle + Math.PI * 2 * i / 5;
+            float x = cx + (float)Math.cos(a) * r;
+            float y = cy + (float)Math.sin(a) * r;
+            if (i == 0) path.moveTo(x, y);
+            else path.lineTo(x, y);
+        }
+        path.close();
+        return path;
     }
 
     @Override public boolean performClick() { super.performClick(); return true; }

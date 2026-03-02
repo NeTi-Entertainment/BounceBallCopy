@@ -27,16 +27,41 @@ import com.example.bounceball.utils.GamePreferences;
  */
 public class CosmeticsPage {
 
-    // ── Données Balles ─────────────────────────────────
-    // {id, nom, couleur preview, gold, diamants}
-    // gold=0 & diam=0 → gratuit/défaut
+// {id, nom, couleur preview, gold, diamants, cat_stats, sous_cat}
+// cat_stats : "classic" | "metal" | "space" | "sport" | "elemental"
+// sous_cat  : label affiché en en-tête de section dans le shop
     private static final Object[][] BALLS = {
-            {"ball_basic",    "Balle basique",    "#E53935", 0,   0  },
-            {"ball_emerald",  "Balle Émeraude",   "#43A047", 450, 15 },
-            {"ball_sapphire", "Balle Saphir",     "#1E88E5", 450, 15 },
-            {"ball_gold",     "Balle Dorée",      "#FFD700", 800, 30 },
-            {"ball_void",     "Balle Néant",      "#212121", 900, 35 },
-            {"ball_rose",     "Balle Rose",       "#E91E63", 500, 18 },
+
+            // ── CLASSIC ────────────────────────────────────────
+            {"ball_basic",    "Balle Basique",    "#E53935", 0,    0,  "classic", "Classic"},
+            {"ball_rose",     "Balle Rose",       "#E91E63", 500,  18, "classic", "Classic"},
+            {"ball_cream",    "Balle Crème",      "#FFF8E1", 300,  10, "classic", "Classic"},
+            {"ball_navy",     "Balle Marine",     "#1A237E", 300,  10, "classic", "Classic"},
+
+            // ── SPORT ──────────────────────────────────────────
+            {"ball_soccer",   "Ballon Foot",      "#F5F5F5", 450,  15, "sport",   "Sport"},
+            {"ball_basket",   "Ballon Basket",    "#E65100", 450,  15, "sport",   "Sport"},
+            {"ball_tennis",   "Balle Tennis",     "#CDDC39", 450,  15, "sport",   "Sport"},
+            {"ball_bowling",  "Boule Bowling",    "#311B92", 600,  22, "sport",   "Sport"},
+
+            // ── METAL ──────────────────────────────────────────
+            {"ball_gold",     "Balle Dorée",      "#FFD700", 800,  30, "metal",   "Metal"},
+            {"ball_silver",   "Balle Argentée",   "#B0BEC5", 600,  22, "metal",   "Metal"},
+            {"ball_copper",   "Balle Cuivrée",    "#BF6830", 600,  22, "metal",   "Metal"},
+            {"ball_chrome",   "Balle Chrome",     "#90CAF9", 900,  35, "metal",   "Metal"},
+
+            // ── ELEMENTAL ──────────────────────────────────────
+            {"ball_emerald",  "Balle Émeraude",   "#43A047", 450,  15, "elemental","Elemental"},
+            {"ball_sapphire", "Balle Saphir",     "#1E88E5", 450,  15, "elemental","Elemental"},
+            {"ball_fire",     "Balle Feu",        "#FF5722", 700,  26, "elemental","Elemental"},
+            {"ball_ice",      "Balle Glace",      "#80DEEA", 700,  26, "elemental","Elemental"},
+            {"ball_thunder",  "Balle Foudre",     "#FDD835", 750,  28, "elemental","Elemental"},
+
+            // ── SPACE ──────────────────────────────────────────
+            {"ball_void",     "Balle Néant",      "#212121", 900,  35, "space",   "Space"},
+            {"ball_nebula",   "Balle Nébuleuse",  "#7B1FA2", 750,  28, "space",   "Space"},
+            {"ball_comet",    "Balle Comète",     "#4FC3F7", 700,  26, "space",   "Space"},
+            {"ball_moon",     "Balle Lune",       "#ECEFF1", 500,  18, "space",   "Space"},
     };
 
     // ── Données Effets ─────────────────────────────────
@@ -110,7 +135,13 @@ public class CosmeticsPage {
 
         // ── Section Balles ──
         addSectionHeader(ctx, page, "Balles");
+        String lastSubCat = "";
         for (Object[] ball : BALLS) {
+            String subCat = (String) ball[6];
+            if (!subCat.equals(lastSubCat)) {
+                addSubSectionHeader(ctx, page, subCat);
+                lastSubCat = subCat;
+            }
             page.addView(buildCosmeticRow(ctx, prefs, raw, ball, "equipped_ball", refreshCurr));
         }
 
@@ -348,5 +379,18 @@ public class CosmeticsPage {
             Object r = child.getTag(R.id.tag_refresh);
             if (r instanceof Runnable) ((Runnable) r).run();
         }
+    }
+
+    private static void addSubSectionHeader(Context ctx, LinearLayout parent, String label) {
+        TextView tv = new TextView(ctx);
+        tv.setText("— " + label + " —");
+        tv.setTextColor(Color.parseColor("#607D8B"));
+        tv.setTextSize(12f);
+        tv.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.setMargins(0, px(ctx, 12), 0, px(ctx, 2));
+        tv.setLayoutParams(lp);
+        parent.addView(tv);
     }
 }
