@@ -62,17 +62,22 @@ public class CosmeticsPage {
             // ── SPACE ──────────────────────────────────────────
             {"ball_void",     "Balle Néant",      "#212121", 1,  35, "space",   "Space"},
             {"ball_nebula",   "Balle Nébuleuse",  "#7B1FA2", 1,  28, "space",   "Space"},
-            {"ball_comet",    "Balle Comète",     "#4FC3F7", 1,  26, "space",   "Space"},
+            {"ball_comet",    "Balle Comète",     "#A0825A", 1,  26, "space",   "Space"},
             {"ball_mercury", "Mercure",           "#9E9585", 1, 18, "space",    "Space"},
             {"ball_venus",   "Vénus",             "#E8D5A3", 1, 20, "space",    "Space"},
             {"ball_earth",   "Terre",             "#1A6FA8", 1, 20, "space",    "Space"},
-            {"ball_moon",    "Lune",              "#ECEFF1", 1,  18, "space",   "Space"},
+            {"ball_moon",    "Lune",              "#B8B8B8", 1, 18, "space",    "Space"},
             {"ball_mars",   "Mars",               "#C1440E", 1, 25, "space",    "Space"},
             {"ball_jupiter",   "Jupiter",         "#C88B3A", 1, 25, "space",    "Space"},
             {"ball_saturn",   "Saturn",           "#C8A96E", 1, 30, "space",    "Space"},
             {"ball_uranus",   "Uranus",           "#7DE8E8", 1, 30, "space",    "Space"},
             {"ball_neptune",   "Neptune",         "#2A5FD4", 1, 40, "space",    "Space"},
             {"ball_pluto",   "Pluton",            "#C4A882", 1, 40, "space",    "Space"},
+            {"ball_red_dwarf",    "Naine Rouge",  "#CC2200", 1, 18, "space",    "Space"},
+            {"ball_yellow_dwarf", "Naine Jaune",  "#FFD700", 1, 18, "space",    "Space"},
+            {"ball_blue_giant",   "Géante Bleue", "#4488FF", 1, 22, "space",    "Space"},
+            {"ball_black_hole", "Trou Noir",      "#0A0010", 1, 40, "space",    "Space"},
+            {"ball_pulsar", "Pulsar",             "#4488FF", 1, 44, "space",    "Space"},
     };
 
     // ── Données Effets ─────────────────────────────────

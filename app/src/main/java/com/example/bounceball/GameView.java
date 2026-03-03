@@ -162,18 +162,24 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             case "ball_platinum": color = Color.parseColor("#D8DCE0"); break;
             // Space
             // Space
-            case "ball_void":     color = Color.parseColor("#212121"); break;
-            case "ball_nebula":   color = Color.parseColor("#7B1FA2"); break;
-            case "ball_comet":    color = Color.parseColor("#4FC3F7"); break;
-            case "ball_moon":     color = Color.parseColor("#ECEFF1"); break;
-            case "ball_mercury":  color = Color.parseColor("#9E9585"); break;
-            case "ball_venus":    color = Color.parseColor("#E8D5A3"); break;
-            case "ball_earth":    color = Color.parseColor("#1A6FA8"); break;
-            case "ball_mars":     color = Color.parseColor("#C1440E"); break;
-            case "ball_jupiter":  color = Color.parseColor("#C88B3A"); break;
-            case "ball_saturn":   color = Color.parseColor("#C8A96E"); break;
-            case "ball_uranus":   color = Color.parseColor("#7DE8E8"); break;
-            case "ball_pluto":    color = Color.parseColor("#C4A882"); break;
+            case "ball_void":         color = Color.parseColor("#212121"); break;
+            case "ball_nebula":       color = Color.parseColor("#7B1FA2"); break;
+            case "ball_comet":        color = Color.parseColor("#A0825A"); break;
+            case "ball_mercury":      color = Color.parseColor("#9E9585"); break;
+            case "ball_venus":        color = Color.parseColor("#E8D5A3"); break;
+            case "ball_earth":        color = Color.parseColor("#1A6FA8"); break;
+            case "ball_moon":         color = Color.parseColor("#B8B8B8"); break;
+            case "ball_mars":         color = Color.parseColor("#C1440E"); break;
+            case "ball_jupiter":      color = Color.parseColor("#C88B3A"); break;
+            case "ball_saturn":       color = Color.parseColor("#C8A96E"); break;
+            case "ball_uranus":       color = Color.parseColor("#7DE8E8"); break;
+            case "ball_pluto":        color = Color.parseColor("#C4A882"); break;
+            case "ball_red_dwarf":    color = Color.parseColor("#CC2200"); break;
+            case "ball_yellow_dwarf": color = Color.parseColor("#FFD700"); break;
+            case "ball_blue_giant":   color = Color.parseColor("#4488FF"); break;
+            case "ball_black_hole":   color = Color.parseColor("#0A0010"); break;
+            case "ball_pulsar":       color = Color.parseColor("#050520"); break;
+
             // Sport
             case "ball_soccer":   color = Color.parseColor("#F5F5F5"); break;
             case "ball_basket":   color = Color.parseColor("#E65100"); break;
@@ -519,25 +525,33 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     }
     private void drawBall(Canvas canvas, float cx, float cy, float r) {
         switch (currentBallSkin) {
-            case "ball_basket":  drawBasketball(canvas, cx, cy, r);  break;
-            case "ball_tennis":  drawTennisBall(canvas, cx, cy, r);  break;
-            case "ball_bowling": drawBowlingBall(canvas, cx, cy, r); break;
-            case "ball_soccer":  drawSoccerBall(canvas, cx, cy, r);  break;
+            case "ball_basket":       drawBasketball(canvas, cx, cy, r);  break;
+            case "ball_tennis":       drawTennisBall(canvas, cx, cy, r);  break;
+            case "ball_bowling":      drawBowlingBall(canvas, cx, cy, r); break;
+            case "ball_soccer":       drawSoccerBall(canvas, cx, cy, r);  break;
             case "ball_gold":
             case "ball_silver":
             case "ball_copper":
             case "ball_chrome":
             case "ball_lead":
-            case "ball_platinum": drawMetalBall(canvas, cx, cy, r); break;
-            case "ball_mercury": drawMercury(canvas, cx, cy, r); break;
-            case "ball_venus":   drawVenus(canvas, cx, cy, r);   break;
-            case "ball_earth":   drawEarth(canvas, cx, cy, r);   break;
-            case "ball_mars":    drawMars(canvas, cx, cy, r);    break;
-            case "ball_jupiter": drawJupiter(canvas, cx, cy, r); break;
-            case "ball_saturn":  drawSaturn(canvas, cx, cy, r);  break;
-            case "ball_uranus":  drawUranus(canvas, cx, cy, r); break;
-            case "ball_neptune": drawNeptune(canvas, cx, cy, r); break;
-            case "ball_pluto":   drawPluto(canvas, cx, cy, r); break;
+            case "ball_platinum":     drawMetalBall(canvas, cx, cy, r); break;
+            case "ball_comet":        drawComet(canvas, cx, cy, r); break;
+            case "ball_mercury":      drawMercury(canvas, cx, cy, r); break;
+            case "ball_venus":        drawVenus(canvas, cx, cy, r);   break;
+            case "ball_earth":        drawEarth(canvas, cx, cy, r);   break;
+            case "ball_moon":         drawMoon(canvas, cx, cy, r); break;
+            case "ball_mars":         drawMars(canvas, cx, cy, r);    break;
+            case "ball_jupiter":      drawJupiter(canvas, cx, cy, r); break;
+            case "ball_saturn":       drawSaturn(canvas, cx, cy, r);  break;
+            case "ball_uranus":       drawUranus(canvas, cx, cy, r); break;
+            case "ball_neptune":      drawNeptune(canvas, cx, cy, r); break;
+            case "ball_pluto":        drawPluto(canvas, cx, cy, r); break;
+            case "ball_red_dwarf":    drawStar(canvas, cx, cy, r, new int[]{0xFFFFEEDD, 0xFFCC2200, 0xFFAA1800, 0xFFFF4400}); break;
+            case "ball_yellow_dwarf": drawStar(canvas, cx, cy, r, new int[]{0xFFFFFFEE, 0xFFFFD700, 0xFFE8A800, 0xFFFFAA00}); break;
+            case "ball_blue_giant":   drawStar(canvas, cx, cy, r, new int[]{0xFFEEF4FF, 0xFF4488FF, 0xFF2255DD, 0xFF88CCFF}); break;
+            case "ball_black_hole":   drawBlackHole(canvas, cx, cy, r); break;
+            case "ball_pulsar":       drawPulsar(canvas, cx, cy, r); break;
+
             default:
                 canvas.drawCircle(cx, cy, r, ballPaint);
                 canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
@@ -816,6 +830,75 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         canvas.drawCircle(cx, cy, r, shadow);
 
         // Reflet
+        canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+    }
+
+    private void drawComet(Canvas canvas, float cx, float cy, float r) {
+        // Halo dessiné EN PREMIER (derrière le corps)
+        Paint halo = new Paint(Paint.ANTI_ALIAS_FLAG);
+        halo.setStyle(Paint.Style.FILL);
+        halo.setShader(new RadialGradient(
+                cx, cy, r * 1.6f,
+                new int[]{ 0xAAFFFFCC, 0x88FFAA00, 0x44FF4400, 0x00FF0000 },
+                new float[]{ 0f, 0.35f, 0.65f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r * 1.6f, halo);
+
+        // Corps rocheux brun-gris
+        Paint base = new Paint(Paint.ANTI_ALIAS_FLAG);
+        base.setStyle(Paint.Style.FILL);
+        base.setShader(new RadialGradient(
+                cx - r * 0.2f, cy - r * 0.2f, r * 1.1f,
+                new int[]{ 0xFFCCAA80, 0xFFA0825A, 0xFF604030 },
+                new float[]{ 0f, 0.55f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, base);
+
+        canvas.save();
+        Path clip = new Path();
+        clip.addCircle(cx, cy, r, Path.Direction.CW);
+        canvas.clipPath(clip);
+
+        // Cratères : moins nombreux, plus grands
+        float[][] craters = {
+                { -0.38f, -0.42f, 0.20f, 185, 95 },
+                {  0.40f,  0.20f, 0.22f, 190, 90 },
+                { -0.15f,  0.45f, 0.18f, 175, 85 },
+                {  0.15f, -0.55f, 0.14f, 165, 80 },
+                { -0.55f,  0.25f, 0.15f, 170, 82 },
+                {  0.50f, -0.40f, 0.12f, 160, 78 },
+        };
+
+        Paint craterFill = new Paint(Paint.ANTI_ALIAS_FLAG);
+        Paint craterRim  = new Paint(Paint.ANTI_ALIAS_FLAG);
+        craterRim.setStyle(Paint.Style.STROKE);
+
+        for (float[] c : craters) {
+            float kx = cx + c[0] * r;
+            float ky = cy + c[1] * r;
+            float kr = c[2] * r;
+
+            craterFill.setStyle(Paint.Style.FILL);
+            craterFill.setColor(Color.parseColor("#503820"));
+            craterFill.setAlpha((int)c[3]);
+            canvas.drawCircle(kx, ky, kr, craterFill);
+
+            craterFill.setColor(Color.parseColor("#302010"));
+            craterFill.setAlpha((int)(c[3] * 0.5f));
+            canvas.drawOval(new RectF(
+                    kx - kr * 0.6f, ky,
+                    kx + kr * 0.6f, ky + kr * 0.8f), craterFill);
+
+            craterRim.setColor(Color.parseColor("#C8A878"));
+            craterRim.setAlpha((int)c[4]);
+            craterRim.setStrokeWidth(kr * 0.22f);
+            canvas.drawCircle(kx, ky, kr, craterRim);
+        }
+
+        canvas.restore();
+
         canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
     }
 
@@ -1106,6 +1189,73 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         cloud.setAlpha(90);
         canvas.drawOval(new RectF(cx - r * 0.95f, cy + r * 0.24f,
                 cx - r * 0.55f,  cy + r * 0.30f), cloud);
+
+        canvas.restore();
+
+        canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+    }
+
+    private void drawMoon(Canvas canvas, float cx, float cy, float r) {
+        Paint base = new Paint(Paint.ANTI_ALIAS_FLAG);
+        base.setStyle(Paint.Style.FILL);
+        base.setShader(new RadialGradient(
+                cx - r * 0.2f, cy - r * 0.2f, r * 1.1f,
+                new int[]{ 0xFFD8D8D8, 0xFFB8B8B8, 0xFF787878 },
+                new float[]{ 0f, 0.55f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, base);
+
+        canvas.save();
+        Path clip = new Path();
+        clip.addCircle(cx, cy, r, Path.Direction.CW);
+        canvas.clipPath(clip);
+
+        // Cratères : {offset_x, offset_y, rayon, alpha_ombre, alpha_rebord}
+        float[][] craters = {
+                { -0.42f,  -0.50f,  0.13f,  180,  90 },  // grand, haut-gauche
+                {  0.35f,  -0.38f,  0.10f,  160,  80 },  // moyen, haut-droite
+                { -0.58f,   0.10f,  0.09f,  170,  85 },  // moyen, gauche
+                {  0.50f,   0.25f,  0.14f,  190,  95 },  // grand, droite
+                { -0.15f,   0.52f,  0.11f,  165,  80 },  // moyen, bas-centre
+                {  0.18f,  -0.62f,  0.07f,  150,  70 },  // petit, haut
+                { -0.30f,  -0.18f,  0.08f,  155,  75 },  // petit, centre-gauche
+                {  0.55f,  -0.58f,  0.06f,  140,  65 },  // petit, haut-droite
+                { -0.62f,  -0.42f,  0.07f,  145,  70 },  // petit, haut-gauche
+                {  0.28f,   0.58f,  0.08f,  150,  72 },  // petit, bas-droite
+                { -0.20f,   0.22f,  0.06f,  140,  65 },  // minuscule, centre
+                {  0.08f,  -0.30f,  0.05f,  135,  60 },  // minuscule, centre-haut
+                { -0.50f,   0.52f,  0.09f,  160,  78 },  // moyen, bas-gauche
+        };
+
+        Paint craterFill  = new Paint(Paint.ANTI_ALIAS_FLAG);
+        Paint craterRim   = new Paint(Paint.ANTI_ALIAS_FLAG);
+        craterRim.setStyle(Paint.Style.STROKE);
+
+        for (float[] c : craters) {
+            float kx  = cx + c[0] * r;
+            float ky  = cy + c[1] * r;
+            float kr  = c[2] * r;
+
+            // Intérieur sombre (creux)
+            craterFill.setStyle(Paint.Style.FILL);
+            craterFill.setColor(Color.parseColor("#606060"));
+            craterFill.setAlpha((int)c[3]);
+            canvas.drawCircle(kx, ky, kr, craterFill);
+
+            // Ombre interne (gradient simulé : arc sombre en bas-droite)
+            craterFill.setColor(Color.parseColor("#404040"));
+            craterFill.setAlpha((int)(c[3] * 0.5f));
+            canvas.drawOval(new RectF(
+                    kx - kr * 0.6f, ky,
+                    kx + kr * 0.6f, ky + kr * 0.8f), craterFill);
+
+            // Rebord clair (relief autour du cratère)
+            craterRim.setColor(Color.parseColor("#DDDDDD"));
+            craterRim.setAlpha((int)c[4]);
+            craterRim.setStrokeWidth(kr * 0.22f);
+            canvas.drawCircle(kx, ky, kr, craterRim);
+        }
 
         canvas.restore();
 
@@ -1670,6 +1820,211 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         canvas.restore();
 
         canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+    }
+
+    private void drawStar(Canvas canvas, float cx, float cy, float r, int[] p) {
+        // p[0] = cœur clair, p[1] = corps, p[2] = bord sombre, p[3] = couleur halo
+
+        // ── Assombrissement au limbe (centre brillant → bords sombres) ──
+        Paint base = new Paint(Paint.ANTI_ALIAS_FLAG);
+        base.setStyle(Paint.Style.FILL);
+        base.setShader(new RadialGradient(
+                cx, cy, r,
+                new int[]{ p[0], p[1], p[2] },
+                new float[]{ 0f, 0.55f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, base);
+
+        canvas.save();
+        Path clip = new Path();
+        clip.addCircle(cx, cy, r, Path.Direction.CW);
+        canvas.clipPath(clip);
+
+        // ── Granulation : minuscules cellules de convection ──
+        Paint grain = new Paint(Paint.ANTI_ALIAS_FLAG);
+        grain.setStyle(Paint.Style.FILL);
+        long seed = 0x5A3F2C1B;
+        for (int i = 0; i < 38; i++) {
+            seed = seed * 0x5DEECE66DL + 0xBL;
+            float gx = cx + ((seed >> 16 & 0xFFFF) / 65535f * 2f - 1f) * r * 0.88f;
+            seed = seed * 0x5DEECE66DL + 0xBL;
+            float gy = cy + ((seed >> 16 & 0xFFFF) / 65535f * 2f - 1f) * r * 0.88f;
+            if ((gx - cx) * (gx - cx) + (gy - cy) * (gy - cy) > r * r * 0.80f) continue;
+            seed = seed * 0x5DEECE66DL + 0xBL;
+            float gs = r * 0.04f + ((seed >> 16 & 0xFFFF) / 65535f) * r * 0.05f;
+            seed = seed * 0x5DEECE66DL + 0xBL;
+            boolean bright = (seed & 1) == 0;
+            grain.setColor(bright ? p[0] : p[2]);
+            grain.setAlpha(18 + (int)((seed >> 8 & 0xFF) % 18));
+            canvas.drawCircle(gx, gy, gs, grain);
+        }
+
+        // ── Halo de couronne : transparent au centre, lumineux au bord ──
+        Paint halo = new Paint(Paint.ANTI_ALIAS_FLAG);
+        halo.setStyle(Paint.Style.FILL);
+        int haloTransp = (p[3] & 0x00FFFFFF); // même couleur, alpha 0
+        halo.setShader(new RadialGradient(
+                cx, cy, r,
+                new int[]{ 0xFFFFFFFF, p[0], p[1], p[1], p[2] },
+                new float[]{ 0f, 0.45f, 0.72f, 0.86f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, halo);
+
+        canvas.restore();
+
+        // Pas de ballShinePaint sur les étoiles : elles sont auto-lumineuses
+    }
+
+    private void drawBlackHole(Canvas canvas, float cx, float cy, float r) {
+        // ── Disque d'accrétion ARRIÈRE (dépasse la balle, moitié haute) ──
+        Paint disk = new Paint(Paint.ANTI_ALIAS_FLAG);
+        disk.setStyle(Paint.Style.STROKE);
+
+        float[][] diskRings = {
+                // {rx, ry, épaisseur, alpha, couleur}
+                { 1.70f, 0.22f, 0.10f, 255, 0xFFFFFFEE },
+                { 1.55f, 0.20f, 0.13f, 255, 0xFFFFCC44 },
+                { 1.38f, 0.18f, 0.16f, 255, 0xFFFF8800 },
+                { 1.20f, 0.15f, 0.11f, 220, 0xFFCC4400 },
+        };
+
+        for (float[] d : diskRings) {
+            disk.setStrokeWidth(d[2] * r);
+            disk.setAlpha((int)d[3]);
+            disk.setColor((int)d[4]);
+            float drx = d[0] * r;
+            float dry = d[1] * r;
+            canvas.save();
+            canvas.clipRect(cx - drx - 10f, cy - dry * 4f, cx + drx + 10f, cy);
+            canvas.drawOval(new RectF(cx - drx, cy - dry, cx + drx, cy + dry), disk);
+            canvas.restore();
+        }
+
+        // ── Corps : fond spatial violet-noir ──
+        Paint space = new Paint(Paint.ANTI_ALIAS_FLAG);
+        space.setStyle(Paint.Style.FILL);
+        space.setShader(new RadialGradient(
+                cx, cy, r,
+                new int[]{ 0xFF1A0030, 0xFF0A0018, 0xFF000008 },
+                new float[]{ 0f, 0.6f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, space);
+
+        canvas.save();
+        Path clip = new Path();
+        clip.addCircle(cx, cy, r, Path.Direction.CW);
+        canvas.clipPath(clip);
+
+        // ── Anneau de photons : couronne lumineuse nette ──
+        Paint photonRing = new Paint(Paint.ANTI_ALIAS_FLAG);
+        photonRing.setStyle(Paint.Style.FILL);
+        photonRing.setShader(new RadialGradient(
+                cx, cy, r * 0.74f,
+                new int[]{ 0x00FFFFFF, 0x00FFFFFF, 0xFFFFEE88, 0x00FFFFFF },
+                new float[]{ 0f, 0.60f, 0.72f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r * 0.74f, photonRing);
+
+        // ── Horizon des événements : noir absolu ──
+        Paint horizon = new Paint(Paint.ANTI_ALIAS_FLAG);
+        horizon.setStyle(Paint.Style.FILL);
+        horizon.setColor(Color.BLACK);
+        canvas.drawCircle(cx, cy, r * 0.50f, horizon);
+
+        canvas.restore();
+
+        // ── Disque d'accrétion AVANT (moitié basse) ──
+        for (float[] d : diskRings) {
+            disk.setStrokeWidth(d[2] * r);
+            disk.setAlpha((int)(d[3] * 0.9f));
+            disk.setColor((int)d[4]);
+            float drx = d[0] * r;
+            float dry = d[1] * r;
+            canvas.save();
+            canvas.clipRect(cx - drx - 10f, cy, cx + drx + 10f, cy + dry * 4f);
+            canvas.drawOval(new RectF(cx - drx, cy - dry, cx + drx, cy + dry), disk);
+            canvas.restore();
+        }
+    }
+
+    private void drawPulsar(Canvas canvas, float cx, float cy, float r) {
+        float innerR = r * 0.18f;
+        float gapY   = r * 0.06f;
+
+        Paint stroke = new Paint(Paint.ANTI_ALIAS_FLAG);
+        stroke.setStyle(Paint.Style.STROKE);
+        stroke.setColor(Color.parseColor("#88DDFF"));
+
+        // Courbe intérieure gauche
+        Path innerLeft = new Path();
+        innerLeft.moveTo(cx, cy - gapY);
+        innerLeft.cubicTo(cx - innerR * 0.8f, cy - innerR * 1.2f,
+                cx - innerR * 0.8f, cy + innerR * 1.2f,
+                cx, cy + gapY);
+
+        // Courbe intérieure droite
+        Path innerRight = new Path();
+        innerRight.moveTo(cx, cy - gapY);
+        innerRight.cubicTo(cx + innerR * 0.8f, cy - innerR * 1.2f,
+                cx + innerR * 0.8f, cy + innerR * 1.2f,
+                cx, cy + gapY);
+
+        // Demi-cercle gauche (bord extérieur)
+        Path outerLeft = new Path();
+        outerLeft.moveTo(cx, cy - gapY);
+        outerLeft.cubicTo(cx - r * 0.05f, cy - r,
+                cx - r,         cy - r * 0.55f,
+                cx - r,         cy);
+        outerLeft.cubicTo(cx - r,         cy + r * 0.55f,
+                cx - r * 0.05f, cy + r,
+                cx,             cy + gapY);
+
+        // Demi-cercle droit (bord extérieur)
+        Path outerRight = new Path();
+        outerRight.moveTo(cx, cy - gapY);
+        outerRight.cubicTo(cx + r * 0.05f, cy - r,
+                cx + r,         cy - r * 0.55f,
+                cx + r,         cy);
+        outerRight.cubicTo(cx + r,         cy + r * 0.55f,
+                cx + r * 0.05f, cy + r,
+                cx,             cy + gapY);
+
+        Path[] edges = { innerLeft, innerRight, outerLeft, outerRight };
+        for (Path p : edges) {
+            stroke.setMaskFilter(new BlurMaskFilter(r * 0.07f, BlurMaskFilter.Blur.NORMAL));
+            stroke.setStrokeWidth(r * 0.07f);
+            stroke.setAlpha(120);
+            canvas.drawPath(p, stroke);
+
+            stroke.setMaskFilter(null);
+            stroke.setStrokeWidth(r * 0.022f);
+            stroke.setAlpha(245);
+            canvas.drawPath(p, stroke);
+        }
+
+        // Anneau central
+        stroke.setMaskFilter(new BlurMaskFilter(r * 0.06f, BlurMaskFilter.Blur.NORMAL));
+        stroke.setStrokeWidth(r * 0.06f);
+        stroke.setAlpha(140);
+        canvas.drawCircle(cx, cy, innerR, stroke);
+
+        stroke.setMaskFilter(null);
+        stroke.setStrokeWidth(r * 0.022f);
+        stroke.setAlpha(255);
+        canvas.drawCircle(cx, cy, innerR, stroke);
+
+        // Étoile à neutrons centrale
+        Paint neutron = new Paint(Paint.ANTI_ALIAS_FLAG);
+        neutron.setStyle(Paint.Style.FILL);
+        neutron.setShader(new RadialGradient(cx, cy, innerR,
+                new int[]{ 0xFFFFFFFF, 0xFF99EEFF, 0xFF2255BB },
+                new float[]{ 0f, 0.45f, 1f },
+                Shader.TileMode.CLAMP));
+        canvas.drawCircle(cx, cy, innerR, neutron);
     }
 
     private void drawWarpPortal(Canvas canvas, Paint wp, float cx, float cy, boolean flipped) {
