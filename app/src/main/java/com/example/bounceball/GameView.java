@@ -19,7 +19,9 @@ import com.example.bounceball.upgrade.UpgradeStats;
 import com.example.bounceball.utils.GamePreferences;
 import android.graphics.Path;
 import android.graphics.RadialGradient;
+import android.graphics.LinearGradient;
 import android.graphics.Shader;
+import android.graphics.BlurMaskFilter;
 
 public class GameView extends SurfaceView implements SurfaceHolder.Callback, Runnable {
 
@@ -156,22 +158,34 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             case "ball_silver":   color = Color.parseColor("#B0BEC5"); break;
             case "ball_copper":   color = Color.parseColor("#BF6830"); break;
             case "ball_chrome":   color = Color.parseColor("#90CAF9"); break;
+            case "ball_lead":     color = Color.parseColor("#707880"); break;
+            case "ball_platinum": color = Color.parseColor("#D8DCE0"); break;
+            // Space
             // Space
             case "ball_void":     color = Color.parseColor("#212121"); break;
             case "ball_nebula":   color = Color.parseColor("#7B1FA2"); break;
             case "ball_comet":    color = Color.parseColor("#4FC3F7"); break;
             case "ball_moon":     color = Color.parseColor("#ECEFF1"); break;
+            case "ball_mercury":  color = Color.parseColor("#9E9585"); break;
+            case "ball_venus":    color = Color.parseColor("#E8D5A3"); break;
+            case "ball_earth":    color = Color.parseColor("#1A6FA8"); break;
+            case "ball_mars":     color = Color.parseColor("#C1440E"); break;
+            case "ball_jupiter":  color = Color.parseColor("#C88B3A"); break;
+            case "ball_saturn":   color = Color.parseColor("#C8A96E"); break;
+            case "ball_uranus":   color = Color.parseColor("#7DE8E8"); break;
+            case "ball_pluto":    color = Color.parseColor("#C4A882"); break;
             // Sport
             case "ball_soccer":   color = Color.parseColor("#F5F5F5"); break;
             case "ball_basket":   color = Color.parseColor("#E65100"); break;
             case "ball_tennis":   color = Color.parseColor("#CDDC39"); break;
-            case "ball_bowling":  color = Color.parseColor("#311B92"); break;
+            case "ball_bowling":  color = Color.parseColor("#C0392B"); break;
             // Elemental
             case "ball_emerald":  color = Color.parseColor("#43A047"); break;
             case "ball_sapphire": color = Color.parseColor("#1E88E5"); break;
             case "ball_fire":     color = Color.parseColor("#FF5722"); break;
             case "ball_ice":      color = Color.parseColor("#80DEEA"); break;
             case "ball_thunder":  color = Color.parseColor("#FDD835"); break;
+            case "ball_neptune":  color = Color.parseColor("#2A5FD4"); break;
             // Défaut
             default:              color = Color.parseColor("#E53935"); break;
         }
@@ -509,6 +523,21 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             case "ball_tennis":  drawTennisBall(canvas, cx, cy, r);  break;
             case "ball_bowling": drawBowlingBall(canvas, cx, cy, r); break;
             case "ball_soccer":  drawSoccerBall(canvas, cx, cy, r);  break;
+            case "ball_gold":
+            case "ball_silver":
+            case "ball_copper":
+            case "ball_chrome":
+            case "ball_lead":
+            case "ball_platinum": drawMetalBall(canvas, cx, cy, r); break;
+            case "ball_mercury": drawMercury(canvas, cx, cy, r); break;
+            case "ball_venus":   drawVenus(canvas, cx, cy, r);   break;
+            case "ball_earth":   drawEarth(canvas, cx, cy, r);   break;
+            case "ball_mars":    drawMars(canvas, cx, cy, r);    break;
+            case "ball_jupiter": drawJupiter(canvas, cx, cy, r); break;
+            case "ball_saturn":  drawSaturn(canvas, cx, cy, r);  break;
+            case "ball_uranus":  drawUranus(canvas, cx, cy, r); break;
+            case "ball_neptune": drawNeptune(canvas, cx, cy, r); break;
+            case "ball_pluto":   drawPluto(canvas, cx, cy, r); break;
             default:
                 canvas.drawCircle(cx, cy, r, ballPaint);
                 canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
@@ -517,7 +546,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     }
 
     private void drawBasketball(Canvas canvas, float cx, float cy, float r) {
-        // Base orange
         ballPaint.setStyle(Paint.Style.FILL);
         canvas.drawCircle(cx, cy, r, ballPaint);
 
@@ -531,33 +559,35 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         seam.setStyle(Paint.Style.STROKE);
         seam.setStrokeWidth(r * 0.07f);
 
-        // Ligne horizontale centrale
+        // Croix centrale (deux lignes droites qui se coupent pile au centre)
         canvas.drawLine(cx - r, cy, cx + r, cy, seam);
+        canvas.drawLine(cx, cy - r, cx, cy + r, seam);
 
-        // Ligne verticale centrale (légèrement courbée à gauche)
-        Path left = new Path();
-        left.moveTo(cx, cy - r);
-        left.cubicTo(cx - r * 0.55f, cy - r * 0.4f,
-                cx - r * 0.55f, cy + r * 0.4f,
-                cx, cy + r);
-        canvas.drawPath(left, seam);
+        // Lignes courbes (même logique que tennis, couleur noire)
+        float gap = r * 0.80f;
+        float cpX = r * 0.35f;
+        float cpY = r * -0.10f;
 
-        // Ligne courbée symétrique à droite
-        Path right = new Path();
-        right.moveTo(cx, cy - r);
-        right.cubicTo(cx + r * 0.55f, cy - r * 0.4f,
-                cx + r * 0.55f, cy + r * 0.4f,
-                cx, cy + r);
-        canvas.drawPath(right, seam);
+        Path top = new Path();
+        top.moveTo(cx - r * 0.95f, cy - gap);
+        top.cubicTo(cx - cpX, cy + cpY,
+                cx + cpX, cy + cpY,
+                cx + r * 0.95f, cy - gap);
+        canvas.drawPath(top, seam);
+
+        Path bot = new Path();
+        bot.moveTo(cx - r * 0.95f, cy + gap);
+        bot.cubicTo(cx - cpX, cy - cpY,
+                cx + cpX, cy - cpY,
+                cx + r * 0.95f, cy + gap);
+        canvas.drawPath(bot, seam);
 
         canvas.restore();
 
-        // Reflet
         canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
     }
 
     private void drawTennisBall(Canvas canvas, float cx, float cy, float r) {
-        // Base jaune-vert
         ballPaint.setStyle(Paint.Style.FILL);
         canvas.drawCircle(cx, cy, r, ballPaint);
 
@@ -571,20 +601,32 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         line.setStyle(Paint.Style.STROKE);
         line.setStrokeWidth(r * 0.13f);
 
-        // Courbe haute : part du bas-gauche, monte au centre, redescend en haut-droite
+        // ── Écart entre les 2 lignes ──────────────────────────
+        float gap = r * 0.82f; // décalage vertical de chaque courbe par rapport au centre
+        // Augmenter = plus d'espace entre les deux lignes
+
+        // ── Resserrement horizontal des points de contrôle ────
+        float cpX = r * 0.45f; // distance X des points de contrôle depuis le centre
+        // Diminuer = courbe plus bombée / Augmenter = courbe plus plate
+
+        // ── Amplitude du bombage vers le centre ───────────────
+        float cpY = r * -0.30f; // de combien les ctrl points dépassent l'équateur vers le centre
+        // Augmenter = courbe bomb davantage vers le centre
+
+        // Courbe nord : part de cy-gap, les ctrl points descendent vers cy+cpY → bombe vers centre
         Path top = new Path();
-        top.moveTo(cx - r * 0.85f, cy + r * 0.35f);
-        top.cubicTo(cx - r * 0.2f,  cy - r * 0.75f,
-                cx + r * 0.2f,  cy - r * 0.75f,
-                cx + r * 0.85f, cy + r * 0.35f);
+        top.moveTo(cx - r * 0.95f, cy - gap);          // point de départ : pôle gauche, décalé haut
+        top.cubicTo(cx - cpX, cy + cpY,                // ctrl 1 : tire vers le bas (centre)
+                cx + cpX, cy + cpY,                // ctrl 2 : tire vers le bas (centre)
+                cx + r * 0.95f, cy - gap);          // point d'arrivée : pôle droit, même décalage
         canvas.drawPath(top, line);
 
-        // Courbe basse : miroir vertical de la première
+        // Courbe sud : miroir exact, ctrl points montent vers cy-cpY → bombe vers centre
         Path bot = new Path();
-        bot.moveTo(cx - r * 0.85f, cy - r * 0.35f);
-        bot.cubicTo(cx - r * 0.2f,  cy + r * 0.75f,
-                cx + r * 0.2f,  cy + r * 0.75f,
-                cx + r * 0.85f, cy - r * 0.35f);
+        bot.moveTo(cx - r * 0.95f, cy + gap);          // point de départ : pôle gauche, décalé bas
+        bot.cubicTo(cx - cpX, cy - cpY,                // ctrl 1 : tire vers le haut (centre)
+                cx + cpX, cy - cpY,                // ctrl 2 : tire vers le haut (centre)
+                cx + r * 0.95f, cy + gap);          // point d'arrivée : pôle droit, même décalage
         canvas.drawPath(bot, line);
 
         canvas.restore();
@@ -622,10 +664,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         // 3 trous décalés vers le haut-droite (pas centrés, pour voir la rotation)
         Paint hole = new Paint(Paint.ANTI_ALIAS_FLAG);
         hole.setStyle(Paint.Style.FILL);
-        hole.setColor(Color.parseColor("#1A0A60"));
+        hole.setColor(Color.parseColor("#4A0000"));
         float hr = r * 0.095f;
-        float hcx = cx + r * 0.18f;
-        float hcy = cy - r * 0.22f;
+        float hcx = cx + r * 0.30f;
+        float hcy = cy - r * 0.10f;
         canvas.drawCircle(hcx,              hcy,              hr, hole);
         canvas.drawCircle(hcx + r * 0.27f,  hcy + r * 0.14f,  hr, hole);
         canvas.drawCircle(hcx - r * 0.06f,  hcy + r * 0.28f,  hr, hole);
@@ -716,6 +758,917 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         canvas.drawCircle(cx, cy, r * 0.988f, stroke);
 
         // ── Reflet ──
+        canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+    }
+
+    private void drawMetalBall(Canvas canvas, float cx, float cy, float r) {
+        int[] colors;
+        switch (currentBallSkin) {
+            case "ball_gold":
+                colors = new int[]{
+                        0xFFFFF5A0, 0xFFFFD700, 0xFFC8A000, 0xFF7A5800 };
+                break;
+            case "ball_silver":
+                colors = new int[]{
+                        0xFFFFFFFF, 0xFFC8D0D8, 0xFF8090A0, 0xFF404850 };
+                break;
+            case "ball_copper":
+                colors = new int[]{
+                        0xFFFFCBA0, 0xFFBF6830, 0xFF8B4010, 0xFF4A1800 };
+                break;
+            case "ball_chrome":
+                colors = new int[]{
+                        0xFFFFFFFF, 0xFFB8D0E8, 0xFF6090B8, 0xFF203848 };
+                break;
+            case "ball_lead":
+                colors = new int[]{
+                        0xFFB0B8C0, 0xFF707880, 0xFF404850, 0xFF202428 };
+                break;
+            case "ball_platinum":
+            default:
+                colors = new int[]{
+                        0xFFF8F8F8, 0xFFD8DCE0, 0xFFA0A8B0, 0xFF606870 };
+                break;
+        }
+
+        float[] stops = { 0f, 0.35f, 0.72f, 1f };
+
+        // Gradient diagonal haut-gauche → bas-droite (source lumineuse fixe)
+        Paint metalPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        metalPaint.setStyle(Paint.Style.FILL);
+        metalPaint.setShader(new LinearGradient(
+                cx - r * 0.7f, cy - r * 0.7f,
+                cx + r * 0.7f, cy + r * 0.7f,
+                colors, stops,
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, metalPaint);
+
+        // Ombre interne bas-droite pour le volume
+        Paint shadow = new Paint(Paint.ANTI_ALIAS_FLAG);
+        shadow.setStyle(Paint.Style.FILL);
+        shadow.setShader(new RadialGradient(
+                cx + r * 0.3f, cy + r * 0.3f, r * 0.85f,
+                new int[]{ 0x00000000, 0x00000000, 0x30000000 },
+                new float[]{ 0f, 0.5f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, shadow);
+
+        // Reflet
+        canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+    }
+
+    private void drawMercury(Canvas canvas, float cx, float cy, float r) {
+        // Base gris-brun
+        ballPaint.setStyle(Paint.Style.FILL);
+        canvas.drawCircle(cx, cy, r, ballPaint);
+
+        canvas.save();
+        Path clip = new Path();
+        clip.addCircle(cx, cy, r, Path.Direction.CW);
+        canvas.clipPath(clip);
+
+        // Cratères : cercles clairs avec bord légèrement sombre
+        Paint craterFill = new Paint(Paint.ANTI_ALIAS_FLAG);
+        craterFill.setStyle(Paint.Style.FILL);
+
+        Paint craterRim = new Paint(Paint.ANTI_ALIAS_FLAG);
+        craterRim.setStyle(Paint.Style.STROKE);
+        craterRim.setColor(Color.parseColor("#6B6055"));
+
+        // {offset_x, offset_y, rayon, alpha_fill}
+        float[][] craters = {
+                { -0.38f,  -0.40f, 0.13f, 1.0f },
+                {  0.30f,  -0.50f, 0.10f, 0.9f },
+                { -0.55f,   0.15f, 0.16f, 1.0f },
+                {  0.45f,   0.25f, 0.12f, 0.9f },
+                {  0.10f,   0.55f, 0.14f, 1.0f },
+                { -0.15f,   0.10f, 0.08f, 0.8f },
+                {  0.55f,  -0.20f, 0.09f, 0.85f},
+                { -0.20f,  -0.65f, 0.07f, 0.75f},
+                {  0.20f,   0.10f, 0.11f, 0.9f },
+        };
+
+        for (float[] c : craters) {
+            float ccx = cx + c[0] * r;
+            float ccy = cy + c[1] * r;
+            float cr  = c[2] * r;
+            int alpha = (int)(c[3] * 255);
+
+            craterFill.setColor(Color.parseColor("#C4BAB0"));
+            craterFill.setAlpha(alpha);
+            canvas.drawCircle(ccx, ccy, cr, craterFill);
+
+            craterRim.setStrokeWidth(cr * 0.18f);
+            craterRim.setAlpha((int)(alpha * 0.6f));
+            canvas.drawCircle(ccx, ccy, cr * 0.88f, craterRim);
+        }
+
+        canvas.restore();
+
+        canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+    }
+
+    private void drawVenus(Canvas canvas, float cx, float cy, float r) {
+        // Base jaune-crème avec gradient radial (atmosphère lumineuse)
+        Paint base = new Paint(Paint.ANTI_ALIAS_FLAG);
+        base.setStyle(Paint.Style.FILL);
+        base.setShader(new RadialGradient(
+                cx - r * 0.2f, cy - r * 0.2f, r * 1.1f,
+                new int[]{ 0xFFFFF8DC, 0xFFE8D5A3, 0xFFD4B870 },
+                new float[]{ 0f, 0.6f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, base);
+
+        canvas.save();
+        Path clip = new Path();
+        clip.addCircle(cx, cy, r, Path.Direction.CW);
+        canvas.clipPath(clip);
+
+// {offset_y, amplitude, ctrl_dx1, ctrl_dx2, épaisseur, alpha, couleur_hex}
+        Object[][] bands = {
+                { -0.55f,  0.08f,  0.30f, -0.10f, 0.07f, 100, "#FFFAEE" },
+                { -0.32f,  0.18f, -0.25f,  0.40f, 0.13f, 120, "#FFF3CC" },
+                { -0.10f,  0.11f,  0.45f,  0.10f, 0.09f,  90, "#F5E090" },
+                {  0.14f,  0.15f, -0.35f, -0.05f, 0.14f, 130, "#FFF8E0" },
+                {  0.38f,  0.09f,  0.20f,  0.50f, 0.08f,  80, "#EDD878" },
+                {  0.60f,  0.13f, -0.15f,  0.25f, 0.11f, 110, "#FFF0C0" },
+        };
+
+        Paint cloud = new Paint(Paint.ANTI_ALIAS_FLAG);
+        cloud.setStyle(Paint.Style.STROKE);
+
+        for (Object[] b : bands) {
+            float bandY   = cy + (float)b[0] * r;
+            float amp     = (float)b[1] * r;
+            float cdx1    = (float)b[2] * r;
+            float cdx2    = (float)b[3] * r;
+            cloud.setStrokeWidth((float)b[4] * r);
+            cloud.setAlpha((int)b[5]);
+            cloud.setColor(Color.parseColor((String)b[6]));
+
+            Path band = new Path();
+            band.moveTo(cx - r, bandY);
+            band.cubicTo(cx - r * 0.3f + cdx1, bandY - amp,
+                    cx + r * 0.3f + cdx2, bandY + amp,
+                    cx + r,               bandY);
+            canvas.drawPath(band, cloud);
+        }
+
+        canvas.restore();
+
+        canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+    }
+
+    private void drawEarth(Canvas canvas, float cx, float cy, float r) {
+        Paint ocean = new Paint(Paint.ANTI_ALIAS_FLAG);
+        ocean.setStyle(Paint.Style.FILL);
+        ocean.setShader(new RadialGradient(
+                cx - r * 0.2f, cy - r * 0.25f, r * 1.1f,
+                new int[]{ 0xFF4FC3F7, 0xFF1A6FA8, 0xFF0D3F6B },
+                new float[]{ 0f, 0.55f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, ocean);
+
+        canvas.save();
+        Path clip = new Path();
+        clip.addCircle(cx, cy, r, Path.Direction.CW);
+        canvas.clipPath(clip);
+
+        Paint land = new Paint(Paint.ANTI_ALIAS_FLAG);
+        land.setStyle(Paint.Style.FILL);
+
+        // ── Afrique ────────────────────────────────────────
+        // Reconnaissable : large rectangle en haut, bombé Brasil-like sur l'ouest,
+        // golfe de Guinée (rentrant) puis cap au sud
+        land.setColor(Color.parseColor("#6AAA55"));
+        Path africa = new Path();
+        africa.moveTo(cx + r * 0.08f,  cy - r * 0.32f); // Maroc (haut-gauche)
+        africa.lineTo(cx + r * 0.38f,  cy - r * 0.32f); // Libye (haut-droite)
+        africa.cubicTo(cx + r * 0.52f, cy - r * 0.18f,
+                cx + r * 0.54f, cy + r * 0.08f,
+                cx + r * 0.48f, cy + r * 0.25f); // Corne de l'Afrique / côte est
+        africa.cubicTo(cx + r * 0.42f, cy + r * 0.50f,
+                cx + r * 0.25f, cy + r * 0.72f,
+                cx + r * 0.18f, cy + r * 0.76f); // descend vers le Cap
+        africa.cubicTo(cx + r * 0.08f, cy + r * 0.74f,
+                cx + r * 0.00f, cy + r * 0.65f,
+                cx - r * 0.02f, cy + r * 0.52f); // cap sud
+        // Golfe de Guinée : la côte ouest remonte en rentrant vers l'est
+        africa.cubicTo(cx + r * 0.10f, cy + r * 0.28f,
+                cx + r * 0.12f, cy + r * 0.12f,
+                cx - r * 0.02f, cy + r * 0.05f); // golfe de Guinée (bosse vers l'est)
+        africa.cubicTo(cx - r * 0.08f, cy - r * 0.08f,
+                cx - r * 0.02f, cy - r * 0.22f,
+                cx + r * 0.08f, cy - r * 0.32f); // remonte côte ouest vers Maroc
+        africa.close();
+        canvas.drawPath(africa, land);
+
+        // ── Amérique du Sud ────────────────────────────────
+        // Reconnaissable : étroite en haut, grande bosse à droite (Brésil),
+        // côte gauche (Chili) longue et droite, pointe effilée au sud
+        land.setColor(Color.parseColor("#3D7A35"));
+        Path samerica = new Path();
+        samerica.moveTo(cx - r * 0.45f, cy + r * 0.08f); // Colombie ouest
+        samerica.cubicTo(cx - r * 0.28f, cy + r * 0.02f,
+                cx - r * 0.12f, cy + r * 0.08f,
+                cx - r * 0.05f, cy + r * 0.22f); // Venezuela / Guyane (haut étroit)
+        // Grande bosse brésilienne vers la droite
+        samerica.cubicTo(cx + r * 0.02f,  cy + r * 0.35f,
+                cx + r * 0.02f,  cy + r * 0.50f,
+                cx - r * 0.12f,  cy + r * 0.62f);
+        samerica.cubicTo(cx + r * 0.02f,  cy + r * 0.35f,
+                cx + r * 0.02f,  cy + r * 0.50f,
+                cx - r * 0.12f,  cy + r * 0.62f); // Brésil bombé (bord droit)
+        samerica.cubicTo(cx - r * 0.20f, cy + r * 0.74f,
+                cx - r * 0.30f, cy + r * 0.82f,
+                cx - r * 0.35f, cy + r * 0.80f); // pointe sud (Patagonie)
+        // Côte ouest longue et relativement droite (Chili/Pérou)
+        samerica.cubicTo(cx - r * 0.52f, cy + r * 0.68f,
+                cx - r * 0.58f, cy + r * 0.42f,
+                cx - r * 0.55f, cy + r * 0.18f); // Chili remonte
+        samerica.cubicTo(cx - r * 0.52f, cy + r * 0.10f,
+                cx - r * 0.48f, cy + r * 0.08f,
+                cx - r * 0.45f, cy + r * 0.08f);
+        samerica.close();
+        canvas.drawPath(samerica, land);
+
+        // ── Amérique du Nord ───────────────────────────────
+        // Reconnaissable : large en haut (Canada), côte est descend,
+        // golfe du Mexique (grande échancrure en bas), côte ouest droite
+        land.setColor(Color.parseColor("#4A8C3F"));
+        Path namerica = new Path();
+        namerica.moveTo(cx - r * 0.78f, cy - r * 0.55f); // Alaska
+        namerica.cubicTo(cx - r * 0.55f, cy - r * 0.75f,
+                cx - r * 0.22f, cy - r * 0.78f,
+                cx - r * 0.05f, cy - r * 0.62f); // Canada haut large
+        namerica.cubicTo(cx - r * 0.00f, cy - r * 0.52f,
+                cx - r * 0.05f, cy - r * 0.35f,
+                cx - r * 0.12f, cy - r * 0.18f); // côte est descend
+        namerica.cubicTo(cx - r * 0.15f, cy - r * 0.05f,
+                cx - r * 0.18f, cy + r * 0.05f,
+                cx - r * 0.22f, cy + r * 0.08f); // Floride (pointe)
+        // Golfe du Mexique : grande échancrure vers le haut
+        namerica.cubicTo(cx - r * 0.35f, cy + r * 0.12f,
+                cx - r * 0.48f, cy + r * 0.08f,
+                cx - r * 0.52f, cy + r * 0.00f); // fond du golfe (Mexique)
+        namerica.cubicTo(cx - r * 0.55f, cy - r * 0.08f,
+                cx - r * 0.50f, cy - r * 0.18f,
+                cx - r * 0.48f, cy - r * 0.25f); // Mexique remonte (Yucatan)
+        // Côte ouest (Californie / Canada-ouest) : assez droite
+        namerica.cubicTo(cx - r * 0.62f, cy - r * 0.25f,
+                cx - r * 0.80f, cy - r * 0.35f,
+                cx - r * 0.85f, cy - r * 0.42f); // côte pacifique
+        namerica.cubicTo(cx - r * 0.85f, cy - r * 0.48f,
+                cx - r * 0.82f, cy - r * 0.52f,
+                cx - r * 0.78f, cy - r * 0.55f);
+        namerica.close();
+        canvas.drawPath(namerica, land);
+
+        // ── Europe + Eurasie ouest ──────────────────────────
+        // Compact, collé à l'Afrique par le haut, visible sur la gauche de l'Asie
+        land.setColor(Color.parseColor("#5A9A50"));
+        Path europe = new Path();
+        europe.moveTo(cx + r * 0.08f,  cy - r * 0.32f); // jonction avec Afrique (Maroc/Espagne)
+        europe.cubicTo(cx + r * 0.05f, cy - r * 0.45f,
+                cx + r * 0.08f, cy - r * 0.62f,
+                cx + r * 0.18f, cy - r * 0.68f); // péninsule ibérique / France
+        europe.cubicTo(cx + r * 0.30f, cy - r * 0.75f,
+                cx + r * 0.45f, cy - r * 0.70f,
+                cx + r * 0.50f, cy - r * 0.58f); // Scandinavie
+        europe.cubicTo(cx + r * 0.50f, cy - r * 0.48f,
+                cx + r * 0.42f, cy - r * 0.38f,
+                cx + r * 0.38f, cy - r * 0.32f); // bord est de l'Europe
+        europe.cubicTo(cx + r * 0.28f, cy - r * 0.28f,
+                cx + r * 0.18f, cy - r * 0.30f,
+                cx + r * 0.08f, cy - r * 0.32f); // Méditerranée, rejoint l'Afrique
+        europe.close();
+        canvas.drawPath(europe, land);
+
+        // ── Asie ───────────────────────────────────────────
+        land.setColor(Color.parseColor("#4E8C45"));
+        Path asia = new Path();
+        asia.moveTo(cx + r * 0.38f,  cy - r * 0.32f); // bord ouest (rejoint Europe)
+        asia.cubicTo(cx + r * 0.50f, cy - r * 0.58f,
+                cx + r * 0.70f, cy - r * 0.70f,
+                cx + r * 0.92f, cy - r * 0.35f); // Sibérie / bord nord-est
+        asia.cubicTo(cx + r * 0.98f, cy - r * 0.10f,
+                cx + r * 0.92f, cy + r * 0.15f,
+                cx + r * 0.80f, cy + r * 0.22f); // côte est Asie
+        asia.cubicTo(cx + r * 0.70f, cy + r * 0.28f,
+                cx + r * 0.58f, cy + r * 0.22f,
+                cx + r * 0.52f, cy + r * 0.10f); // Asie du Sud-Est
+        // Péninsule indienne (pointe vers le bas)
+        asia.cubicTo(cx + r * 0.48f, cy - r * 0.02f,
+                cx + r * 0.50f, cy + r * 0.12f,
+                cx + r * 0.44f, cy + r * 0.22f); // Inde (pointe)
+        asia.cubicTo(cx + r * 0.42f, cy + r * 0.10f,
+                cx + r * 0.40f, cy - r * 0.05f,
+                cx + r * 0.38f, cy - r * 0.15f); // remonte côte ouest Inde
+        asia.cubicTo(cx + r * 0.35f, cy - r * 0.22f,
+                cx + r * 0.36f, cy - r * 0.28f,
+                cx + r * 0.38f, cy - r * 0.32f);
+        asia.close();
+        canvas.drawPath(asia, land);
+
+        // ── Antarctique : fine bande en bas ────────────────
+        land.setColor(Color.parseColor("#DFF0F8"));
+        land.setAlpha(210);
+        Path antarctica = new Path();
+        antarctica.moveTo(cx - r, cy + r * 0.85f);
+        antarctica.cubicTo(cx - r * 0.4f, cy + r * 0.78f,
+                cx + r * 0.4f, cy + r * 0.80f,
+                cx + r,        cy + r * 0.85f);
+        antarctica.lineTo(cx + r, cy + r);
+        antarctica.lineTo(cx - r, cy + r);
+        antarctica.close();
+        canvas.drawPath(antarctica, land);
+        land.setAlpha(255);
+
+        // ── Nuages ─────────────────────────────────────────
+        Paint cloud = new Paint(Paint.ANTI_ALIAS_FLAG);
+        cloud.setStyle(Paint.Style.FILL);
+        cloud.setColor(Color.WHITE);
+
+        cloud.setAlpha(170);
+        canvas.drawOval(new RectF(cx - r * 0.38f, cy - r * 0.52f,
+                cx + r * 0.05f,  cy - r * 0.40f), cloud);
+        cloud.setAlpha(110);
+        canvas.drawOval(new RectF(cx - r * 0.30f, cy - r * 0.50f,
+                cx + r * 0.12f,  cy - r * 0.44f), cloud);
+
+        cloud.setAlpha(150);
+        canvas.drawOval(new RectF(cx - r * 0.90f, cy + r * 0.20f,
+                cx - r * 0.50f,  cy + r * 0.32f), cloud);
+        cloud.setAlpha(90);
+        canvas.drawOval(new RectF(cx - r * 0.95f, cy + r * 0.24f,
+                cx - r * 0.55f,  cy + r * 0.30f), cloud);
+
+        canvas.restore();
+
+        canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+    }
+
+    private void drawMars(Canvas canvas, float cx, float cy, float r) {
+        // Base rouge-orangé avec gradient radial (lumière haut-gauche)
+        Paint base = new Paint(Paint.ANTI_ALIAS_FLAG);
+        base.setStyle(Paint.Style.FILL);
+        base.setShader(new RadialGradient(
+                cx - r * 0.25f, cy - r * 0.25f, r * 1.15f,
+                new int[]{ 0xFFE8714A, 0xFFC1440E, 0xFF8B2500 },
+                new float[]{ 0f, 0.55f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, base);
+
+        canvas.save();
+        Path clip = new Path();
+        clip.addCircle(cx, cy, r, Path.Direction.CW);
+        canvas.clipPath(clip);
+
+        // ── Taches sombres (régions volcaniques / Syrtis Major) ──
+        Paint dark = new Paint(Paint.ANTI_ALIAS_FLAG);
+        dark.setStyle(Paint.Style.FILL);
+        dark.setColor(Color.parseColor("#8B2500"));
+
+        // Syrtis Major : grande tache triangulaire sombre, hémisphère nord-est
+        dark.setAlpha(130);
+        Path syrtis = new Path();
+        syrtis.moveTo(cx + r * 0.28f, cy - r * 0.28f);
+        syrtis.cubicTo(cx + r * 0.48f, cy - r * 0.42f,
+                cx + r * 0.58f, cy - r * 0.22f,
+                cx + r * 0.42f, cy - r * 0.08f);
+        syrtis.cubicTo(cx + r * 0.32f, cy - r * 0.02f,
+                cx + r * 0.20f, cy - r * 0.10f,
+                cx + r * 0.28f, cy - r * 0.28f);
+        syrtis.close();
+        canvas.drawPath(syrtis, dark);
+
+        // Tache secondaire (Acidalia Planitia) : ovale plus diffus, nord-ouest
+        dark.setAlpha(75);
+        canvas.drawOval(new RectF(
+                cx - r * 0.55f, cy - r * 0.48f,
+                cx - r * 0.15f, cy - r * 0.22f), dark);
+
+        // Petite tache sud (Hellas Basin : légèrement plus claire, creux d'impact)
+        Paint hellas = new Paint(Paint.ANTI_ALIAS_FLAG);
+        hellas.setStyle(Paint.Style.FILL);
+        hellas.setColor(Color.parseColor("#D4623A"));
+        hellas.setAlpha(120);
+        canvas.drawOval(new RectF(
+                cx + r * 0.18f, cy + r * 0.35f,
+                cx + r * 0.55f, cy + r * 0.56f), hellas);
+
+        // ── Valles Marineris : grand canyon horizontal ──────
+        // Long trait sombre légèrement courbé traversant le centre
+        Paint canyon = new Paint(Paint.ANTI_ALIAS_FLAG);
+        canyon.setStyle(Paint.Style.STROKE);
+        canyon.setColor(Color.parseColor("#5A1200"));
+        canyon.setStrokeWidth(r * 0.055f);
+        canyon.setAlpha(210);
+        canyon.setStrokeCap(Paint.Cap.ROUND);
+
+        // Segment ouest : part à gauche, légèrement montant
+        Path vallesW = new Path();
+        vallesW.moveTo(cx - r * 0.58f, cy + r * 0.18f);
+        vallesW.cubicTo(cx - r * 0.38f, cy + r * 0.12f,
+                cx - r * 0.25f, cy + r * 0.20f,
+                cx - r * 0.12f, cy + r * 0.15f);
+        canvas.drawPath(vallesW, canyon);
+
+        // Segment central : légère ondulation, c'est le plus large
+        canyon.setStrokeWidth(r * 0.065f);
+        Path vallesC = new Path();
+        vallesC.moveTo(cx - r * 0.12f, cy + r * 0.15f);
+        vallesC.cubicTo(cx + r * 0.02f, cy + r * 0.22f,
+                cx + r * 0.15f, cy + r * 0.10f,
+                cx + r * 0.28f, cy + r * 0.17f);
+        canvas.drawPath(vallesC, canyon);
+
+        // Segment est : se rétrécit et remonte légèrement
+        canyon.setStrokeWidth(r * 0.040f);
+        canyon.setAlpha(160);
+        Path vallesE = new Path();
+        vallesE.moveTo(cx + r * 0.28f, cy + r * 0.17f);
+        vallesE.cubicTo(cx + r * 0.38f, cy + r * 0.12f,
+                cx + r * 0.50f, cy + r * 0.18f,
+                cx + r * 0.60f, cy + r * 0.13f);
+        canvas.drawPath(vallesE, canyon);
+
+        // Ramification sud, depuis le segment central
+        canyon.setStrokeWidth(r * 0.028f);
+        canyon.setAlpha(130);
+        Path branch = new Path();
+        branch.moveTo(cx + r * 0.05f, cy + r * 0.18f);
+        branch.cubicTo(cx + r * 0.08f, cy + r * 0.26f,
+                cx + r * 0.18f, cy + r * 0.30f,
+                cx + r * 0.25f, cy + r * 0.27f);
+        canvas.drawPath(branch, canyon);
+
+        // ── Calotte polaire nord ────────────────────────────
+        Paint polar = new Paint(Paint.ANTI_ALIAS_FLAG);
+        polar.setStyle(Paint.Style.FILL);
+        polar.setColor(Color.parseColor("#F5EEE8"));
+        polar.setAlpha(220);
+        canvas.drawOval(new RectF(
+                cx - r * 0.28f, cy - r * 0.92f,
+                cx + r * 0.28f, cy - r * 0.62f), polar);
+
+        // Bord légèrement teinté (glace carbonique = légèrement rosé)
+        polar.setColor(Color.parseColor("#E8D5CC"));
+        polar.setAlpha(100);
+        canvas.drawOval(new RectF(
+                cx - r * 0.22f, cy - r * 0.88f,
+                cx + r * 0.22f, cy - r * 0.68f), polar);
+
+        canvas.restore();
+
+        canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+    }
+
+    private void drawJupiter(Canvas canvas, float cx, float cy, float r) {
+        // Base beige chaud
+        Paint base = new Paint(Paint.ANTI_ALIAS_FLAG);
+        base.setStyle(Paint.Style.FILL);
+        base.setShader(new RadialGradient(
+                cx - r * 0.2f, cy - r * 0.2f, r * 1.1f,
+                new int[]{ 0xFFE8D5A3, 0xFFC88B3A, 0xFF8B5A1A },
+                new float[]{ 0f, 0.6f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, base);
+
+        canvas.save();
+        Path clip = new Path();
+        clip.addCircle(cx, cy, r, Path.Direction.CW);
+        canvas.clipPath(clip);
+
+        Paint band = new Paint(Paint.ANTI_ALIAS_FLAG);
+        band.setStyle(Paint.Style.STROKE);
+
+        // Bandes de haut en bas — {offset_y, épaisseur, ondulation_amp, ctrl_dx1, ctrl_dx2, alpha, couleur}
+        // Proportions réelles : NEB et SEB très larges, zones claires plus fines
+        Object[][] bands = {
+                // Zone polaire nord : brun foncé compact
+                { -0.78f, 0.10f, 0.03f,  0.15f, -0.10f, 160, "#7A4010" },
+                // North North Temperate Belt : brun moyen
+                { -0.60f, 0.08f, 0.04f, -0.20f,  0.15f, 140, "#A05A20" },
+                // North Temperate Zone : crème clair, fine
+                { -0.48f, 0.06f, 0.02f,  0.10f,  0.05f, 100, "#E8CFA0" },
+                // North Equatorial Belt : LARGE, brun-orangé foncé, le plus marqué
+                { -0.30f, 0.18f, 0.05f, -0.25f,  0.30f, 180, "#8B3A08" },
+                // Equatorial Zone : LARGE, crème très clair
+                { -0.08f, 0.16f, 0.03f,  0.20f, -0.15f, 130, "#F0D8A8" },
+                // South Equatorial Belt : LARGE, brun-orangé, c'est ici la GRS
+                {  0.12f, 0.17f, 0.06f, -0.30f,  0.20f, 175, "#9A4010" },
+                // South Temperate Zone : crème, fine
+                {  0.32f, 0.07f, 0.03f,  0.15f, -0.10f, 110, "#DEC898" },
+                // South South Temperate Belt : brun
+                {  0.44f, 0.09f, 0.04f, -0.18f,  0.22f, 145, "#A06028" },
+                // Zone polaire sud : brun foncé
+                {  0.62f, 0.12f, 0.03f,  0.10f, -0.08f, 155, "#7A4010" },
+        };
+
+        for (Object[] b : bands) {
+            float bandY   = cy + (float)b[0] * r;
+            float thick   = (float)b[1] * r;
+            float amp     = (float)b[2] * r;
+            float cdx1    = (float)b[3] * r;
+            float cdx2    = (float)b[4] * r;
+            band.setAlpha((int)b[5]);
+            band.setColor(Color.parseColor((String)b[6]));
+            band.setStrokeWidth(thick);
+
+            Path p = new Path();
+            p.moveTo(cx - r, bandY);
+            p.cubicTo(cx - r * 0.3f + cdx1, bandY - amp,
+                    cx + r * 0.3f + cdx2, bandY + amp,
+                    cx + r,               bandY);
+            canvas.drawPath(p, band);
+        }
+
+        // ── Grande Tache Rouge ──────────────────────────────
+        // Ovale dans le South Equatorial Belt, légèrement à droite du centre
+        Paint grs = new Paint(Paint.ANTI_ALIAS_FLAG);
+        grs.setStyle(Paint.Style.FILL);
+        grs.setColor(Color.parseColor("#B83A18"));
+        grs.setAlpha(200);
+        canvas.drawOval(new RectF(
+                cx + r * 0.10f, cy + r * 0.14f,
+                cx + r * 0.48f, cy + r * 0.28f), grs);
+
+        // Contour légèrement plus sombre de la GRS
+        grs.setStyle(Paint.Style.STROKE);
+        grs.setStrokeWidth(r * 0.025f);
+        grs.setColor(Color.parseColor("#7A2008"));
+        grs.setAlpha(160);
+        canvas.drawOval(new RectF(
+                cx + r * 0.10f, cy + r * 0.14f,
+                cx + r * 0.48f, cy + r * 0.28f), grs);
+
+        canvas.restore();
+
+        canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+    }
+
+    private void drawSaturn(Canvas canvas, float cx, float cy, float r) {
+        // Dimensions de l'anneau : plus large que la balle, incliné (ellipse aplatie)
+        float ringRx  = r * 1.75f; // demi-largeur totale de l'anneau
+        float ringRy  = r * 0.30f; // aplatissement (perspective)
+        float ringOffY = r * 0.18f; // décalage vertical vers le bas (inclinaison)
+
+        // ── Passe 1 : demi-anneau ARRIÈRE (au-dessus du centre) ──
+        Paint ringBack = new Paint(Paint.ANTI_ALIAS_FLAG);
+        ringBack.setStyle(Paint.Style.STROKE);
+        ringBack.setAntiAlias(true);
+
+        // 3 anneaux concentriques, du plus externe au plus interne, demi-ellipse du haut
+        String[] ringColors = { "#D4B483", "#C8A055", "#B08840" };
+        float[][] rings = {
+                { 1.75f, 0.30f, 0.14f, 130 },
+                { 1.45f, 0.25f, 0.18f, 160 },
+                { 1.18f, 0.20f, 0.10f,  90 },
+        };
+
+        for (int i = 0; i < rings.length; i++) {
+            float rx = r * rings[i][0];
+            float ry = r * rings[i][1];
+            ringBack.setStrokeWidth(r * rings[i][2]);
+            ringBack.setAlpha((int)rings[i][3]);
+            ringBack.setColor(Color.parseColor(ringColors[i]));
+
+            // Clipper uniquement la moitié supérieure pour le passage arrière
+            canvas.save();
+            canvas.clipRect(cx - rx - 10f, cy - ry * 3f, cx + rx + 10f, cy + ringOffY);
+            canvas.drawOval(new RectF(cx - rx, cy - ry + ringOffY,
+                    cx + rx, cy + ry + ringOffY), ringBack);
+            canvas.restore();
+        }
+
+        // ── Passe 2 : la planète ──────────────────────────────
+        Paint base = new Paint(Paint.ANTI_ALIAS_FLAG);
+        base.setStyle(Paint.Style.FILL);
+        base.setShader(new RadialGradient(
+                cx - r * 0.2f, cy - r * 0.2f, r * 1.1f,
+                new int[]{ 0xFFEDD9A3, 0xFFC8A96E, 0xFF9A7840 },
+                        new float[]{ 0f, 0.55f, 1f },
+                        Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, base);
+
+        canvas.save();
+        Path clip = new Path();
+        clip.addCircle(cx, cy, r, Path.Direction.CW);
+        canvas.clipPath(clip);
+
+        // Bandes atmosphériques — plus douces que Jupiter, teintes beige/or
+        Paint band = new Paint(Paint.ANTI_ALIAS_FLAG);
+        band.setStyle(Paint.Style.STROKE);
+
+        Object[][] bands = {
+                { -0.70f, 0.09f, 0.03f,  0.12f, -0.08f, 120, "#A07838" },
+                { -0.52f, 0.07f, 0.02f, -0.15f,  0.10f,  90, "#DEC880" },
+                { -0.36f, 0.13f, 0.04f,  0.22f, -0.18f, 140, "#B08840" },
+                { -0.18f, 0.10f, 0.03f, -0.10f,  0.20f, 100, "#E8D090" },
+                {  0.00f, 0.14f, 0.05f,  0.18f, -0.12f, 150, "#B89050" },
+                {  0.18f, 0.09f, 0.03f, -0.22f,  0.15f,  95, "#D8B870" },
+                {  0.34f, 0.11f, 0.04f,  0.15f, -0.20f, 130, "#A87830" },
+                {  0.52f, 0.08f, 0.02f, -0.08f,  0.12f, 100, "#C8A060" },
+                {  0.68f, 0.10f, 0.03f,  0.10f, -0.08f, 115, "#987030" },
+        };
+
+        for (Object[] b : bands) {
+            float bandY = cy + (float)b[0] * r;
+            float thick = (float)b[1] * r;
+            float amp   = (float)b[2] * r;
+            float cdx1  = (float)b[3] * r;
+            float cdx2  = (float)b[4] * r;
+            band.setAlpha((int)b[5]);
+            band.setColor(Color.parseColor((String)b[6]));
+            band.setStrokeWidth(thick);
+
+            Path p = new Path();
+            p.moveTo(cx - r, bandY);
+            p.cubicTo(cx - r * 0.3f + cdx1, bandY - amp,
+                    cx + r * 0.3f + cdx2, bandY + amp,
+                    cx + r, bandY);
+            canvas.drawPath(p, band);
+        }
+
+        canvas.restore();
+
+        // Reflet
+        canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+
+        // ── Passe 3 : demi-anneau AVANT (en-dessous du centre) ──
+        for (int i = 0; i < rings.length; i++) {
+            float rx = r * rings[i][0];
+            float ry = r * rings[i][1];
+            ringBack.setStrokeWidth(r * rings[i][2]);
+            ringBack.setAlpha((int)rings[i][3]);
+            ringBack.setColor(Color.parseColor(ringColors[i]));
+
+            canvas.save();
+            canvas.clipRect(cx - rx - 10f, cy + ringOffY, cx + rx + 10f, cy + ry * 3f + ringOffY);
+            canvas.drawOval(new RectF(cx - rx, cy - ry + ringOffY,
+                    cx + rx, cy + ry + ringOffY), ringBack);
+            canvas.restore();
+        }
+}
+
+    private void drawUranus(Canvas canvas, float cx, float cy, float r) {
+        // Anneau arrière (fin, sombre, incliné) — dessiné AVANT la planète
+        Paint ring = new Paint(Paint.ANTI_ALIAS_FLAG);
+        ring.setStyle(Paint.Style.STROKE);
+        ring.setColor(Color.parseColor("#607070"));
+        float ringRx = r * 1.55f;
+        float ringRy = r * 0.22f;
+
+        ring.setStrokeWidth(r * 0.04f);
+        ring.setAlpha(110);
+        canvas.save();
+        canvas.clipRect(cx - ringRx, cy - ringRy * 3f, cx + ringRx, cy);
+        canvas.drawOval(new RectF(cx - ringRx, cy - ringRy, cx + ringRx, cy + ringRy), ring);
+        canvas.restore();
+
+        ring.setStrokeWidth(r * 0.025f);
+        ring.setAlpha(80);
+        float ringRx2 = r * 1.38f;
+        float ringRy2 = r * 0.19f;
+        canvas.save();
+        canvas.clipRect(cx - ringRx2, cy - ringRy2 * 3f, cx + ringRx2, cy);
+        canvas.drawOval(new RectF(cx - ringRx2, cy - ringRy2, cx + ringRx2, cy + ringRy2), ring);
+        canvas.restore();
+
+        // Base : bleu-cyan pâle et froid, très proche des vraies images Voyager 2
+        Paint base = new Paint(Paint.ANTI_ALIAS_FLAG);
+        base.setStyle(Paint.Style.FILL);
+        base.setShader(new RadialGradient(
+                cx - r * 0.25f, cy - r * 0.25f, r * 1.1f,
+                new int[]{ 0xFFCCF0F0, 0xFF88D8D8, 0xFF3AACAC, 0xFF1A6868 },
+                new float[]{ 0f, 0.38f, 0.72f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, base);
+
+        canvas.save();
+        Path clip = new Path();
+        clip.addCircle(cx, cy, r, Path.Direction.CW);
+        canvas.clipPath(clip);
+
+// 3 zones de couleur seulement, chacune rendue en 3 passes superposées
+// (large+transparent → étroit+opaque) pour simuler un dégradé doux
+        Paint band = new Paint(Paint.ANTI_ALIAS_FLAG);
+        band.setStyle(Paint.Style.STROKE);
+
+// {offset_y, cdx1, cdx2, amp, couleur_hex}
+        Object[][] zones = {
+                { -0.40f,  0.10f, -0.08f, 0.025f, "#4AACAC" },
+                {  0.05f, -0.12f,  0.16f, 0.020f, "#6ABEBE" },
+                {  0.48f,  0.08f, -0.10f, 0.025f, "#3A9E9E" },
+        };
+
+// Passes : {épaisseur_r, alpha}
+        float[][] passes = {
+                { 0.28f,  8 },
+                { 0.16f, 14 },
+                { 0.07f, 20 },
+        };
+
+        for (Object[] z : zones) {
+            float bandY = cy + (float)z[0] * r;
+            float cdx1  = (float)z[1] * r;
+            float cdx2  = (float)z[2] * r;
+            float amp   = (float)z[3] * r;
+            String col  = (String)z[4];
+
+            for (float[] pass : passes) {
+                band.setMaskFilter(new BlurMaskFilter(r * 0.10f, BlurMaskFilter.Blur.NORMAL));
+                band.setStrokeWidth(r * 0.20f);
+                band.setAlpha(22);
+                band.setColor(Color.parseColor(col));
+
+                Path p = new Path();
+                p.moveTo(cx - r, bandY);
+                p.cubicTo(cx - r * 0.3f + cdx1, bandY - amp,
+                        cx + r * 0.3f + cdx2, bandY + amp,
+                        cx + r, bandY);
+                canvas.drawPath(p, band);
+                band.setMaskFilter(null);
+            }
+        }
+
+// Calotte polaire : très discrète
+        Paint polar = new Paint(Paint.ANTI_ALIAS_FLAG);
+        polar.setStyle(Paint.Style.FILL);
+        polar.setColor(Color.parseColor("#DAFAFF"));
+        polar.setAlpha(35);
+        canvas.drawOval(new RectF(
+                cx - r * 0.30f, cy - r * 0.88f,
+                cx + r * 0.30f, cy - r * 0.58f), polar);
+
+        canvas.restore();
+
+        canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+    }
+
+    private void drawNeptune(Canvas canvas, float cx, float cy, float r) {
+        Paint base = new Paint(Paint.ANTI_ALIAS_FLAG);
+        base.setStyle(Paint.Style.FILL);
+        base.setShader(new RadialGradient(
+                cx - r * 0.25f, cy - r * 0.25f, r * 1.1f,
+                new int[]{ 0xFF4A80E8, 0xFF2A5FD4, 0xFF1238A0, 0xFF081A60 },
+                new float[]{ 0f, 0.38f, 0.72f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, base);
+
+        canvas.save();
+        Path clip = new Path();
+        clip.addCircle(cx, cy, r, Path.Direction.CW);
+        canvas.clipPath(clip);
+
+        // Unique bande légèrement plus claire, légèrement sous l'équateur
+        // 3 passes superposées pour bords fondus
+        Paint band = new Paint(Paint.ANTI_ALIAS_FLAG);
+        band.setStyle(Paint.Style.STROKE);
+
+        float bandY = cy + r * 0.18f;
+        float cdx1  =  r * 0.14f;
+        float cdx2  = -r * 0.10f;
+        float amp   =  r * 0.022f;
+
+        float[][] passes = {
+                { 0.32f,  7 },
+                { 0.18f, 13 },
+                { 0.07f, 19 },
+        };
+
+        for (float[] pass : passes) {
+            band.setMaskFilter(new BlurMaskFilter(r * 0.12f, BlurMaskFilter.Blur.NORMAL));
+            band.setStrokeWidth(r * 0.22f);
+            band.setAlpha(28);
+            band.setColor(Color.parseColor("#5A8FEE"));
+
+            Path p = new Path();
+            p.moveTo(cx - r, bandY);
+            p.cubicTo(cx - r * 0.3f + cdx1, bandY - amp,
+                    cx + r * 0.3f + cdx2, bandY + amp,
+                    cx + r, bandY);
+            canvas.drawPath(p, band);
+            band.setMaskFilter(null);
+        }
+
+        // 2 minuscules taches blanches (tempêtes)
+        Paint spot = new Paint(Paint.ANTI_ALIAS_FLAG);
+        spot.setStyle(Paint.Style.FILL);
+        spot.setColor(Color.WHITE);
+
+        // Tache 1 : légèrement plus visible, hémisphère sud (la Grande Tache Sombre est sombre,
+        // mais les cirrus blancs autour sont blancs)
+        spot.setAlpha(140);
+        canvas.drawOval(new RectF(
+                cx - r * 0.22f, cy + r * 0.28f,
+                cx - r * 0.08f, cy + r * 0.36f), spot);
+
+        // Tache 2 : plus petite, nord
+        spot.setAlpha(100);
+        canvas.drawOval(new RectF(
+                cx + r * 0.28f, cy - r * 0.32f,
+                cx + r * 0.38f, cy - r * 0.26f), spot);
+
+        // Tache 3 : minuscule, très discrète
+        spot.setAlpha(75);
+        canvas.drawOval(new RectF(
+                cx - r * 0.45f, cy - r * 0.12f,
+                cx - r * 0.36f, cy - r * 0.07f), spot);
+
+        canvas.restore();
+
+        canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+    }
+
+    private void drawPluto(Canvas canvas, float cx, float cy, float r) {
+        Paint base = new Paint(Paint.ANTI_ALIAS_FLAG);
+        base.setStyle(Paint.Style.FILL);
+        base.setShader(new RadialGradient(
+                cx - r * 0.2f, cy - r * 0.2f, r * 1.1f,
+                new int[]{ 0xFFD8BCA0, 0xFFC4A882, 0xFF9A7858 },
+                new float[]{ 0f, 0.55f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, base);
+
+        canvas.save();
+        Path clip = new Path();
+        clip.addCircle(cx, cy, r, Path.Direction.CW);
+        canvas.clipPath(clip);
+
+        // Arc du bas : brun foncé
+        Paint arc = new Paint(Paint.ANTI_ALIAS_FLAG);
+        arc.setStyle(Paint.Style.FILL);
+        arc.setColor(Color.parseColor("#6B3A20"));
+        Path arcBottom = new Path();
+        arcBottom.moveTo(cx - r, cy + r * 0.52f);
+        arcBottom.cubicTo(cx - r * 0.5f, cy + r * 0.68f,
+                cx + r * 0.5f, cy + r * 0.65f,
+                cx + r,        cy + r * 0.52f);
+        arcBottom.lineTo(cx + r, cy + r);
+        arcBottom.lineTo(cx - r, cy + r);
+        arcBottom.close();
+        canvas.drawPath(arcBottom, arc);
+
+        // Arc intermédiaire : brun moyen, au-dessus du foncé
+        arc.setColor(Color.parseColor("#A87850"));
+        Path arcMid = new Path();
+        arcMid.moveTo(cx - r, cy + r * 0.28f);
+        arcMid.cubicTo(cx - r * 0.4f, cy + r * 0.42f,
+                cx + r * 0.5f, cy + r * 0.38f,
+                cx + r,        cy + r * 0.28f);
+        arcMid.lineTo(cx + r, cy + r * 0.58f);
+        arcMid.cubicTo(cx + r * 0.5f, cy + r * 0.65f,
+                cx - r * 0.5f, cy + r * 0.68f,
+                cx - r,        cy + r * 0.52f);
+        arcMid.close();
+        canvas.drawPath(arcMid, arc);
+
+        // Coeur de Tombaugh : légèrement incliné vers la droite
+        Paint heart = new Paint(Paint.ANTI_ALIAS_FLAG);
+        heart.setStyle(Paint.Style.FILL);
+        heart.setColor(Color.parseColor("#EDD8C0"));
+
+        canvas.save();
+        canvas.rotate(12f, cx + r * 0.22f, cy + r * 0.26f);
+
+        float hcx = cx + r * 0.35f;
+        float hcy = cy + r * 0.57f;
+        float hs  = r * 0.80f;
+
+        Path heartPath = new Path();
+        heartPath.moveTo(hcx, hcy + hs * 0.35f); // pointe bas
+        // Côté gauche
+        heartPath.cubicTo(hcx - hs * 0.05f, hcy + hs * 0.10f,
+                hcx - hs * 0.60f, hcy - hs * 0.10f,
+                hcx - hs * 0.50f, hcy - hs * 0.45f);
+        heartPath.cubicTo(hcx - hs * 0.40f, hcy - hs * 0.80f,
+                hcx,              hcy - hs * 0.65f,
+                hcx,              hcy - hs * 0.30f);
+        // Côté droit (miroir)
+        heartPath.cubicTo(hcx,              hcy - hs * 0.65f,
+                hcx + hs * 0.40f, hcy - hs * 0.80f,
+                hcx + hs * 0.50f, hcy - hs * 0.45f);
+        heartPath.cubicTo(hcx + hs * 0.60f, hcy - hs * 0.10f,
+                hcx + hs * 0.05f, hcy + hs * 0.10f,
+                hcx,              hcy + hs * 0.35f);
+        heartPath.close();
+        canvas.drawPath(heartPath, heart);
+        canvas.restore();
+
+        canvas.restore();
+
         canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
     }
 

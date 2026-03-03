@@ -45,10 +45,12 @@ public class CosmeticsPage {
             {"ball_bowling",  "Boule Bowling",    "#311B92", 600,  22, "sport",   "Sport"},
 
             // ── METAL ──────────────────────────────────────────
-            {"ball_gold",     "Balle Dorée",      "#FFD700", 800,  30, "metal",   "Metal"},
-            {"ball_silver",   "Balle Argentée",   "#B0BEC5", 600,  22, "metal",   "Metal"},
-            {"ball_copper",   "Balle Cuivrée",    "#BF6830", 600,  22, "metal",   "Metal"},
+            {"ball_lead",     "Balle Plomb",      "#707880", 500,  18, "metal",   "Metal"},
             {"ball_chrome",   "Balle Chrome",     "#90CAF9", 900,  35, "metal",   "Metal"},
+            {"ball_copper",   "Balle Cuivrée",    "#BF6830", 600,  22, "metal",   "Metal"},
+            {"ball_silver",   "Balle Argentée",   "#B0BEC5", 600,  22, "metal",   "Metal"},
+            {"ball_gold",     "Balle Dorée",      "#FFD700", 800,  30, "metal",   "Metal"},
+            {"ball_platinum", "Balle Platine",    "#D8DCE0", 1100, 45, "metal",   "Metal"},
 
             // ── ELEMENTAL ──────────────────────────────────────
             {"ball_emerald",  "Balle Émeraude",   "#43A047", 450,  15, "elemental","Elemental"},
@@ -58,10 +60,19 @@ public class CosmeticsPage {
             {"ball_thunder",  "Balle Foudre",     "#FDD835", 750,  28, "elemental","Elemental"},
 
             // ── SPACE ──────────────────────────────────────────
-            {"ball_void",     "Balle Néant",      "#212121", 900,  35, "space",   "Space"},
-            {"ball_nebula",   "Balle Nébuleuse",  "#7B1FA2", 750,  28, "space",   "Space"},
-            {"ball_comet",    "Balle Comète",     "#4FC3F7", 700,  26, "space",   "Space"},
-            {"ball_moon",     "Balle Lune",       "#ECEFF1", 500,  18, "space",   "Space"},
+            {"ball_void",     "Balle Néant",      "#212121", 1,  35, "space",   "Space"},
+            {"ball_nebula",   "Balle Nébuleuse",  "#7B1FA2", 1,  28, "space",   "Space"},
+            {"ball_comet",    "Balle Comète",     "#4FC3F7", 1,  26, "space",   "Space"},
+            {"ball_mercury", "Mercure",           "#9E9585", 1, 18, "space",    "Space"},
+            {"ball_venus",   "Vénus",             "#E8D5A3", 1, 20, "space",    "Space"},
+            {"ball_earth",   "Terre",             "#1A6FA8", 1, 20, "space",    "Space"},
+            {"ball_moon",    "Lune",              "#ECEFF1", 1,  18, "space",   "Space"},
+            {"ball_mars",   "Mars",               "#C1440E", 1, 25, "space",    "Space"},
+            {"ball_jupiter",   "Jupiter",         "#C88B3A", 1, 25, "space",    "Space"},
+            {"ball_saturn",   "Saturn",           "#C8A96E", 1, 30, "space",    "Space"},
+            {"ball_uranus",   "Uranus",           "#7DE8E8", 1, 30, "space",    "Space"},
+            {"ball_neptune",   "Neptune",         "#2A5FD4", 1, 40, "space",    "Space"},
+            {"ball_pluto",   "Pluton",            "#C4A882", 1, 40, "space",    "Space"},
     };
 
     // ── Données Effets ─────────────────────────────────
