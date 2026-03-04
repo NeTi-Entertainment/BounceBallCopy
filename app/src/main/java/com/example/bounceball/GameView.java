@@ -44,7 +44,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private float ballY;
     private float ballVelocityY;
     private float ballVelocityX;
-    private final float ballRadius = 32f;
+    private float ballRotation     = 0f;
+    private float ballAngularSpeed = 0f;
+    private final float ballRadius = 48f;
 
     private boolean isGameStarted;
     private boolean isGameOver;
@@ -150,17 +152,36 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         currentBallSkin = skinId;
         switch (skinId) {
             // Classic
-            case "ball_rose":     color = Color.parseColor("#E91E63"); break;
-            case "ball_cream":    color = Color.parseColor("#FFF8E1"); break;
-            case "ball_navy":     color = Color.parseColor("#1A237E"); break;
+            case "ball_red":       color = Color.parseColor("#E82020"); break;
+            case "ball_blue":      color = Color.parseColor("#2050E8"); break;
+            case "ball_yellow":    color = Color.parseColor("#F5D800"); break;
+            case "ball_green":     color = Color.parseColor("#20B020"); break;
+            case "ball_orange":    color = Color.parseColor("#F07010"); break;
+            case "ball_pink":      color = Color.parseColor("#F060A0"); break;
+            case "ball_purple":    color = Color.parseColor("#8030D0"); break;
+            case "ball_cyan":      color = Color.parseColor("#00C8D8"); break;
+            case "ball_lime":      color = Color.parseColor("#80E000"); break;
+            case "ball_brown":     color = Color.parseColor("#8B4513"); break;
+            case "ball_beige":     color = Color.parseColor("#F5DEB3"); break;
+            case "ball_white":     color = Color.parseColor("#F5F5F5"); break;
+            case "ball_black":     color = Color.parseColor("#1A1A1A"); break;
+            case "ball_lightgray": color = Color.parseColor("#C0C0C0"); break;
+            case "ball_darkgray":  color = Color.parseColor("#505050"); break;
             // Metal
-            case "ball_gold":     color = Color.parseColor("#FFD700"); break;
-            case "ball_silver":   color = Color.parseColor("#B0BEC5"); break;
-            case "ball_copper":   color = Color.parseColor("#BF6830"); break;
-            case "ball_chrome":   color = Color.parseColor("#90CAF9"); break;
-            case "ball_lead":     color = Color.parseColor("#707880"); break;
-            case "ball_platinum": color = Color.parseColor("#D8DCE0"); break;
-            // Space
+            case "ball_copper":    color = Color.parseColor("#BF6830"); break;
+            case "ball_nickel":    color = Color.parseColor("#C8B87A"); break;
+            case "ball_lead":      color = Color.parseColor("#707880"); break;
+            case "ball_chrome":    color = Color.parseColor("#90CAF9"); break;
+            case "ball_bronze":    color = Color.parseColor("#CD7F32"); break;
+            case "ball_steel":     color = Color.parseColor("#6B7FA8"); break;
+            case "ball_silver":    color = Color.parseColor("#B0BEC5"); break;
+            case "ball_gold":      color = Color.parseColor("#FFD700"); break;
+            case "ball_rosegold":  color = Color.parseColor("#E8A090"); break;
+            case "ball_titanium":  color = Color.parseColor("#5B6B7C"); break;
+            case "ball_platinum":  color = Color.parseColor("#D8DCE0"); break;
+            case "ball_bismuth":   color = Color.parseColor("#C8A0C0"); break;
+            case "ball_damascus":  color = Color.parseColor("#4A4A4A"); break;
+            case "ball_meteorite": color = Color.parseColor("#7A7060"); break;
             // Space
             case "ball_void":         color = Color.parseColor("#212121"); break;
             case "ball_nebula":       color = Color.parseColor("#7B1FA2"); break;
@@ -185,6 +206,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             case "ball_basket":   color = Color.parseColor("#E65100"); break;
             case "ball_tennis":   color = Color.parseColor("#CDDC39"); break;
             case "ball_bowling":  color = Color.parseColor("#C0392B"); break;
+            case "ball_petanque": color = Color.parseColor("#A0A8B0"); break;
+            case "ball_golf":     color = Color.parseColor("#F5F5F5"); break;
+            case "ball_cateye": color = Color.parseColor("#00000000"); break;
+            case "ball_beach":  color = Color.parseColor("#FFFFFF"); break;
+            case "ball_volleyball": color = Color.parseColor("#F5E6C8"); break;
+            case "ball_baseball": color = Color.parseColor("#F5EED8"); break;
+            case "ball_8ball": color = Color.parseColor("#111111"); break;
+
             // Elemental
             case "ball_emerald":  color = Color.parseColor("#43A047"); break;
             case "ball_sapphire": color = Color.parseColor("#1E88E5"); break;
@@ -211,6 +240,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         hasTrampoline     = false;
         warpState         = WARP_NONE;
         warpBallScale     = 1f;
+        ballRotation     = 0f;
+        ballAngularSpeed = 0f;
         inkBlobs.clear();
         warps.clear();
     }
@@ -267,12 +298,17 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         ballY += ballVelocityY;
         ballX += ballVelocityX;
 
+        ballAngularSpeed = ballVelocityX / ballRadius * (180f / (float) Math.PI);
+        ballRotation    += ballAngularSpeed;
+
         if (ballX - ballRadius < 0) {
             ballX = ballRadius;
-            ballVelocityX = -ballVelocityX * 0.8f;
+            ballVelocityX    = -ballVelocityX * 0.8f;
+            ballAngularSpeed = -ballAngularSpeed * 0.6f; // rebond inverse + amortissement
         } else if (ballX + ballRadius > screenWidth) {
             ballX = screenWidth - ballRadius;
-            ballVelocityX = -ballVelocityX * 0.8f;
+            ballVelocityX    = -ballVelocityX * 0.8f;
+            ballAngularSpeed = -ballAngularSpeed * 0.6f;
         }
 
         // Camera (Lerp)
@@ -305,6 +341,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 float bounceForce = (trampElasticity * mult) + (incomingSpeed * 0.5f);
                 ballVelocityX = nx * bounceForce;
                 ballVelocityY = ny * bounceForce;
+                float tx = ny, ty = -nx;
+                float tangentialSpeed = ballVelocityX * tx + ballVelocityY * ty;
+// Spin proportionnel à la vitesse tangentielle et à l'angle d'inclinaison
+                ballAngularSpeed = (tangentialSpeed / ballRadius) * (180f / (float) Math.PI) * 0.8f;
                 hasTrampoline = false;
             }
         }
@@ -408,6 +448,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 ballX += ballVelocityX;
                 if (ballX - ballRadius < 0)             { ballX = ballRadius;              ballVelocityX *= -0.8f; }
                 if (ballX + ballRadius > screenWidth)   { ballX = screenWidth - ballRadius; ballVelocityX *= -0.8f; }
+                if (ballX - ballRadius < 0)           { ballX = ballRadius;              ballVelocityX *= -0.8f; ballAngularSpeed *= -0.6f; }
+                if (ballX + ballRadius > screenWidth) { ballX = screenWidth - ballRadius; ballVelocityX *= -0.8f; ballAngularSpeed *= -0.6f; }
                 warpEjectTimer--;
                 if (warpEjectTimer <= 0) warpState = WARP_NONE;
                 break;
@@ -459,10 +501,22 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         }
 
         // Balle
+        canvas.save();
+        canvas.rotate(ballRotation, ballX, ballY);
         if (warpState == WARP_NONE || warpState == WARP_EJECT) {
             drawBall(canvas, ballX, ballY, ballRadius);
         } else if (warpState == WARP_ABSORB && warpBallScale > 0f) {
             drawBall(canvas, ballX, ballY, ballRadius * warpBallScale);
+        }
+        canvas.restore();
+// Reflet statique hors rotation
+        if (warpState != WARP_SCROLL) {
+            float sr = (warpState == WARP_ABSORB) ? ballRadius * warpBallScale : ballRadius;
+            if (!currentBallSkin.equals("ball_pulsar") && !currentBallSkin.equals("ball_blackhole")
+                    && !currentBallSkin.equals("ball_red_dwarf") && !currentBallSkin.equals("ball_yellow_dwarf")
+                    && !currentBallSkin.equals("ball_blue_giant")) {
+                canvas.drawCircle(ballX - sr * 0.3f, ballY - sr * 0.3f, sr * 0.35f, ballShinePaint);
+            }
         }
         //if (warpState == WARP_NONE || warpState == WARP_EJECT) {
         //    canvas.drawCircle(ballX, ballY, ballRadius, ballPaint);
@@ -529,12 +583,27 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             case "ball_tennis":       drawTennisBall(canvas, cx, cy, r);  break;
             case "ball_bowling":      drawBowlingBall(canvas, cx, cy, r); break;
             case "ball_soccer":       drawSoccerBall(canvas, cx, cy, r);  break;
+            case "ball_petanque":     drawPetanque(canvas, cx, cy, r);    break;
+            case "ball_golf":         drawGolf(canvas, cx, cy, r);        break;
+            case "ball_cateye":       drawCatEye(canvas, cx, cy, r);      break;
+            case "ball_beach":        drawBeachBall(canvas, cx, cy, r);   break;
+            case "ball_volleyball":   drawVolleyball(canvas, cx, cy, r);  break;
+            case "ball_baseball":     drawBaseball(canvas, cx, cy, r);    break;
+            case "ball_8ball":        draw8Ball(canvas, cx, cy, r);       break;
             case "ball_gold":
             case "ball_silver":
             case "ball_copper":
             case "ball_chrome":
             case "ball_lead":
+            case "ball_bronze":
+            case "ball_titanium":
+            case "ball_steel":
+            case "ball_nickel":
+            case "ball_rosegold":
             case "ball_platinum":     drawMetalBall(canvas, cx, cy, r); break;
+            case "ball_bismuth":      drawBismuth(canvas, cx, cy, r);   break;
+            case "ball_damascus":     drawDamascus(canvas, cx, cy, r);  break;
+            case "ball_meteorite":    drawMeteorite(canvas, cx, cy, r); break;
             case "ball_comet":        drawComet(canvas, cx, cy, r); break;
             case "ball_mercury":      drawMercury(canvas, cx, cy, r); break;
             case "ball_venus":        drawVenus(canvas, cx, cy, r);   break;
@@ -554,7 +623,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
             default:
                 canvas.drawCircle(cx, cy, r, ballPaint);
-                canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+                //canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
                 break;
         }
     }
@@ -598,7 +667,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
         canvas.restore();
 
-        canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+        //canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
     }
 
     private void drawTennisBall(Canvas canvas, float cx, float cy, float r) {
@@ -645,7 +714,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
         canvas.restore();
 
-        canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+        //canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
     }
 
     private void drawBowlingBall(Canvas canvas, float cx, float cy, float r) {
@@ -696,7 +765,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         canvas.drawCircle(hcx + r * 0.27f,  hcy + r * 0.14f,  hr * 0.6f, holeShadow);
         canvas.drawCircle(hcx - r * 0.06f,  hcy + r * 0.28f,  hr * 0.6f, holeShadow);
 
-        canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+        //canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
     }
 
     private void drawSoccerBall(Canvas canvas, float cx, float cy, float r) {
@@ -772,7 +841,540 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         canvas.drawCircle(cx, cy, r * 0.988f, stroke);
 
         // ── Reflet ──
-        canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+        //canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+    }
+
+    private void drawPetanque(Canvas canvas, float cx, float cy, float r) {
+        Paint base = new Paint(Paint.ANTI_ALIAS_FLAG);
+        base.setStyle(Paint.Style.FILL);
+        base.setShader(new LinearGradient(
+                cx - r * 0.7f, cy - r * 0.7f,
+                cx + r * 0.7f, cy + r * 0.7f,
+                new int[]{ 0xFFDDE0E8, 0xFFA0A8B8, 0xFF606878, 0xFF282E38 },
+                new float[]{ 0f, 0.38f, 0.68f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, base);
+
+        canvas.save();
+        Path clip = new Path();
+        clip.addCircle(cx, cy, r, Path.Direction.CW);
+        canvas.clipPath(clip);
+
+        Paint shadow = new Paint(Paint.ANTI_ALIAS_FLAG);
+        shadow.setStyle(Paint.Style.FILL);
+        shadow.setShader(new RadialGradient(
+                cx + r * 0.35f, cy + r * 0.40f, r,
+                new int[]{ 0x00000000, 0x55000000 },
+                new float[]{ 0f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, shadow);
+
+        // Traits : légèrement plus clairs que le corps, doux
+        Paint line = new Paint(Paint.ANTI_ALIAS_FLAG);
+        line.setStyle(Paint.Style.STROKE);
+        line.setStrokeCap(Paint.Cap.ROUND);
+        line.setColor(Color.parseColor("#C8D0DC"));
+        line.setStrokeWidth(r * 0.025f);
+        line.setAlpha(130);
+
+        // 3 traits verticaux espacés régulièrement
+        float spacing = r * 0.28f;
+        canvas.drawLine(cx - spacing, cy - r, cx - spacing, cy + r, line);
+        canvas.drawLine(cx,           cy - r, cx,           cy + r, line);
+        canvas.drawLine(cx + spacing, cy - r, cx + spacing, cy + r, line);
+
+        // 3 traits horizontaux espacés régulièrement
+        canvas.drawLine(cx - r, cy - spacing, cx + r, cy - spacing, line);
+        canvas.drawLine(cx - r, cy,           cx + r, cy,           line);
+        canvas.drawLine(cx - r, cy + spacing, cx + r, cy + spacing, line);
+
+        // Cercle gravé près du bord
+        line.setStrokeWidth(r * 0.022f);
+        canvas.drawCircle(cx, cy, r * 0.82f, line);
+
+        canvas.restore();
+
+        //canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+    }
+
+    private void drawGolf(Canvas canvas, float cx, float cy, float r) {
+        Paint base = new Paint(Paint.ANTI_ALIAS_FLAG);
+        base.setStyle(Paint.Style.FILL);
+        base.setShader(new RadialGradient(
+                cx - r * 0.2f, cy - r * 0.25f, r * 1.1f,
+                new int[]{ 0xFFFFFFFF, 0xFFF0F0F0, 0xFFD0D0D0 },
+                new float[]{ 0f, 0.6f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, base);
+
+        canvas.save();
+        Path clip = new Path();
+        clip.addCircle(cx, cy, r, Path.Direction.CW);
+        canvas.clipPath(clip);
+
+        Paint dimpleShadow = new Paint(Paint.ANTI_ALIAS_FLAG);
+        dimpleShadow.setStyle(Paint.Style.FILL);
+
+        Paint dimpleLight = new Paint(Paint.ANTI_ALIAS_FLAG);
+        dimpleLight.setStyle(Paint.Style.FILL);
+        dimpleLight.setColor(Color.WHITE);
+
+        float dimpleR  = r * 0.052f;
+        float spacingX = dimpleR * 3.2f;
+        float spacingY = dimpleR * 2.9f;
+
+        int cols = (int)(2f * r / spacingX) + 2;
+        int rows = (int)(2f * r / spacingY) + 2;
+
+        for (int row = -rows; row <= rows; row++) {
+            for (int col = -cols; col <= cols; col++) {
+                float offsetX = (row % 2 == 0) ? 0f : spacingX * 0.5f;
+                float dx = cx + col * spacingX + offsetX;
+                float dy = cy + row * spacingY;
+
+                // On laisse le clipPath couper naturellement — pas de filtre artificiel
+                float dist = (float) Math.hypot(dx - cx, dy - cy);
+                if (dist > r * 1.05f) continue;
+
+                float vertFactor = (dy - (cy - r)) / (2f * r);
+                float distFactor = dist / r;
+                float depth = 0.08f + vertFactor * 0.35f + distFactor * 0.18f;
+                depth = Math.min(depth, 0.75f);
+
+                int shadowAlpha = (int)(depth * 140f);
+                int lightAlpha  = (int)((1f - depth) * 90f);
+
+                dimpleShadow.setColor(Color.parseColor("#999999"));
+                dimpleShadow.setAlpha(shadowAlpha);
+                canvas.drawCircle(dx + dimpleR * 0.20f,
+                        dy + dimpleR * 0.20f,
+                        dimpleR, dimpleShadow);
+
+                dimpleShadow.setColor(Color.parseColor("#BBBBBB"));
+                dimpleShadow.setAlpha((int)(shadowAlpha * 0.5f));
+                canvas.drawCircle(dx, dy, dimpleR * 0.55f, dimpleShadow);
+
+                dimpleLight.setAlpha(lightAlpha);
+                canvas.drawCircle(dx - dimpleR * 0.18f,
+                        dy - dimpleR * 0.18f,
+                        dimpleR * 0.40f, dimpleLight);
+            }
+        }
+
+        canvas.restore();
+
+        //canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+    }
+
+    private void drawCatEye(Canvas canvas, float cx, float cy, float r) {
+        Paint glass = new Paint(Paint.ANTI_ALIAS_FLAG);
+        glass.setStyle(Paint.Style.FILL);
+        glass.setShader(new RadialGradient(
+                cx - r * 0.2f, cy - r * 0.25f, r * 1.1f,
+                new int[]{ 0x6644DDBB, 0x4422BB99, 0x6600AA88 },
+                new float[]{ 0f, 0.6f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, glass);
+
+        canvas.save();
+        Path clip = new Path();
+        clip.addCircle(cx, cy, r, Path.Direction.CW);
+        canvas.clipPath(clip);
+
+        float topY = cy - r * 0.95f;
+        float botY = cy + r * 0.95f;
+        float y1   = cy - r * 0.30f;
+        float y2   = cy + r * 0.30f;
+        float bow  = r * 0.55f;
+        float w    = r * 0.16f;
+
+        // 4 bords, chacun avec un offset horizontal intégré dans ses contrôles.
+        // Tous partagent (cx, topY) et (cx, botY) — pointes communes.
+        // L'offset ox pousse le contrôle haut vers la gauche et bas vers la droite,
+        // garantissant que l'ordre gauche→droite est conservé sans croisement.
+        float[] ox = { -1.5f * w, -0.5f * w, 0.5f * w, 1.5f * w };
+
+        int[] colors = {
+                Color.parseColor("#E02020"),
+                Color.parseColor("#F0D000"),
+                Color.parseColor("#2040D0"),
+        };
+
+        Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG);
+        fill.setStyle(Paint.Style.FILL);
+
+        for (int i = 0; i < 3; i++) {
+            float ox0 = ox[i];
+            float ox1 = ox[i + 1];
+            fill.setColor(colors[i]);
+
+            Path ribbon = new Path();
+            ribbon.moveTo(cx, topY);
+            // Bord gauche : descend, ox0 intégré dans les contrôles
+            ribbon.cubicTo(cx + ox0 - bow, y1,
+                    cx + ox0 + bow, y2,
+                    cx, botY);
+            // Bord droit : remonte (contrôles inversés), ox1 intégré
+            ribbon.cubicTo(cx + ox1 + bow, y2,
+                    cx + ox1 - bow, y1,
+                    cx, topY);
+            ribbon.close();
+            canvas.drawPath(ribbon, fill);
+        }
+
+        canvas.restore();
+
+        Paint shine = new Paint(Paint.ANTI_ALIAS_FLAG);
+        shine.setStyle(Paint.Style.FILL);
+        shine.setShader(new RadialGradient(
+                cx - r * 0.30f, cy - r * 0.32f, r * 0.38f,
+                new int[]{ 0x66FFFFFF, 0x00FFFFFF },
+                new float[]{ 0f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx - r * 0.30f, cy - r * 0.32f, r * 0.38f, shine);
+    }
+
+    private void drawBeachBall(Canvas canvas, float cx, float cy, float r) {
+        // Pole excentré (haut-gauche, comme dans l'image)
+        float px = cx - r * 0.10f;
+        float py = cy - r * 0.20f;
+
+        // Base blanche
+        Paint base = new Paint(Paint.ANTI_ALIAS_FLAG);
+        base.setStyle(Paint.Style.FILL);
+        base.setColor(Color.WHITE);
+        canvas.drawCircle(cx, cy, r, base);
+
+        canvas.save();
+        Path clip = new Path();
+        clip.addCircle(cx, cy, r, Path.Direction.CW);
+        canvas.clipPath(clip);
+
+        // Angles des frontières (depuis le centre de la balle, en degrés)
+        // Non uniformes pour simuler la perspective
+        float[] bounds = { -108f, -48f, 18f, 78f, 150f, 222f };
+
+        // Segments entre bounds[i] et bounds[i+1] :
+        // blanc, bleu, blanc, jaune, blanc, rose
+        int[] segColors = {
+                Color.WHITE,
+                Color.parseColor("#3399EE"),
+                Color.WHITE,
+                Color.parseColor("#FFD700"),
+                Color.WHITE,
+                Color.parseColor("#EE1899"),
+        };
+
+        Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG);
+        fill.setStyle(Paint.Style.FILL);
+
+        int n = bounds.length;
+        for (int i = 0; i < n; i++) {
+            if (segColors[i] == Color.WHITE) continue; // segments blancs déjà couverts par la base
+
+            float a1 = bounds[i];
+            float a2 = bounds[(i + 1) % n];
+            float sweep = a2 - a1;
+            if (sweep < 0) sweep += 360f;
+
+            float x1 = cx + r * (float)Math.cos(Math.toRadians(a1));
+            float y1 = cy + r * (float)Math.sin(Math.toRadians(a1));
+
+            fill.setColor(segColors[i]);
+            Path seg = new Path();
+            seg.moveTo(px, py);
+            seg.lineTo(x1, y1);
+            seg.arcTo(new RectF(cx - r, cy - r, cx + r, cy + r), a1, sweep);
+            seg.close();
+            canvas.drawPath(seg, fill);
+        }
+
+        // Léger ombrage sphérique pour le relief
+        Paint shadow = new Paint(Paint.ANTI_ALIAS_FLAG);
+        shadow.setStyle(Paint.Style.FILL);
+        shadow.setShader(new RadialGradient(
+                cx + r * 0.30f, cy + r * 0.35f, r * 1.0f,
+                new int[]{ 0x00000000, 0x28000000 },
+                new float[]{ 0f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, shadow);
+
+        // Petit cercle blanc de jonction (pole)
+        Paint pole = new Paint(Paint.ANTI_ALIAS_FLAG);
+        pole.setStyle(Paint.Style.FILL);
+        pole.setColor(Color.WHITE);
+        canvas.drawCircle(px, py, r * 0.09f, pole);
+
+        canvas.restore();
+
+        //canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+    }
+
+    private void drawVolleyball(Canvas canvas, float cx, float cy, float r) {
+        Paint base = new Paint(Paint.ANTI_ALIAS_FLAG);
+        base.setStyle(Paint.Style.FILL);
+        base.setShader(new RadialGradient(
+                cx - r * 0.2f, cy - r * 0.2f, r * 1.1f,
+                new int[]{ 0xFFFFF0D8, 0xFFF5E6C8, 0xFFD4C090 },
+                new float[]{ 0f, 0.6f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, base);
+
+        canvas.save();
+        Path clip = new Path();
+        clip.addCircle(cx, cy, r, Path.Direction.CW);
+        canvas.clipPath(clip);
+
+        Paint line = new Paint(Paint.ANTI_ALIAS_FLAG);
+        line.setStyle(Paint.Style.STROKE);
+        line.setColor(Color.parseColor("#2A1A08"));
+        line.setStrokeCap(Paint.Cap.ROUND);
+        line.setStrokeWidth(r * 0.030f);
+        line.setAlpha(210);
+
+        double[] angles = {
+                Math.PI / 2.0,
+                Math.PI / 2.0 + 2.0 * Math.PI / 3.0,
+                Math.PI / 2.0 + 4.0 * Math.PI / 3.0
+        };
+
+        // 3 droites du centre vers le bord
+        for (double a : angles) {
+            canvas.drawLine(cx, cy,
+                    cx + (float) Math.cos(a) * r * 0.97f,
+                    cy + (float) Math.sin(a) * r * 0.97f, line);
+        }
+
+        // Pour chaque droite i :
+        // - courbe A : part du bord près de la droite i+1, arrive à 1/3 de la droite i
+        // - courbe B : part du bord près de la droite i+2, arrive à 2/3 de la droite i
+        for (int i = 0; i < 3; i++) {
+            double aBase = angles[i];
+            double aNext = angles[(i + 1) % 3];
+
+            float s1X = cx + (float) Math.cos(aNext) * r * 0.33f;
+            float s1Y = cy + (float) Math.sin(aNext) * r * 0.33f;
+
+            float s2X = cx + (float) Math.cos(aNext) * r * 0.66f;
+            float s2Y = cy + (float) Math.sin(aNext) * r * 0.66f;
+
+            double endAngle1 = aBase + 0.30;
+            double endAngle2 = aBase + 0.61;
+
+            float e1X = cx + (float) Math.cos(endAngle1) * r;
+            float e1Y = cy + (float) Math.sin(endAngle1) * r;
+
+            float e2X = cx + (float) Math.cos(endAngle2) * r;
+            float e2Y = cy + (float) Math.sin(endAngle2) * r;
+
+            double cpAngle1 = aBase + 1.2;
+            float cp1X = cx + (float) Math.cos(cpAngle1) * r * 0.5f;
+            float cp1Y = cy + (float) Math.sin(cpAngle1) * r * 0.5f;
+
+            double cpAngle2 = aBase + 1.35;
+            float cp2X = cx + (float) Math.cos(cpAngle2) * r * 0.85f;
+            float cp2Y = cy + (float) Math.sin(cpAngle2) * r * 0.85f;
+
+            Path curveA = new Path();
+            curveA.moveTo(s1X, s1Y);
+            curveA.quadTo(cp1X, cp1Y, e1X, e1Y);
+            canvas.drawPath(curveA, line);
+
+            Path curveB = new Path();
+            curveB.moveTo(s2X, s2Y);
+            curveB.quadTo(cp2X, cp2Y, e2X, e2Y);
+            canvas.drawPath(curveB, line);
+        }
+        Paint shadow = new Paint(Paint.ANTI_ALIAS_FLAG);
+        shadow.setStyle(Paint.Style.FILL);
+        shadow.setShader(new RadialGradient(
+                cx + r * 0.3f, cy + r * 0.35f, r,
+                new int[]{ 0x00000000, 0x30000000 },
+                new float[]{ 0f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, shadow);
+
+        canvas.restore();
+
+        //canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+    }
+
+    private void drawBaseball(Canvas canvas, float cx, float cy, float r) {
+        ballPaint.setStyle(Paint.Style.FILL);
+        canvas.drawCircle(cx, cy, r, ballPaint);
+
+        canvas.save();
+        Path clip = new Path();
+        clip.addCircle(cx, cy, r, Path.Direction.CW);
+        canvas.clipPath(clip);
+
+        Paint line = new Paint(Paint.ANTI_ALIAS_FLAG);
+        line.setColor(Color.parseColor("#1A0A0A"));
+        line.setStyle(Paint.Style.STROKE);
+        line.setStrokeWidth(r * 0.07f);
+
+        float gap = r * 0.62f; // plus proche du centre que le tennis
+        float cpX = r * 0.45f;
+        float cpY = r * -0.30f;
+
+        Path top = new Path();
+        top.moveTo(cx - r * 0.95f, cy - gap);
+        top.cubicTo(cx - cpX, cy + cpY,
+                cx + cpX, cy + cpY,
+                cx + r * 0.95f, cy - gap);
+        canvas.drawPath(top, line);
+
+        Path bot = new Path();
+        bot.moveTo(cx - r * 0.95f, cy + gap);
+        bot.cubicTo(cx - cpX, cy - cpY,
+                cx + cpX, cy - cpY,
+                cx + r * 0.95f, cy + gap);
+        canvas.drawPath(bot, line);
+
+        // ── Points de suture le long des 2 courbes ───────────
+        // On échantillonne la courbe en t=[0..1] et on place
+        // un petit trait perpendiculaire à la tangente à chaque point
+        Paint stitch = new Paint(Paint.ANTI_ALIAS_FLAG);
+        stitch.setStyle(Paint.Style.STROKE);
+        stitch.setStrokeCap(Paint.Cap.ROUND);
+        stitch.setColor(Color.parseColor("#CC1111"));
+        stitch.setStrokeWidth(r * 0.033f);
+
+        int stitchCount = 9;
+        float stitchLen = r * 0.10f;
+
+        for (int s = 0; s < 2; s++) {
+            float ySign = (s == 0) ? -1f : 1f; // top ou bottom
+
+            for (int i = 1; i <= stitchCount; i++) {
+                float t = i / (float)(stitchCount + 1);
+
+                // Évaluation du point sur la courbe cubique de Bézier
+                float mt  = 1f - t;
+                float mt2 = mt * mt;
+                float mt3 = mt2 * mt;
+                float t2  = t * t;
+                float t3  = t2 * t;
+
+                float p0x = cx - r * 0.95f;
+                float p0y = cy + ySign * gap;
+                float p1x = cx - cpX;
+                float p1y = cy + ySign * cpY * -1f; // ctrl 1
+                float p2x = cx + cpX;
+                float p2y = cy + ySign * cpY * -1f; // ctrl 2
+                float p3x = cx + r * 0.95f;
+                float p3y = cy + ySign * gap;
+
+                float bx = mt3 * p0x + 3 * mt2 * t * p1x + 3 * mt * t2 * p2x + t3 * p3x;
+                float by = mt3 * p0y + 3 * mt2 * t * p1y + 3 * mt * t2 * p2y + t3 * p3y;
+
+                // Tangente (dérivée de la cubique)
+                float dx = 3 * mt2 * (p1x - p0x) + 6 * mt * t * (p2x - p1x) + 3 * t2 * (p3x - p2x);
+                float dy = 3 * mt2 * (p1y - p0y) + 6 * mt * t * (p2y - p1y) + 3 * t2 * (p3y - p2y);
+                float len = (float) Math.hypot(dx, dy);
+                if (len < 0.001f) continue;
+
+                // Perpendiculaire à la tangente
+                float nx = -dy / len;
+                float ny =  dx / len;
+
+                canvas.drawLine(
+                        bx + nx * stitchLen, by + ny * stitchLen,
+                        bx - nx * stitchLen, by - ny * stitchLen,
+                        stitch);
+            }
+        }
+
+        canvas.restore();
+
+        //canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+    }
+
+    private void draw8Ball(Canvas canvas, float cx, float cy, float r) {
+        // Base noire avec gradient sphérique
+        Paint base = new Paint(Paint.ANTI_ALIAS_FLAG);
+        base.setStyle(Paint.Style.FILL);
+        base.setShader(new RadialGradient(
+                cx - r * 0.2f, cy - r * 0.2f, r * 1.1f,
+                new int[]{ 0xFF444444, 0xFF111111, 0xFF000000 },
+                new float[]{ 0f, 0.45f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, base);
+
+        canvas.save();
+        Path clip = new Path();
+        clip.addCircle(cx, cy, r, Path.Direction.CW);
+        canvas.clipPath(clip);
+
+        // Le centre du cercle blanc est excentré vers le haut-gauche
+        // pour simuler que le 8 n'est pas face à nous
+        float ocx = cx - r * 0.12f;
+        float ocy = cy - r * 0.10f;
+
+        // Cercle blanc aplati (ellipse) — la courbure de la balle
+        // le déforme légèrement : plus large que haut
+        Paint white = new Paint(Paint.ANTI_ALIAS_FLAG);
+        white.setStyle(Paint.Style.FILL);
+        white.setColor(Color.WHITE);
+        float ow = r * 0.48f; // demi-largeur
+        float oh = r * 0.44f; // demi-hauteur (légèrement aplati)
+        canvas.drawOval(new RectF(ocx - ow, ocy - oh, ocx + ow, ocy + oh), white);
+
+        // ── Chiffre 8 ────────────────────────────────────────
+        // Dessiné avec 2 ovales noirs superposés (lobe haut + lobe bas)
+        // légèrement déformés pour coller à la perspective
+        Paint eight = new Paint(Paint.ANTI_ALIAS_FLAG);
+        eight.setStyle(Paint.Style.FILL);
+        eight.setColor(Color.BLACK);
+
+        // Fond noir du 8 (rectangle arrondi englobant)
+        float ew  = r * 0.20f;
+        float eh  = r * 0.34f;
+        float ex  = ocx + r * 0.01f;
+        float ey  = ocy + r * 0.01f;
+
+        // Lobe supérieur : plus petit
+        canvas.drawOval(new RectF(ex - ew * 0.80f, ey - eh * 0.95f,
+                ex + ew * 0.80f, ey - eh * 0.05f), eight);
+
+        // Lobe inférieur : légèrement plus large
+        canvas.drawOval(new RectF(ex - ew * 0.95f, ey - eh * 0.10f,
+                ex + ew * 0.95f, ey + eh * 0.90f), eight);
+
+        // Trous blancs du 8 (intérieur des lobes)
+        eight.setColor(Color.WHITE);
+
+        // Trou haut
+        canvas.drawOval(new RectF(ex - ew * 0.42f, ey - eh * 0.82f,
+                ex + ew * 0.42f, ey - eh * 0.22f), eight);
+
+        // Trou bas
+        canvas.drawOval(new RectF(ex - ew * 0.52f, ey - eh * 0.00f,
+                ex + ew * 0.52f, ey + eh * 0.72f), eight);
+
+        // Ombre sphérique
+        Paint shadow = new Paint(Paint.ANTI_ALIAS_FLAG);
+        shadow.setStyle(Paint.Style.FILL);
+        shadow.setShader(new RadialGradient(
+                cx + r * 0.35f, cy + r * 0.40f, r,
+                new int[]{ 0x00000000, 0x55000000 },
+                new float[]{ 0f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, shadow);
+
+        canvas.restore();
+
+        //canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
     }
 
     private void drawMetalBall(Canvas canvas, float cx, float cy, float r) {
@@ -798,11 +1400,27 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 colors = new int[]{
                         0xFFB0B8C0, 0xFF707880, 0xFF404850, 0xFF202428 };
                 break;
+            case "ball_bronze":
+                colors = new int[]{ 0xFFEDAA70, 0xFFCD7F32, 0xFF8B4A10, 0xFF4A2005 };
+                break;
+            case "ball_titanium":
+                colors = new int[]{ 0xFFAAB8C8, 0xFF5B6B7C, 0xFF334455, 0xFF151E28 };
+                break;
+            case "ball_steel":
+                colors = new int[]{ 0xFFCCD4E8, 0xFF6B7FA8, 0xFF384870, 0xFF182038 };
+                break;
+            case "ball_nickel":
+                colors = new int[]{ 0xFFEEDDA0, 0xFFC8B87A, 0xFF8A7A40, 0xFF454020 };
+                break;
+            case "ball_rosegold":
+                colors = new int[]{ 0xFFFFF0EC, 0xFFE8A090, 0xFFB86858, 0xFF703830 };
+                break;
             case "ball_platinum":
             default:
                 colors = new int[]{
                         0xFFF8F8F8, 0xFFD8DCE0, 0xFFA0A8B0, 0xFF606870 };
                 break;
+
         }
 
         float[] stops = { 0f, 0.35f, 0.72f, 1f };
@@ -830,7 +1448,296 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         canvas.drawCircle(cx, cy, r, shadow);
 
         // Reflet
-        canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+        //canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+    }
+
+    private void drawBismuth(Canvas canvas, float cx, float cy, float r) {
+        // Base argentée
+        Paint base = new Paint(Paint.ANTI_ALIAS_FLAG);
+        base.setStyle(Paint.Style.FILL);
+        base.setShader(new LinearGradient(
+                cx - r * 0.7f, cy - r * 0.7f,
+                cx + r * 0.7f, cy + r * 0.7f,
+                new int[]{ 0xFFD8D0E0, 0xFFB0A8C0, 0xFF908898, 0xFF605870 },
+                new float[]{ 0f, 0.35f, 0.65f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, base);
+
+        canvas.save();
+        Path clip = new Path();
+        clip.addCircle(cx, cy, r, Path.Direction.CW);
+        canvas.clipPath(clip);
+
+        // Couches irisées superposées — chacune à un angle différent
+        // comme les facettes d'oxydation naturelle du bismuth
+        int[][] iridLayers = {
+                // {angle_start_x, angle_start_y, angle_end_x, angle_end_y, color1, color2, alpha}
+        };
+
+        // On dessine 6 zones rectangulaires colorées à angles variés
+        // simulant les marches d'escalier du bismuth cristallisé
+        float[][] zones = {
+                // {x1, y1, x2, y2, rotation, color_hex_int, alpha}
+        };
+
+        Paint irid = new Paint(Paint.ANTI_ALIAS_FLAG);
+        irid.setStyle(Paint.Style.FILL);
+
+        // Zone rose-magenta (haut-gauche)
+        irid.setShader(new LinearGradient(
+                cx - r, cy - r,
+                cx,     cy,
+                new int[]{ 0x00FF80C0, 0x55FF40A0, 0x00FF80C0 },
+                new float[]{ 0f, 0.5f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, irid);
+
+        // Zone bleue (haut-droite)
+        irid.setShader(new LinearGradient(
+                cx + r * 0.2f, cy - r,
+                cx - r * 0.3f, cy + r * 0.5f,
+                new int[]{ 0x004488FF, 0x6644AAFF, 0x002266CC },
+                new float[]{ 0f, 0.5f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, irid);
+
+        // Zone verte (centre-gauche)
+        irid.setShader(new LinearGradient(
+                cx - r, cy + r * 0.1f,
+                cx + r * 0.4f, cy - r * 0.4f,
+                new int[]{ 0x0040CC88, 0x4440EE88, 0x0020AA60 },
+                new float[]{ 0f, 0.5f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, irid);
+
+        // Zone jaune-or (bas-droite)
+        irid.setShader(new LinearGradient(
+                cx + r * 0.1f, cy + r * 0.2f,
+                cx - r * 0.5f, cy - r * 0.3f,
+                new int[]{ 0x00FFD700, 0x55FFCC00, 0x00EE9900 },
+                new float[]{ 0f, 0.5f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, irid);
+
+        // Zone violet-cyan (bas-gauche)
+        irid.setShader(new LinearGradient(
+                cx - r * 0.3f, cy + r * 0.5f,
+                cx + r * 0.5f, cy - r * 0.2f,
+                new int[]{ 0x0088FFEE, 0x4400CCCC, 0x00006688 },
+                new float[]{ 0f, 0.5f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, irid);
+
+        // Zone orange (centre-haut)
+        irid.setShader(new LinearGradient(
+                cx,            cy - r * 0.5f,
+                cx + r * 0.3f, cy + r * 0.6f,
+                new int[]{ 0x00FF8800, 0x44FFAA00, 0x00CC5500 },
+                new float[]{ 0f, 0.5f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, irid);
+
+        // Lignes de cristallisation : fines lignes argentées simulant
+        // les marches d'escalier caractéristiques du bismuth
+        Paint crystal = new Paint(Paint.ANTI_ALIAS_FLAG);
+        crystal.setStyle(Paint.Style.STROKE);
+        crystal.setColor(Color.parseColor("#E0D8F0"));
+        crystal.setStrokeWidth(r * 0.012f);
+        crystal.setAlpha(80);
+
+        // Grille de marches horizontales/verticales décalées
+        float step = r * 0.28f;
+        for (float offset = -r; offset < r; offset += step) {
+            // Horizontales
+            canvas.drawLine(cx - r, cy + offset, cx + r, cy + offset, crystal);
+            // Verticales décalées (motif escalier)
+            canvas.drawLine(cx + offset, cy - r, cx + offset, cy + r, crystal);
+        }
+
+        // Reflet
+        //canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+
+        canvas.restore();
+    }
+
+    private void drawDamascus(Canvas canvas, float cx, float cy, float r) {
+        // Base acier sombre
+        Paint base = new Paint(Paint.ANTI_ALIAS_FLAG);
+        base.setStyle(Paint.Style.FILL);
+        base.setShader(new LinearGradient(
+                cx - r * 0.7f, cy - r * 0.7f,
+                cx + r * 0.7f, cy + r * 0.7f,
+                new int[]{ 0xFF707070, 0xFF484848, 0xFF282828, 0xFF181818 },
+                new float[]{ 0f, 0.35f, 0.65f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, base);
+
+        canvas.save();
+        Path clip = new Path();
+        clip.addCircle(cx, cy, r, Path.Direction.CW);
+        canvas.clipPath(clip);
+
+        // Ondulations damas : lignes sinueuses très serrées alternant
+        // clair/sombre — le motif Widmanstätten du damas
+        Paint light = new Paint(Paint.ANTI_ALIAS_FLAG);
+        light.setStyle(Paint.Style.STROKE);
+        light.setStrokeCap(Paint.Cap.ROUND);
+
+        Paint dark = new Paint(Paint.ANTI_ALIAS_FLAG);
+        dark.setStyle(Paint.Style.STROKE);
+        dark.setStrokeCap(Paint.Cap.ROUND);
+
+        float spacing = r * 0.075f;
+        int lineCount = (int)(2f * r / spacing) + 2;
+
+        for (int i = 0; i < lineCount; i++) {
+            float baseY = (cy - r) + i * spacing;
+
+            // Amplitude et phase varient ligne par ligne pour l'aspect organique
+            float amp1  = r * (0.05f + 0.08f * ((i * 7 % 11) / 11f));
+            float amp2  = r * (0.04f + 0.07f * ((i * 5 % 9)  / 9f));
+            float phase = r * ((i * 3 % 13) / 13f) * 0.4f;
+
+            Path wave = new Path();
+            wave.moveTo(cx - r, baseY + phase);
+            wave.cubicTo(
+                    cx - r * 0.5f, baseY - amp1 + phase,
+                    cx,            baseY + amp2 + phase,
+                    cx + r * 0.5f, baseY - amp1 * 0.7f + phase
+            );
+            wave.cubicTo(
+                    cx + r * 0.7f, baseY + amp2 * 0.5f + phase,
+                    cx + r * 0.9f, baseY - amp1 * 0.3f + phase,
+                    cx + r,        baseY + phase * 0.5f
+            );
+
+            // Alternance clair / sombre
+            if (i % 2 == 0) {
+                light.setColor(Color.parseColor("#909090"));
+                light.setStrokeWidth(r * 0.022f);
+                light.setAlpha(160);
+                canvas.drawPath(wave, light);
+            } else {
+                dark.setColor(Color.parseColor("#181818"));
+                dark.setStrokeWidth(r * 0.022f);
+                dark.setAlpha(200);
+                canvas.drawPath(wave, dark);
+            }
+        }
+
+        // Reflet acier
+        Paint shadowOverlay = new Paint(Paint.ANTI_ALIAS_FLAG);
+        shadowOverlay.setStyle(Paint.Style.FILL);
+        shadowOverlay.setShader(new RadialGradient(
+                cx + r * 0.4f, cy + r * 0.4f, r * 0.9f,
+                new int[]{ 0x00000000, 0x40000000 },
+                new float[]{ 0f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, shadowOverlay);
+
+        canvas.restore();
+
+        //canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+    }
+
+    private void drawMeteorite(Canvas canvas, float cx, float cy, float r) {
+        // Base gris-beige ferreuse
+        Paint base = new Paint(Paint.ANTI_ALIAS_FLAG);
+        base.setStyle(Paint.Style.FILL);
+        base.setShader(new LinearGradient(
+                cx - r * 0.7f, cy - r * 0.7f,
+                cx + r * 0.7f, cy + r * 0.7f,
+                new int[]{ 0xFFB0A890, 0xFF807868, 0xFF504840, 0xFF302820 },
+                new float[]{ 0f, 0.38f, 0.65f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, base);
+
+        canvas.save();
+        Path clip = new Path();
+        clip.addCircle(cx, cy, r, Path.Direction.CW);
+        canvas.clipPath(clip);
+
+        // Bandes de Widmanstätten : 3 familles à 0°, 60°, 120°
+        Paint bandLight = new Paint(Paint.ANTI_ALIAS_FLAG);
+        bandLight.setStyle(Paint.Style.STROKE);
+        bandLight.setColor(Color.parseColor("#C8B898"));
+        bandLight.setStrokeWidth(r * 0.030f);
+
+        Paint bandDark = new Paint(Paint.ANTI_ALIAS_FLAG);
+        bandDark.setStyle(Paint.Style.STROKE);
+        bandDark.setColor(Color.parseColor("#282018"));
+        bandDark.setStrokeWidth(r * 0.018f);
+
+        float spacing = r * 0.18f;
+        int   count   = (int)(3f * r / spacing) + 2;
+
+        // Les 3 angles caractéristiques du motif Widmanstätten
+        double[] angles = { 0.0, Math.PI / 3.0, 2.0 * Math.PI / 3.0 };
+
+        for (double angle : angles) {
+            float cos = (float)Math.cos(angle);
+            float sin = (float)Math.sin(angle);
+            // Vecteur perpendiculaire pour l'espacement
+            float px = -sin;
+            float py =  cos;
+
+            for (int i = -count; i <= count; i++) {
+                float ox = px * i * spacing;
+                float oy = py * i * spacing;
+
+                // Ligne étendue bien au-delà de r pour couvrir toute la balle
+                float x1 = cx + ox + cos * r * 2f;
+                float y1 = cy + oy + sin * r * 2f;
+                float x2 = cx + ox - cos * r * 2f;
+                float y2 = cy + oy - sin * r * 2f;
+
+                bandLight.setAlpha(i % 2 == 0 ? 130 : 70);
+                canvas.drawLine(x1, y1, x2, y2, bandLight);
+                bandDark.setAlpha(i % 2 == 0 ? 80 : 140);
+                canvas.drawLine(x1, y1, x2, y2, bandDark);
+            }
+        }
+
+        // Quelques inclusions de troïlite (taches sombres arrondies)
+        Paint inclusion = new Paint(Paint.ANTI_ALIAS_FLAG);
+        inclusion.setStyle(Paint.Style.FILL);
+        float[][] spots = {
+                { -0.30f, -0.35f, 0.07f },
+                {  0.40f,  0.20f, 0.05f },
+                { -0.10f,  0.45f, 0.06f },
+                {  0.25f, -0.50f, 0.04f },
+                { -0.52f,  0.15f, 0.05f },
+        };
+        for (float[] s : spots) {
+            inclusion.setColor(Color.parseColor("#1A1208"));
+            inclusion.setAlpha(160);
+            canvas.drawCircle(cx + s[0] * r, cy + s[1] * r, s[2] * r, inclusion);
+        }
+
+        // Ombre sphérique
+        Paint shadow = new Paint(Paint.ANTI_ALIAS_FLAG);
+        shadow.setStyle(Paint.Style.FILL);
+        shadow.setShader(new RadialGradient(
+                cx + r * 0.4f, cy + r * 0.4f, r * 0.9f,
+                new int[]{ 0x00000000, 0x44000000 },
+                new float[]{ 0f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, shadow);
+
+        canvas.restore();
+
+        //canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
     }
 
     private void drawComet(Canvas canvas, float cx, float cy, float r) {
@@ -899,7 +1806,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
         canvas.restore();
 
-        canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+        //canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
     }
 
     private void drawMercury(Canvas canvas, float cx, float cy, float r) {
@@ -950,7 +1857,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
         canvas.restore();
 
-        canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+        //canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
     }
 
     private void drawVenus(Canvas canvas, float cx, float cy, float r) {
@@ -1002,7 +1909,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
         canvas.restore();
 
-        canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+        //canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
     }
 
     private void drawEarth(Canvas canvas, float cx, float cy, float r) {
@@ -1192,7 +2099,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
         canvas.restore();
 
-        canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+        //canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
     }
 
     private void drawMoon(Canvas canvas, float cx, float cy, float r) {
@@ -1259,7 +2166,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
         canvas.restore();
 
-        canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+        //canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
     }
 
     private void drawMars(Canvas canvas, float cx, float cy, float r) {
@@ -1376,7 +2283,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
         canvas.restore();
 
-        canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+        //canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
     }
 
     private void drawJupiter(Canvas canvas, float cx, float cy, float r) {
@@ -1461,7 +2368,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
         canvas.restore();
 
-        canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+        //canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
     }
 
     private void drawSaturn(Canvas canvas, float cx, float cy, float r) {
@@ -1551,7 +2458,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         canvas.restore();
 
         // Reflet
-        canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+        //canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
 
         // ── Passe 3 : demi-anneau AVANT (en-dessous du centre) ──
         for (int i = 0; i < rings.length; i++) {
@@ -1662,7 +2569,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
         canvas.restore();
 
-        canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+        //canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
     }
 
     private void drawNeptune(Canvas canvas, float cx, float cy, float r) {
@@ -1738,7 +2645,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
         canvas.restore();
 
-        canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+        //canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
     }
 
     private void drawPluto(Canvas canvas, float cx, float cy, float r) {
@@ -1819,7 +2726,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
         canvas.restore();
 
-        canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+        //canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
     }
 
     private void drawStar(Canvas canvas, float cx, float cy, float r, int[] p) {
