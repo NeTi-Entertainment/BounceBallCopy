@@ -22,6 +22,7 @@ import android.graphics.RadialGradient;
 import android.graphics.LinearGradient;
 import android.graphics.Shader;
 import android.graphics.BlurMaskFilter;
+import android.graphics.CornerPathEffect;
 
 public class GameView extends SurfaceView implements SurfaceHolder.Callback, Runnable {
 
@@ -215,12 +216,16 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             case "ball_8ball": color = Color.parseColor("#111111"); break;
 
             // Elemental
-            case "ball_emerald":  color = Color.parseColor("#43A047"); break;
-            case "ball_sapphire": color = Color.parseColor("#1E88E5"); break;
-            case "ball_fire":     color = Color.parseColor("#FF5722"); break;
-            case "ball_ice":      color = Color.parseColor("#80DEEA"); break;
-            case "ball_thunder":  color = Color.parseColor("#FDD835"); break;
-            case "ball_neptune":  color = Color.parseColor("#2A5FD4"); break;
+            case "ball_elem_fire":  color = Color.parseColor("#FF4400"); break;
+            case "ball_elem_water": color = Color.parseColor("#0088CC"); break;
+            case "ball_elem_earth": color = Color.parseColor("#6B4226"); break;
+            case "ball_elem_ice":   color = Color.parseColor("#A8D8EA"); break;
+            case "ball_elem_darkness": color = Color.parseColor("#050505"); break;
+            case "ball_elem_light": color = Color.parseColor("#FFFFEE"); break;
+            case "ball_elem_air":   color = Color.parseColor("#E0F7FA"); break;
+            case "ball_elem_lightning": color = Color.parseColor("#FFF176"); break;
+            case "ball_elem_plasma": color = Color.parseColor("#E040FB"); break;
+            case "ball_elem_lava": color = Color.parseColor("#FF3300"); break;
             // Défaut
             default:              color = Color.parseColor("#E53935"); break;
         }
@@ -590,6 +595,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             case "ball_volleyball":   drawVolleyball(canvas, cx, cy, r);  break;
             case "ball_baseball":     drawBaseball(canvas, cx, cy, r);    break;
             case "ball_8ball":        draw8Ball(canvas, cx, cy, r);       break;
+
             case "ball_gold":
             case "ball_silver":
             case "ball_copper":
@@ -604,6 +610,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             case "ball_bismuth":      drawBismuth(canvas, cx, cy, r);   break;
             case "ball_damascus":     drawDamascus(canvas, cx, cy, r);  break;
             case "ball_meteorite":    drawMeteorite(canvas, cx, cy, r); break;
+
             case "ball_comet":        drawComet(canvas, cx, cy, r); break;
             case "ball_mercury":      drawMercury(canvas, cx, cy, r); break;
             case "ball_venus":        drawVenus(canvas, cx, cy, r);   break;
@@ -620,6 +627,17 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             case "ball_blue_giant":   drawStar(canvas, cx, cy, r, new int[]{0xFFEEF4FF, 0xFF4488FF, 0xFF2255DD, 0xFF88CCFF}); break;
             case "ball_black_hole":   drawBlackHole(canvas, cx, cy, r); break;
             case "ball_pulsar":       drawPulsar(canvas, cx, cy, r); break;
+
+            case "ball_elem_fire":    drawFireBall(canvas, cx, cy, r);  break;
+            case "ball_elem_water":   drawWaterBall(canvas, cx, cy, r); break;
+            case "ball_elem_earth":   drawElemEarthBall(canvas, cx, cy, r); break;
+            case "ball_elem_ice":     drawIceBall(canvas, cx, cy, r);   break;
+            case "ball_elem_darkness": drawDarknessBall(canvas, cx, cy, r); break;
+            case "ball_elem_light":   drawLightBall(canvas, cx, cy, r); break;
+            case "ball_elem_air":     drawAirBall(canvas, cx, cy, r);   break;
+            case "ball_elem_lightning": drawLightningBall(canvas, cx, cy, r); break;
+            case "ball_elem_plasma":  drawPlasmaBall(canvas, cx, cy, r); break;
+            case "ball_elem_lava":    drawLavaBall(canvas, cx, cy, r); break;
 
             default:
                 canvas.drawCircle(cx, cy, r, ballPaint);
@@ -2932,6 +2950,922 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 new float[]{ 0f, 0.45f, 1f },
                 Shader.TileMode.CLAMP));
         canvas.drawCircle(cx, cy, innerR, neutron);
+    }
+
+    private void drawFireBall(Canvas canvas, float cx, float cy, float r) {
+        long t = System.currentTimeMillis();
+        float phase = (t % 800) / 800f;
+        float phase2 = (t % 500) / 500f;
+
+        canvas.save();
+        canvas.rotate(-ballRotation, cx, cy);
+
+        Paint auraPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        auraPaint.setStyle(Paint.Style.FILL);
+
+        float[][] auraLayers = {
+                { 1.35f, 0.28f, 7, 0.0f, 60,  0xFFFF2200 },
+                { 1.22f, 0.22f, 6, 0.15f, 90, 0xFFFF5500 },
+                { 1.12f, 0.16f, 8, 0.30f, 130,0xFFFF8800 },
+        };
+
+        float convection = 14f;
+        float windX = -ballVelocityX;
+        float windY = -ballVelocityY - convection;
+        float rotAngle = (float) Math.atan2(windY, windX) + (float) Math.PI / 2f;
+        float speedForce = (float) Math.hypot(windX, windY);
+        float stretch = Math.max(1.0f, Math.min(2.8f, speedForce / convection));
+        float dynPinch = 1.0f / (float) Math.sqrt(stretch);
+
+        float cosR = (float) Math.cos(rotAngle);
+        float sinR = (float) Math.sin(rotAngle);
+
+        for (float[] al : auraLayers) {
+            float baseR = al[0] * r;
+            float amp   = al[1] * r;
+            int   peaks = (int) al[2];
+            float lPhase = (phase + al[3]) % 1.0f;
+
+            auraPaint.setColor((int) al[5]);
+            auraPaint.setAlpha((int) al[4]);
+
+            Path aura = new Path();
+            int pts = 120;
+            float auraCy = cy - r * 0.08f;
+
+            for (int i = 0; i <= pts; i++) {
+                double angle = i * 2.0 * Math.PI / pts;
+
+                float yPos = (float) (-Math.sin(angle) * 0.5 + 0.5);
+                float upBias = (float) Math.pow(yPos, 1.5);
+
+                double asymmetry = Math.cos(angle) * 0.5;
+
+                double flow1 = yPos * peaks * 1.8 - lPhase * Math.PI * 2.0 + asymmetry;
+                double flow2 = yPos * (peaks + 2) * 1.4 - lPhase * Math.PI * 3.0 - asymmetry;
+
+                float spike1 = 1.0f - (float) Math.abs(Math.sin(flow1));
+                float spike2 = 1.0f - (float) Math.abs(Math.cos(flow2));
+
+                float flicker = (spike1 * 0.6f + spike2 * 0.4f) * amp * upBias;
+                float rad = baseR + flicker + (upBias * amp * 0.3f);
+
+                double hookFactor = Math.cos(angle) * (flicker / baseR) * 1.3;
+                double drawAngle = angle - hookFactor;
+
+                float localPx = cx + (float) Math.cos(drawAngle) * rad;
+                float localPy = auraCy + (float) Math.sin(drawAngle) * rad;
+
+                float pinch = 1.0f - (upBias * 0.5f);
+                localPx = cx + (localPx - cx) * pinch * (1.0f - upBias * (1.0f - dynPinch));
+                localPy -= upBias * amp * 0.7f * stretch;
+
+                float dx = localPx - cx;
+                float dy = localPy - cy;
+                float px = cx + dx * cosR - dy * sinR;
+                float py = cy + dx * sinR + dy * cosR;
+
+                if (i == 0) aura.moveTo(px, py);
+                else        aura.lineTo(px, py);
+            }
+            aura.close();
+            canvas.drawPath(aura, auraPaint);
+        }
+
+        canvas.restore();
+
+        // ── Corps de la balle clipé sur le cercle de base ──
+        canvas.save();
+        Path clip = new Path();
+        clip.addCircle(cx, cy, r * 0.98f, Path.Direction.CW);
+        canvas.clipPath(clip);
+
+        // Corps : crépitement de couleurs au cœur (variations rapides)
+        float flicker1 = 0.5f + 0.5f * (float) Math.sin(phase2 * Math.PI * 2);
+        float flicker2 = 0.5f + 0.5f * (float) Math.sin(phase2 * Math.PI * 2 * 1.7f + 1.0f);
+
+        int coreColor = lerpColor(0xFFFFCC00, 0xFFFF4400, flicker1);
+        int midColor  = lerpColor(0xFFFF4400, 0xFFCC1100, flicker2);
+
+        Paint body = new Paint(Paint.ANTI_ALIAS_FLAG);
+        body.setStyle(Paint.Style.FILL);
+        body.setShader(new RadialGradient(
+                cx, cy, r,
+                new int[]{ 0xFFFFEE44, coreColor, midColor, 0xFF660000 },
+                new float[]{ 0f, 0.25f, 0.6f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, body);
+
+        canvas.restore();
+    }
+
+    // Helper : interpolation linéaire entre 2 couleurs ARGB
+    private int lerpColor(int c1, int c2, float t) {
+        int a = (int)((( c1 >> 24) & 0xFF) * (1-t) + ((c2 >> 24) & 0xFF) * t);
+        int r = (int)(((c1 >> 16) & 0xFF) * (1-t) + ((c2 >> 16) & 0xFF) * t);
+        int g = (int)(((c1 >>  8) & 0xFF) * (1-t) + ((c2 >>  8) & 0xFF) * t);
+        int b = (int)(( c1        & 0xFF) * (1-t) + ( c2        & 0xFF) * t);
+        return (a << 24) | (r << 16) | (g << 8) | b;
+    }
+
+    private void drawWaterBall(Canvas canvas, float cx, float cy, float r) {
+        long t = System.currentTimeMillis();
+
+        float p1 = (t % 2300) / 2300f;
+        float p2 = (t % 1700) / 1700f;
+        float p3 = (t % 3100) / 3100f;
+
+        float speed = (float) Math.hypot(ballVelocityX, ballVelocityY);
+        float stretch = Math.min(1.2f, speed / 30f);
+        float moveAngle = (float) Math.atan2(ballVelocityY, ballVelocityX);
+        float cosM = (float) Math.cos(moveAngle);
+        float sinM = (float) Math.sin(moveAngle);
+
+        canvas.save();
+        canvas.rotate(-ballRotation, cx, cy);
+
+        Paint body = new Paint(Paint.ANTI_ALIAS_FLAG);
+        body.setStyle(Paint.Style.FILL);
+        body.setShader(new RadialGradient(
+                cx - r * 0.2f, cy - r * 0.2f, r * 1.1f,
+                new int[]{ 0xFF66CCFF, 0xFF0088CC, 0xFF004488 },
+                new float[]{ 0f, 0.55f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+
+        if (stretch > 0.4f) {
+            float dropCycle = (p1 * 8.0f) % 1.0f;
+            float dropDist = r * (1.1f + stretch * 0.7f + dropCycle * 0.8f);
+            float dropR = r * 0.16f * (1.0f - dropCycle * 0.8f);
+            float dropX = cx - dropDist * cosM;
+            float dropY = cy - dropDist * sinM;
+
+            Paint dropPaint = new Paint(body);
+            int alpha = (int) (255 * (1.0f - dropCycle));
+            dropPaint.setAlpha(Math.max(0, alpha));
+            canvas.drawCircle(dropX, dropY, Math.max(0, dropR), dropPaint);
+        }
+
+        Path waterEdge = buildWaterEdge(cx, cy, r, p1, p2, p3, ballVelocityX, ballVelocityY);
+        canvas.drawPath(waterEdge, body);
+
+        canvas.save();
+        canvas.clipPath(waterEdge);
+
+        Paint glint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        glint.setStyle(Paint.Style.FILL);
+
+        float gx = cx - r * 0.15f + (float) Math.sin(p1 * Math.PI * 2) * r * 0.12f;
+        float gy = cy - r * 0.25f + (float) Math.cos(p2 * Math.PI * 2) * r * 0.08f;
+        glint.setShader(new RadialGradient(gx, gy, r * 0.30f,
+                new int[]{ 0x55FFFFFF, 0x00FFFFFF },
+                new float[]{ 0f, 1f }, Shader.TileMode.CLAMP));
+        canvas.drawCircle(gx, gy, r * 0.30f, glint);
+
+        float gx2 = cx + r * 0.20f + (float) Math.cos(p3 * Math.PI * 2) * r * 0.10f;
+        float gy2 = cy + r * 0.10f;
+        glint.setShader(new RadialGradient(gx2, gy2, r * 0.18f,
+                new int[]{ 0x33FFFFFF, 0x00FFFFFF },
+                new float[]{ 0f, 1f }, Shader.TileMode.CLAMP));
+        canvas.drawCircle(gx2, gy2, r * 0.18f, glint);
+
+        canvas.restore();
+        canvas.restore();
+    }
+
+    private Path buildWaterEdge(float cx, float cy, float r, float p1, float p2, float p3, float vx, float vy) {
+        Path path = new Path();
+        int pts = 120;
+
+        float speed = (float) Math.hypot(vx, vy);
+        float stretch = Math.min(1.2f, speed / 30f);
+        float moveAngle = (float) Math.atan2(vy, vx);
+        float cosM = (float) Math.cos(moveAngle);
+        float sinM = (float) Math.sin(moveAngle);
+
+        for (int i = 0; i <= pts; i++) {
+            double angle = i * 2.0 * Math.PI / pts;
+
+            float idleFactor = Math.max(0.0f, 1.0f - stretch * 0.9f);
+
+            float w1 = (float) Math.sin(angle * 2.0 + p1 * Math.PI * 2.0) * r * 0.06f * idleFactor;
+            float w2 = (float) Math.cos(angle * 3.0 - p2 * Math.PI * 2.0) * r * 0.04f * idleFactor;
+            float w3 = (float) Math.sin(angle * 5.0 + p3 * Math.PI * 4.0) * r * 0.02f * idleFactor;
+
+            float rad = r + w1 + w2 + w3;
+
+            float localAngle = (float) (angle - moveAngle);
+            float lx = (float) Math.cos(localAngle) * rad;
+            float ly = (float) Math.sin(localAngle) * rad;
+
+            if (lx < 0) {
+                float normX = lx / r;
+                float tailFactor = normX * normX;
+                lx -= stretch * r * tailFactor;
+                ly *= (1.0f - stretch * 0.45f * tailFactor);
+            } else {
+                lx *= (1.0f - stretch * 0.15f);
+            }
+
+            float px = cx + lx * cosM - ly * sinM;
+            float py = cy + lx * sinM + ly * cosM;
+
+            if (i == 0) path.moveTo(px, py);
+            else        path.lineTo(px, py);
+        }
+        path.close();
+        return path;
+    }
+
+    private void drawIceBall(Canvas canvas, float cx, float cy, float r) {
+        long t = System.currentTimeMillis();
+
+        // ── Corps de glace avec dégradé inversé (centre bleu moyen -> bord clair) ──
+        Paint base = new Paint(Paint.ANTI_ALIAS_FLAG);
+        base.setStyle(Paint.Style.FILL);
+        base.setShader(new RadialGradient(
+                cx, cy, r, // Dégradé parfaitement centré
+                new int[]{ 0xFF4A90E2, 0xFF99D0E8, 0xFFEEF8FF },
+                new float[]{ 0f, 0.6f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+
+        // L'astuce pour adoucir les angles de la plaque de glace nativement
+        CornerPathEffect smoothEffect = new CornerPathEffect(r * 0.15f);
+        base.setPathEffect(smoothEffect);
+
+        Path iceEdge = buildIceEdge(cx, cy, r);
+        canvas.drawPath(iceEdge, base);
+
+        canvas.save();
+        canvas.clipPath(iceEdge);
+
+        // ── Épaisseur de la glace (bordure interne) ──
+        Paint thickness = new Paint(Paint.ANTI_ALIAS_FLAG);
+        thickness.setStyle(Paint.Style.STROKE);
+        thickness.setColor(Color.parseColor("#A8D8EA"));
+        thickness.setStrokeWidth(r * 0.05f);
+        thickness.setPathEffect(smoothEffect);
+
+        canvas.save();
+        // On réduit légèrement l'échelle pour dessiner l'épaisseur à l'intérieur
+        canvas.scale(0.92f, 0.92f, cx, cy);
+        canvas.drawPath(iceEdge, thickness);
+        canvas.restore();
+
+        // ── Fissures foncées (de la surface vers le centre) ──
+        Paint crackPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        crackPaint.setStyle(Paint.Style.STROKE);
+        crackPaint.setColor(Color.parseColor("#2A6A92"));
+        crackPaint.setStrokeWidth(r * 0.015f);
+        crackPaint.setStrokeCap(Paint.Cap.ROUND);
+        crackPaint.setStrokeJoin(Paint.Join.ROUND);
+
+        Path cracksPath = new Path();
+        // Fissure 1 (Droite)
+        cracksPath.moveTo(cx + r * 0.95f, cy + r * 0.1f);
+        cracksPath.lineTo(cx + r * 0.6f, cy + r * 0.2f);
+        cracksPath.lineTo(cx + r * 0.4f, cy + r * 0.15f);
+        // Fissure 2 (Haut Gauche)
+        cracksPath.moveTo(cx - r * 0.90f, cy - r * 0.3f);
+        cracksPath.lineTo(cx - r * 0.5f, cy - r * 0.2f);
+        cracksPath.lineTo(cx - r * 0.3f, cy - r * 0.4f);
+        // Fissure 3 (Bas)
+        cracksPath.moveTo(cx + r * 0.1f, cy + r * 0.95f);
+        cracksPath.lineTo(cx - r * 0.05f, cy + r * 0.5f);
+        cracksPath.lineTo(cx + r * 0.15f, cy + r * 0.35f);
+        canvas.drawPath(cracksPath, crackPaint);
+
+        canvas.restore();
+
+        // ── Bordure anguleuse adoucie repassée par-dessus ──
+        Paint edgePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        edgePaint.setStyle(Paint.Style.STROKE);
+        edgePaint.setColor(Color.WHITE);
+        edgePaint.setStrokeWidth(r * 0.025f);
+        edgePaint.setAlpha(180);
+        edgePaint.setPathEffect(smoothEffect);
+        canvas.drawPath(iceEdge, edgePaint);
+
+        // ── Scintillements animés type manga (fixes face caméra) ──
+        canvas.save();
+        canvas.rotate(-ballRotation, cx, cy); // Contre-rotation pour garder l'étoile droite
+
+        Paint sparkle = new Paint(Paint.ANTI_ALIAS_FLAG);
+        sparkle.setColor(Color.WHITE);
+        sparkle.setStyle(Paint.Style.FILL);
+
+        int numSparkles = 5;
+        for(int i = 0; i < numSparkles; i++) {
+            long cycle = 1200 + i * 300; // Chaque étoile a un rythme différent
+            float phase = (float) ((t + i * 500) % cycle) / cycle;
+
+            // Le scintillement n'est visible que brièvement (25% du cycle)
+            if (phase < 0.25f) {
+                float intensity = (float) Math.sin((phase / 0.25f) * Math.PI);
+
+                float angle = i * 2.1f;
+                float sRad = r * (0.3f + (i * 0.12f) % 0.5f);
+                float sx = cx + (float) Math.cos(angle) * sRad;
+                float sy = cy + (float) Math.sin(angle) * sRad;
+
+                float size = r * 0.25f * intensity;
+
+                // Dessin d'une belle étoile à 4 branches avec des courbes de Bézier
+                Path star = new Path();
+                star.moveTo(sx, sy - size);
+                star.quadTo(sx, sy, sx + size, sy);
+                star.quadTo(sx, sy, sx, sy + size);
+                star.quadTo(sx, sy, sx - size, sy);
+                star.quadTo(sx, sy, sx, sy - size);
+                star.close();
+
+                sparkle.setAlpha((int)(255 * intensity));
+                canvas.drawPath(star, sparkle);
+            }
+        }
+        canvas.restore();
+    }
+
+    private Path buildIceEdge(float cx, float cy, float r) {
+        Path path = new Path();
+        float[] angles = {
+                0f,  18f,  38f,  52f,  70f,  88f, 105f, 122f,
+                140f, 158f, 175f, 192f, 210f, 225f, 242f, 258f,
+                275f, 292f, 308f, 325f, 342f, 360f
+        };
+
+        // Rayons beaucoup moins erratiques pour adoucir la forme globale
+        float[] radii = {
+                1.00f, 0.98f, 1.02f, 0.97f, 1.01f, 0.98f, 1.03f, 0.97f,
+                1.01f, 0.98f, 1.02f, 0.97f, 1.03f, 0.98f, 1.01f, 0.97f,
+                1.03f, 0.97f, 1.02f, 0.98f, 1.01f, 1.00f
+        };
+
+        for (int i = 0; i < angles.length; i++) {
+            double a = Math.toRadians(angles[i]);
+            float  rad = r * radii[i];
+            float  px = cx + (float) Math.cos(a) * rad;
+            float  py = cy + (float) Math.sin(a) * rad;
+            if (i == 0) path.moveTo(px, py);
+            else        path.lineTo(px, py);
+        }
+        path.close();
+        return path;
+    }
+
+    private void drawElemEarthBall(Canvas canvas, float cx, float cy, float r) {
+        long t = System.currentTimeMillis();
+        float phase = (t % 3000) / 3000f;
+
+        // Base terre sombre
+        Paint base = new Paint(Paint.ANTI_ALIAS_FLAG);
+        base.setStyle(Paint.Style.FILL);
+        base.setShader(new RadialGradient(
+                cx - r * 0.2f, cy - r * 0.2f, r * 1.1f,
+                new int[]{ 0xFF8B6340, 0xFF6B4226, 0xFF3A1F0E },
+                new float[]{ 0f, 0.55f, 1f },
+                Shader.TileMode.CLAMP
+        ));
+        canvas.drawCircle(cx, cy, r, base);
+
+        canvas.save();
+        Path clip = new Path();
+        clip.addCircle(cx, cy, r, Path.Direction.CW);
+        canvas.clipPath(clip);
+
+        // Strates géologiques : bandes horizontales légèrement ondulées et animées
+        Paint strata = new Paint(Paint.ANTI_ALIAS_FLAG);
+        strata.setStyle(Paint.Style.FILL);
+
+        float[][] strataData = {
+                // {offset_y, épaisseur, amp, couleur, alpha}
+                { -0.55f, 0.12f, 0.04f, 0xFF5A3018, 140 },
+                { -0.35f, 0.10f, 0.05f, 0xFF9B6B40, 120 },
+                { -0.15f, 0.14f, 0.03f, 0xFF4A2810, 150 },
+                {  0.08f, 0.11f, 0.06f, 0xFFA07850, 110 },
+                {  0.28f, 0.13f, 0.04f, 0xFF3A1808, 140 },
+                {  0.48f, 0.10f, 0.05f, 0xFF7A5030, 120 },
+                };
+
+        for (float[] sd : strataData) {
+            float sy    = cy + sd[0] * r;
+            float sh    = sd[1] * r;
+            float amp   = sd[2] * r;
+            strata.setColor((int) sd[3]);
+            strata.setAlpha((int) sd[4]);
+
+            // Ondulation lente
+            float waveOff = (float) Math.sin(phase * Math.PI * 2 + sd[0] * 3f) * amp;
+
+            Path sp = new Path();
+            sp.moveTo(cx - r, sy + waveOff);
+            sp.cubicTo(cx - r * 0.3f, sy - amp + waveOff,
+                    cx + r * 0.3f, sy + amp + waveOff,
+                    cx + r, sy + waveOff);
+            sp.lineTo(cx + r, sy + sh + waveOff);
+            sp.cubicTo(cx + r * 0.3f, sy + sh + amp + waveOff,
+                    cx - r * 0.3f, sy + sh - amp + waveOff,
+                    cx - r, sy + sh + waveOff);
+            sp.close();
+            canvas.drawPath(sp, strata);
+        }
+
+        // Fissures animées (particules de terre qui "respirent")
+        Paint crack = new Paint(Paint.ANTI_ALIAS_FLAG);
+        crack.setStyle(Paint.Style.STROKE);
+        crack.setColor(Color.parseColor("#1A0800"));
+        crack.setStrokeWidth(r * 0.018f);
+        crack.setAlpha(120);
+
+        float[][] cracks = {
+                { -0.30f, -0.20f, -0.05f,  0.15f },
+                {  0.10f, -0.10f,  0.30f,  0.05f },
+                { -0.10f,  0.30f,  0.15f,  0.50f },
+                {  0.25f,  0.10f,  0.40f,  0.35f },
+        };
+        float crackOsc = (float) Math.sin(phase * Math.PI * 2) * r * 0.015f;
+        for (float[] c : cracks) {
+            canvas.drawLine(
+                    cx + c[0] * r, cy + c[1] * r + crackOsc,
+                    cx + c[2] * r, cy + c[3] * r - crackOsc,
+                    crack);
+        }
+
+        canvas.restore();
+}
+
+    private void drawDarknessBall(Canvas canvas, float cx, float cy, float r) {
+        long t = System.currentTimeMillis();
+
+        canvas.save();
+        canvas.rotate(-ballRotation, cx, cy);
+
+        Paint dark = new Paint(Paint.ANTI_ALIAS_FLAG);
+        dark.setStyle(Paint.Style.FILL);
+        dark.setColor(Color.parseColor("#050505"));
+
+        canvas.drawCircle(cx, cy, r * 0.70f, dark);
+
+        int numBubbles = 45;
+        for (int i = 0; i < numBubbles; i++) {
+            long cycle = 2500 + (i * 419 % 1500);
+            float phase = (float) ((t + i * 811) % cycle) / cycle;
+
+            double angle = (i * Math.PI * 2.0) / numBubbles + Math.sin(phase * Math.PI * 2.0) * 0.3;
+
+            float dist = phase * r * 0.90f;
+            float bubbleR = r * 0.20f + (phase * r * 0.20f);
+
+            if (phase > 0.85f) {
+                float popPhase = (phase - 0.85f) * (1.0f / 0.15f);
+                bubbleR *= (1.0f - popPhase);
+            }
+
+            float px = cx + (float) Math.cos(angle) * dist;
+            float py = cy + (float) Math.sin(angle) * dist;
+
+            canvas.drawCircle(px, py, bubbleR, dark);
+        }
+
+        canvas.restore();
+    }
+
+    private void drawLightBall(Canvas canvas, float cx, float cy, float r) {
+        long t = System.currentTimeMillis();
+        // Pulsation lente pour la respiration de l'orbe
+        float phase = (t % 3000) / 3000f;
+        float pulse = (float) Math.sin(phase * Math.PI * 2) * 0.1f;
+
+        canvas.save();
+        // Contre-rotation pour que les rayons de lumière tournent indépendamment de la balle
+        canvas.rotate(-ballRotation, cx, cy);
+
+        // ── 1. Halo extérieur (très doux, or et blanc) ──
+        Paint halo = new Paint(Paint.ANTI_ALIAS_FLAG);
+        halo.setStyle(Paint.Style.FILL);
+        halo.setShader(new RadialGradient(cx, cy, r * (1.6f + pulse),
+                new int[]{ 0xAAFFFFFF, 0x66FFFFAA, 0x00FFD700 },
+                new float[]{ 0f, 0.4f, 1f },
+                Shader.TileMode.CLAMP));
+        canvas.drawCircle(cx, cy, r * 1.7f, halo);
+
+        // ── 2. Rayons lumineux tournants ──
+        Paint rayPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        rayPaint.setColor(Color.WHITE);
+
+        int numRays = 8;
+        float rotSlow = (t % 12000) / 12000f * 360f; // Rotation horaire lente
+        float rotFast = (t % 7000) / 7000f * 360f;   // Rotation anti-horaire plus rapide
+
+        // Couche de rayons arrière (plus grands, plus transparents, tournent lentement)
+        canvas.save();
+        canvas.rotate(rotSlow, cx, cy);
+        rayPaint.setAlpha(60);
+        for (int i = 0; i < numRays; i++) {
+            canvas.rotate(360f / numRays, cx, cy);
+            Path ray = new Path();
+            ray.moveTo(cx - r * 0.1f, cy);
+            ray.lineTo(cx, cy - r * (1.9f + pulse * 1.5f));
+            ray.lineTo(cx + r * 0.1f, cy);
+            ray.close();
+            canvas.drawPath(ray, rayPaint);
+        }
+        canvas.restore();
+
+        // Couche de rayons avant (plus courts, plus intenses, tournent vite dans l'autre sens)
+        canvas.save();
+        canvas.rotate(-rotFast, cx, cy);
+        rayPaint.setAlpha(110);
+        for (int i = 0; i < numRays; i++) {
+            canvas.rotate(360f / numRays, cx, cy);
+            Path ray = new Path();
+            ray.moveTo(cx - r * 0.05f, cy);
+            ray.lineTo(cx, cy - r * (1.4f - pulse));
+            ray.lineTo(cx + r * 0.05f, cy);
+            ray.close();
+            canvas.drawPath(ray, rayPaint);
+        }
+        canvas.restore();
+
+        // ── 3. Cœur central (Masse d'énergie pure) ──
+        Paint core = new Paint(Paint.ANTI_ALIAS_FLAG);
+        core.setStyle(Paint.Style.FILL);
+        core.setShader(new RadialGradient(cx, cy, r * (0.9f + pulse),
+                new int[]{ 0xFFFFFFFF, 0xFFFFFFDD, 0xAAFFD700 },
+                new float[]{ 0f, 0.65f, 1f },
+                Shader.TileMode.CLAMP));
+        canvas.drawCircle(cx, cy, r * (0.95f + pulse * 0.5f), core);
+
+        // ── 4. Éclat optique central (Lens flare en étoile à 4 branches) ──
+        Paint flare = new Paint(Paint.ANTI_ALIAS_FLAG);
+        flare.setColor(Color.WHITE);
+        flare.setAlpha(220);
+
+        float flareSize = r * 1.1f;
+        Path star = new Path();
+        star.moveTo(cx, cy - flareSize);
+        star.quadTo(cx, cy, cx + flareSize, cy);
+        star.quadTo(cx, cy, cx, cy + flareSize);
+        star.quadTo(cx, cy, cx - flareSize, cy);
+        star.quadTo(cx, cy, cx, cy - flareSize);
+        star.close();
+        canvas.drawPath(star, flare);
+
+        canvas.restore();
+    }
+
+    private void drawAirBall(Canvas canvas, float cx, float cy, float r) {
+        long t = System.currentTimeMillis();
+
+        canvas.save();
+        canvas.rotate(-ballRotation, cx, cy);
+
+        Paint base = new Paint(Paint.ANTI_ALIAS_FLAG);
+        base.setStyle(Paint.Style.FILL);
+        base.setShader(new RadialGradient(cx, cy, r,
+                new int[]{ 0x11FFFFFF, 0x44B2EBF2, 0x8880DEEA },
+                new float[]{ 0f, 0.7f, 1f },
+                Shader.TileMode.CLAMP));
+        canvas.drawCircle(cx, cy, r, base);
+
+        Paint wind = new Paint(Paint.ANTI_ALIAS_FLAG);
+        wind.setStyle(Paint.Style.STROKE);
+        wind.setStrokeCap(Paint.Cap.ROUND);
+
+        int numSwirls = 7;
+        for (int i = 0; i < numSwirls; i++) {
+            float speed = 1200f + i * 400f;
+            float direction = (i % 2 == 0) ? 1f : -1f;
+            float rot = (t % (long)speed) / speed * 360f * direction;
+
+            canvas.save();
+            canvas.rotate(rot + i * 50f, cx, cy);
+
+            float arcR = r * (0.4f + (i * 0.09f));
+            float strokeW = r * (0.03f + (i * 0.01f));
+
+            wind.setStrokeWidth(strokeW);
+            wind.setColor(Color.parseColor("#FFFFFF"));
+            wind.setAlpha(80 + i * 20);
+
+            float startAngle = 0f;
+            float sweepAngle = 100f + (i * 20f);
+
+            RectF oval = new RectF(cx - arcR, cy - arcR, cx + arcR, cy + arcR);
+            canvas.drawArc(oval, startAngle, sweepAngle, false, wind);
+
+            canvas.restore();
+        }
+
+        Paint particle = new Paint(Paint.ANTI_ALIAS_FLAG);
+        particle.setStyle(Paint.Style.FILL);
+        particle.setColor(Color.WHITE);
+
+        for (int i = 0; i < 10; i++) {
+            float pSpeed = 1500f + i * 200f;
+            float pPhase = (t % (long)pSpeed) / pSpeed;
+            float pRot = pPhase * 360f * ((i % 2 == 0) ? 1f : -1f);
+            float pRadius = r * (0.2f + (i * 0.07f));
+
+            float px = cx + (float) Math.cos(Math.toRadians(pRot + i * 36f)) * pRadius;
+            float py = cy + (float) Math.sin(Math.toRadians(pRot + i * 36f)) * pRadius;
+
+            particle.setAlpha((int)(255 * Math.sin(pPhase * Math.PI)));
+            canvas.drawCircle(px, py, r * 0.05f, particle);
+        }
+
+        canvas.restore();
+    }
+
+    private void drawLightningBall(Canvas canvas, float cx, float cy, float r) {
+        long t = System.currentTimeMillis();
+        long frame = t / 40;
+
+        canvas.save();
+        canvas.rotate(-ballRotation, cx, cy);
+
+        Path[] bolts = new Path[2];
+        for (int b = 0; b < 2; b++) {
+            java.util.Random rand = new java.util.Random(frame + b * 999L);
+            Path path = new Path();
+            int pts = 26;
+            for (int i = 0; i <= pts; i++) {
+                double angle = i * 2.0 * Math.PI / pts;
+                float radBase = r * 0.85f;
+                float spike = (rand.nextFloat() - 0.4f) * r * 0.55f;
+                if (spike < 0) spike *= 0.25f;
+
+                float rad = radBase + spike;
+                float px = cx + (float) Math.cos(angle) * rad;
+                float py = cy + (float) Math.sin(angle) * rad;
+
+                if (i == 0) path.moveTo(px, py);
+                else path.lineTo(px, py);
+            }
+            path.close();
+            bolts[b] = path;
+        }
+
+        Paint boltGlow = new Paint(Paint.ANTI_ALIAS_FLAG);
+        boltGlow.setStyle(Paint.Style.STROKE);
+        boltGlow.setStrokeJoin(Paint.Join.MITER);
+
+        Paint boltCore = new Paint(Paint.ANTI_ALIAS_FLAG);
+        boltCore.setStyle(Paint.Style.STROKE);
+        boltCore.setStrokeJoin(Paint.Join.MITER);
+        boltCore.setColor(Color.WHITE);
+
+        boltGlow.setMaskFilter(new BlurMaskFilter(r * 0.12f, BlurMaskFilter.Blur.NORMAL));
+        boltGlow.setStrokeWidth(r * 0.09f);
+        boltGlow.setColor(Color.parseColor("#00BFFF"));
+
+        for (int b = 0; b < 1; b++) {
+            canvas.drawPath(bolts[b], boltGlow);
+            boltCore.setStrokeWidth(r * 0.012f);
+            canvas.drawPath(bolts[b], boltCore);
+        }
+
+        boltGlow.setMaskFilter(null);
+
+        Paint base = new Paint(Paint.ANTI_ALIAS_FLAG);
+        base.setStyle(Paint.Style.FILL);
+        base.setShader(new RadialGradient(cx, cy, r * 0.95f,
+                new int[]{ 0xFFFFFFFF, 0xFFFFF176, 0xFFFF9800 },
+                new float[]{ 0f, 0.6f, 1f },
+                Shader.TileMode.CLAMP));
+        canvas.drawCircle(cx, cy, r * 0.85f, base);
+
+        boltGlow.setMaskFilter(new BlurMaskFilter(r * 0.08f, BlurMaskFilter.Blur.NORMAL));
+        for (int b = 1; b < 2; b++) {
+            boltGlow.setStrokeWidth(r * 0.07f);
+            boltGlow.setColor(Color.parseColor("#00BFFF"));
+            canvas.drawPath(bolts[b], boltGlow);
+
+            boltGlow.setStrokeWidth(r * 0.025f);
+            boltGlow.setColor(Color.parseColor("#80D8FF"));
+            canvas.drawPath(bolts[b], boltGlow);
+
+            boltCore.setStrokeWidth(r * 0.012f);
+            canvas.drawPath(bolts[b], boltCore);
+        }
+
+        boltGlow.setMaskFilter(null);
+
+        canvas.restore();
+    }
+
+    private void drawPlasmaBall(Canvas canvas, float cx, float cy, float r) {
+        long t = System.currentTimeMillis();
+        // L'astuce du modulo évite la perte de précision du float et débloque l'animation
+        float time = (t % 100000) / 400f; // Vitesse de l'animation (plus le diviseur est petit, plus c'est rapide)
+
+        canvas.save();
+        // Contre-rotation : le plasma ignore la rotation physique de la balle
+        canvas.rotate(-ballRotation, cx, cy);
+
+        // 1. Base : le "verre" de la sphère, sombre et teinté de violet profond
+        Paint base = new Paint(Paint.ANTI_ALIAS_FLAG);
+        base.setStyle(Paint.Style.FILL);
+        base.setShader(new RadialGradient(cx, cy, r,
+                new int[]{ 0xDD1A0033, 0xEE110022, 0xFF4A0080 },
+                new float[]{ 0f, 0.7f, 1f },
+                Shader.TileMode.CLAMP));
+        canvas.drawCircle(cx, cy, r, base);
+
+        // NOUVEAU : Effet bordure en verre (outline transparent épais)
+        Paint glassEdge = new Paint(Paint.ANTI_ALIAS_FLAG);
+        glassEdge.setStyle(Paint.Style.STROKE);
+        glassEdge.setStrokeWidth(r * 0.08f); // Épaisseur de la paroi de verre
+        glassEdge.setShader(new RadialGradient(cx, cy, r,
+                new int[]{ 0x00FFFFFF, 0x11FFFFFF, 0x66FFFFFF },
+                new float[]{ 0.7f, 0.9f, 1f },
+                Shader.TileMode.CLAMP));
+        canvas.drawCircle(cx, cy, r * 0.96f, glassEdge);
+
+        // 2. Préparation des pinceaux pour le plasma (Halo externe flou + Cœur blanc net)
+        Paint plasmaGlow = new Paint(Paint.ANTI_ALIAS_FLAG);
+        plasmaGlow.setStyle(Paint.Style.STROKE);
+        plasmaGlow.setStrokeCap(Paint.Cap.ROUND);
+        plasmaGlow.setMaskFilter(new BlurMaskFilter(r * 0.15f, BlurMaskFilter.Blur.NORMAL));
+
+        Paint plasmaCore = new Paint(Paint.ANTI_ALIAS_FLAG);
+        plasmaCore.setStyle(Paint.Style.STROKE);
+        plasmaCore.setStrokeCap(Paint.Cap.ROUND);
+        plasmaCore.setColor(Color.WHITE);
+
+        // 3. Dessin des filaments fluides
+        int numFilaments = 7;
+        for (int i = 0; i < numFilaments; i++) {
+            float phaseOffset = i * 2.5f;
+
+            // L'angle de base tourne rapidement
+            float baseAngle = (time * (0.8f + (i * 0.15f)) + phaseOffset) % (float)(Math.PI * 2);
+
+            // Le bout du filament cherche le bord nerveusement
+            float angleWander = (float)Math.sin(time * 3f + phaseOffset) * 0.8f;
+            float endAngle = baseAngle + angleWander;
+
+            float endX = cx + (float)Math.cos(endAngle) * r * 0.95f;
+            float endY = cy + (float)Math.sin(endAngle) * r * 0.95f;
+
+            // Le point de contrôle crée la courbure très organique
+            float cpDist = r * (0.2f + 0.6f * (float)Math.abs(Math.sin(time * 5f + phaseOffset)));
+            float cpAngle = baseAngle - angleWander * 1.5f;
+            float cpX = cx + (float)Math.cos(cpAngle) * cpDist;
+            float cpY = cy + (float)Math.sin(cpAngle) * cpDist;
+
+            Path p = new Path();
+            p.moveTo(cx, cy); // Départ depuis l'électrode centrale
+            p.quadTo(cpX, cpY, endX, endY); // Courbure
+
+            // Couleurs néon
+            int color = (i % 3 == 0) ? 0xFF00E5FF : ((i % 3 == 1) ? 0xFFE040FB : 0xFF7C4DFF);
+
+            plasmaGlow.setColor(color);
+            plasmaGlow.setStyle(Paint.Style.STROKE);
+            plasmaGlow.setStrokeWidth(r * 0.1f);
+            canvas.drawPath(p, plasmaGlow);
+
+            plasmaCore.setStrokeWidth(r * 0.018f);
+            canvas.drawPath(p, plasmaCore);
+
+            // Le "pied" du plasma qui s'écrase sur le verre
+            plasmaGlow.setStyle(Paint.Style.FILL);
+            canvas.drawCircle(endX, endY, r * 0.06f, plasmaGlow);
+            canvas.drawCircle(endX, endY, r * 0.025f, plasmaCore);
+        }
+
+        // 4. L'électrode centrale (Cœur lumineux au milieu)
+        Paint coreBase = new Paint(Paint.ANTI_ALIAS_FLAG);
+        coreBase.setStyle(Paint.Style.FILL);
+        coreBase.setShader(new RadialGradient(cx, cy, r * 0.18f,
+                new int[]{ 0xFFFFFFFF, 0xFFE040FB, 0x00E040FB },
+                new float[]{ 0f, 0.4f, 1f },
+                Shader.TileMode.CLAMP));
+        canvas.drawCircle(cx, cy, r * 0.18f, coreBase);
+
+        // 5. Reflet du verre extérieur
+        Paint glassReflect = new Paint(Paint.ANTI_ALIAS_FLAG);
+        glassReflect.setStyle(Paint.Style.FILL);
+        glassReflect.setShader(new RadialGradient(cx - r * 0.3f, cy - r * 0.3f, r * 0.8f,
+                new int[]{ 0x55FFFFFF, 0x00FFFFFF },
+                new float[]{ 0f, 1f },
+                Shader.TileMode.CLAMP));
+        canvas.drawCircle(cx, cy, r, glassReflect);
+
+        canvas.restore();
+    }
+
+    private void drawLavaBall(Canvas canvas, float cx, float cy, float r) {
+        long t = System.currentTimeMillis();
+        float time = (t % 100000) / 1000f;
+
+        canvas.save();
+        canvas.rotate(-ballRotation, cx, cy);
+
+        float speed = (float) Math.hypot(ballVelocityX, ballVelocityY);
+        float stretch = Math.min(0.5f, speed / 50f);
+        float moveAngle = (float) Math.atan2(ballVelocityY, ballVelocityX);
+        float cosM = (float) Math.cos(moveAngle);
+        float sinM = (float) Math.sin(moveAngle);
+
+        Path magmaEdge = new Path();
+        int pts = 120;
+        for (int i = 0; i <= pts; i++) {
+            double angle = i * 2.0 * Math.PI / pts;
+
+            float w1 = (float) Math.sin(angle * 3.0 + time * 1.5f) * r * 0.04f;
+            float w2 = (float) Math.cos(angle * 4.0 - time * 1.2f) * r * 0.03f;
+            float w3 = (float) Math.sin(angle * 2.0 + time * 0.8f) * r * 0.05f;
+
+            float rad = r + w1 + w2 + w3;
+
+            float localAngle = (float) (angle - moveAngle);
+            float lx = (float) Math.cos(localAngle) * rad;
+            float ly = (float) Math.sin(localAngle) * rad;
+
+            if (lx < 0) {
+                float normX = lx / r;
+                float tailFactor = normX * normX;
+                lx -= stretch * r * tailFactor;
+                ly *= (1.0f - stretch * 0.2f * tailFactor);
+            }
+
+            float px = cx + lx * cosM - ly * sinM;
+            float py = cy + lx * sinM + ly * cosM;
+
+            if (i == 0) magmaEdge.moveTo(px, py);
+            else        magmaEdge.lineTo(px, py);
+        }
+        magmaEdge.close();
+
+        Paint body = new Paint(Paint.ANTI_ALIAS_FLAG);
+        body.setStyle(Paint.Style.FILL);
+        body.setShader(new RadialGradient(cx, cy, r * 1.1f,
+                new int[]{ 0xFFFFFF00, 0xFFFF6600, 0xFF990000, 0xFF330000 },
+                new float[]{ 0f, 0.4f, 0.8f, 1f },
+                Shader.TileMode.CLAMP));
+        canvas.drawPath(magmaEdge, body);
+
+        canvas.save();
+        canvas.clipPath(magmaEdge);
+
+        Paint crust = new Paint(Paint.ANTI_ALIAS_FLAG);
+        crust.setStyle(Paint.Style.FILL);
+        crust.setColor(Color.parseColor("#1A0D00"));
+        crust.setAlpha(200);
+
+        int numPlates = 6;
+        for (int i = 0; i < numPlates; i++) {
+            float plateAngle = (time * (0.2f + i * 0.05f) + i * (float)Math.PI * 2f / numPlates) % (float)(Math.PI * 2);
+            float plateDist = r * 0.5f + (float)Math.sin(time + i) * r * 0.2f;
+            float px = cx + (float)Math.cos(plateAngle) * plateDist;
+            float py = cy + (float)Math.sin(plateAngle) * plateDist;
+            float pr = r * (0.2f + (i % 3) * 0.1f);
+
+            Path rock = new Path();
+            for (int j = 0; j < 6; j++) {
+                float a = j * (float)Math.PI * 2f / 6f;
+                float radP = pr * (0.7f + 0.3f * (float)Math.abs(Math.sin(a * 2 + i)));
+                float rpx = px + (float)Math.cos(a) * radP;
+                float rpy = py + (float)Math.sin(a) * radP;
+                if (j == 0) rock.moveTo(rpx, rpy);
+                else rock.lineTo(rpx, rpy);
+            }
+            rock.close();
+            crust.setMaskFilter(new BlurMaskFilter(r * 0.05f, BlurMaskFilter.Blur.SOLID));
+            canvas.drawPath(rock, crust);
+        }
+        crust.setMaskFilter(null);
+
+        Paint bubble = new Paint(Paint.ANTI_ALIAS_FLAG);
+        bubble.setStyle(Paint.Style.FILL);
+        for (int i = 0; i < 5; i++) {
+            float bPhase = ((time * 0.5f) + i * 0.2f) % 1.0f;
+            float bAngle = i * 1.2f + (float)Math.sin(time + i);
+            float bDist = bPhase * r * 0.85f;
+            float bx = cx + (float)Math.cos(bAngle) * bDist;
+            float by = cy + (float)Math.sin(bAngle) * bDist;
+            float br = r * 0.18f * (float)Math.sin(bPhase * Math.PI);
+
+            bubble.setShader(new RadialGradient(bx, by, br + 0.01f,
+                    new int[]{0xFFFFFFFF, 0xFFFFFF00, 0x00FF6600},
+                    new float[]{0f, 0.4f, 1f}, Shader.TileMode.CLAMP));
+            canvas.drawCircle(bx, by, br, bubble);
+        }
+
+        canvas.restore();
+
+        Paint border = new Paint(Paint.ANTI_ALIAS_FLAG);
+        border.setStyle(Paint.Style.STROKE);
+        border.setColor(Color.parseColor("#4D0000"));
+        border.setStrokeWidth(r * 0.08f);
+        border.setMaskFilter(new BlurMaskFilter(r * 0.04f, BlurMaskFilter.Blur.NORMAL));
+        canvas.drawPath(magmaEdge, border);
+
+        canvas.restore();
     }
 
     private void drawWarpPortal(Canvas canvas, Paint wp, float cx, float cy, boolean flipped) {

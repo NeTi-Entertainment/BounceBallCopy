@@ -78,13 +78,6 @@ public class CosmeticsPage {
             {"ball_damascus",  "Damas",            "#4A4A4A", 1, 26, "metal",  "Metal"},
             {"ball_meteorite", "Météorite",        "#7A7060", 1, 24, "metal",  "Metal"},
 
-            // ── ELEMENTAL ──────────────────────────────────────
-            {"ball_emerald",  "Balle Émeraude",   "#43A047", 450,  15, "elemental","Elemental"},
-            {"ball_sapphire", "Balle Saphir",     "#1E88E5", 450,  15, "elemental","Elemental"},
-            {"ball_fire",     "Balle Feu",        "#FF5722", 700,  26, "elemental","Elemental"},
-            {"ball_ice",      "Balle Glace",      "#80DEEA", 700,  26, "elemental","Elemental"},
-            {"ball_thunder",  "Balle Foudre",     "#FDD835", 750,  28, "elemental","Elemental"},
-
             // ── SPACE ──────────────────────────────────────────
             {"ball_void",     "Balle Néant",      "#212121", 1,  35, "space",   "Space"},
             {"ball_nebula",   "Balle Nébuleuse",  "#7B1FA2", 1,  28, "space",   "Space"},
@@ -104,6 +97,18 @@ public class CosmeticsPage {
             {"ball_blue_giant",   "Géante Bleue", "#4488FF", 1, 22, "space",    "Space"},
             {"ball_black_hole", "Trou Noir",      "#0A0010", 1, 40, "space",    "Space"},
             {"ball_pulsar", "Pulsar",             "#4488FF", 1, 44, "space",    "Space"},
+
+            // ── ELEMENTAL ──────────────────────────────────────
+            {"ball_elem_fire",  "Feu",   "#FF4400", 1, 18, "elemental", "Élémental"},
+            {"ball_elem_water", "Eau",   "#0088CC", 1, 18, "elemental", "Élémental"},
+            {"ball_elem_earth", "Terre", "#6B4226", 1, 18, "elemental", "Élémental"},
+            {"ball_elem_ice",   "Glace", "#A8D8EA", 1, 18, "elemental", "Élémental"},
+            {"ball_elem_darkness", "Ténèbres", "#050505", 1, 18, "elemental", "Élémental"},
+            {"ball_elem_light", "Lumière", "#FFFFEE", 1, 18, "elemental", "Élémental"},
+            {"ball_elem_air", "Air", "#E0F7FA", 1, 18, "elemental", "Élémental"},
+            {"ball_elem_lightning", "Foudre", "#FFF176", 1, 18, "elemental", "Élémental"},
+            {"ball_elem_plasma", "Plasma", "#E040FB", 1, 18, "elemental", "Élémental"},
+            {"ball_elem_lava", "Lave", "#FF3300", 1, 18, "elemental", "Élémental"},
     };
 
     // ── Données Effets ─────────────────────────────────
