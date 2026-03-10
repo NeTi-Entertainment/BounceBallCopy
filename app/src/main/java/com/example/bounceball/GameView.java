@@ -23,6 +23,7 @@ import android.graphics.LinearGradient;
 import android.graphics.Shader;
 import android.graphics.BlurMaskFilter;
 import android.graphics.CornerPathEffect;
+import android.graphics.Matrix;
 
 public class GameView extends SurfaceView implements SurfaceHolder.Callback, Runnable {
 
@@ -63,6 +64,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
     private String currentBallSkin = "ball_basic";
     private Bitmap gaugeSprite;
+    private final RectF gaugeRect = new RectF();
+    private static final int COLOR_GREY_HUD = 0xFF888888;
     private float gaugeOffsetX = -500f;
     private float statsOffsetY = -250f;
     private boolean hudShouldBeVisible = false;
@@ -70,6 +73,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
     private GamePreferences prefs;
     private UpgradeStats upgrades;
+
+    private BackgroundRenderer bgRenderer;
 
     // ── Power-ups ──────────────────────────────────────
     private final ArrayList<float[]> inkBlobs = new ArrayList<>();
@@ -108,11 +113,64 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private final Paint blobPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint warpPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
+    // ── drawSoccerBall ─────────────────────────────────
+    private final Paint  soccerBasePaint   = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint  soccerPentPaint   = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint  soccerShadowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint  soccerStrokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Path   soccerClipPath    = new Path();
+    private final Path   soccerPentPath    = new Path();
+    private final Matrix soccerBaseMatrix  = new Matrix();
+    private final Matrix soccerShadowMatrix = new Matrix();
+    private final RadialGradient soccerBaseGradient = new RadialGradient(
+            0f, 0f, 1f,
+            new int[]{ 0xFFFFFFFF, 0xFFE8E8E8, 0xFFCCCCCC },
+            new float[]{ 0f, 0.55f, 1f },
+            Shader.TileMode.CLAMP);
+    private final RadialGradient soccerShadowGradient = new RadialGradient(
+            0f, 0f, 1f,
+            new int[]{ 0x00000000, 0x00000000, 0x22000000 },
+            new float[]{ 0f, 0.5f, 1f },
+            Shader.TileMode.CLAMP);
+
+    // ── drawLavaBall ───────────────────────────────────
+    private final Paint  lavaBodyPaint   = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint  lavaCrustPaint  = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint  lavaBubblePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint  lavaBorderPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Path   lavaEdgePath    = new Path();
+    private final Path[] lavaRockPaths   = new Path[]{ new Path(), new Path(), new Path(),
+            new Path(), new Path(), new Path() };
+    private final Matrix lavaBodyMatrix  = new Matrix();
+    private final Matrix[] lavaBubbleMatrices = new Matrix[]{
+            new Matrix(), new Matrix(), new Matrix(), new Matrix(), new Matrix() };
+    private final RadialGradient lavaBodyGradient = new RadialGradient(
+            0f, 0f, 1f,
+            new int[]{ 0xFFFFFF00, 0xFFFF6600, 0xFF990000, 0xFF330000 },
+            new float[]{ 0f, 0.4f, 0.8f, 1f },
+            Shader.TileMode.CLAMP);
+    private final RadialGradient[] lavaBubbleGradients = new RadialGradient[]{
+            new RadialGradient(0f, 0f, 1f, new int[]{0xFFFFFFFF, 0xFFFFFF00, 0x00FF6600}, new float[]{0f, 0.4f, 1f}, Shader.TileMode.CLAMP),
+            new RadialGradient(0f, 0f, 1f, new int[]{0xFFFFFFFF, 0xFFFFFF00, 0x00FF6600}, new float[]{0f, 0.4f, 1f}, Shader.TileMode.CLAMP),
+            new RadialGradient(0f, 0f, 1f, new int[]{0xFFFFFFFF, 0xFFFFFF00, 0x00FF6600}, new float[]{0f, 0.4f, 1f}, Shader.TileMode.CLAMP),
+            new RadialGradient(0f, 0f, 1f, new int[]{0xFFFFFFFF, 0xFFFFFF00, 0x00FF6600}, new float[]{0f, 0.4f, 1f}, Shader.TileMode.CLAMP),
+            new RadialGradient(0f, 0f, 1f, new int[]{0xFFFFFFFF, 0xFFFFFF00, 0x00FF6600}, new float[]{0f, 0.4f, 1f}, Shader.TileMode.CLAMP),
+    };
+    // BlurMaskFilter : ballRadius est final (48f), r * 0.05f et r * 0.04f sont des constantes
+    private final BlurMaskFilter lavaCrustBlur  = new BlurMaskFilter(ballRadius * 0.05f, BlurMaskFilter.Blur.SOLID);
+    private final BlurMaskFilter lavaBorderBlur = new BlurMaskFilter(ballRadius * 0.04f, BlurMaskFilter.Blur.NORMAL);
+
     private float currentRunGold = 0f;
 
     // ──────────────────────────────────────────────────
 
     public void setHudVisible(boolean visible) { hudShouldBeVisible = visible; }
+
+    public void loadBgSkin() {
+        if (bgRenderer == null) return;
+        String bgId = prefs.getRaw().getString("equipped_bg", "bg_default");
+        bgRenderer.loadBgSkin(bgId);
+    }
 
     public interface GameStateListener {
         void onGameStarted();
@@ -255,13 +313,19 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     public void surfaceCreated(@NonNull SurfaceHolder holder) {
         screenWidth  = getWidth();
         screenHeight = getHeight();
+        bgRenderer = new BackgroundRenderer(getContext(), screenWidth, screenHeight);
+        loadBgSkin();
         resetGame();
         isRunning  = true;
         gameThread = new Thread(this);
         gameThread.start();
     }
 
-    @Override public void surfaceChanged(@NonNull SurfaceHolder holder, int f, int w, int h) {}
+    @Override public void surfaceChanged(@NonNull SurfaceHolder holder, int f, int w, int h) {
+        screenWidth  = w;
+        screenHeight = h;
+        bgRenderer.onScreenSizeChanged(w, h);
+    }
 
     @Override
     public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
@@ -272,7 +336,19 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         }
     }
 
-    @Override public void run() { while (isRunning) { update(); draw(); sleep(); } }
+    @Override public void run() {
+        while (isRunning) {
+            long frameStart = System.currentTimeMillis();
+            update();
+            draw();
+            long elapsed = System.currentTimeMillis() - frameStart;
+            long sleepMs = 16 - elapsed;
+            if (sleepMs > 0) {
+                try { Thread.sleep(sleepMs); }
+                catch (InterruptedException e) { Log.e("GameView", "sleep", e); }
+            }
+        }
+    }
 
     // ══════════════════════════════════════════════════
     // UPDATE
@@ -326,6 +402,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             for (float[] w : warps)    w[1] += shift;
             totalHeightMeters += shift / 100f;
             currentRunGold += shift / 100f * upgrades.goldMultiplier;
+            if (bgRenderer != null) bgRenderer.updateParallax(shift);
         }
 
         // Rebond trampoline
@@ -481,7 +558,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private void draw() {
         if (!surfaceHolder.getSurface().isValid()) return;
         Canvas canvas = surfaceHolder.lockCanvas();
-        canvas.drawColor(Color.WHITE);
+        if (canvas == null) return;
+        if (bgRenderer != null) bgRenderer.draw(canvas);
+        else canvas.drawColor(Color.WHITE);
 
         // Billes d'encre
         blobPaint.setStyle(Paint.Style.FILL);
@@ -554,7 +633,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         paint.setColor(Color.BLACK);
         canvas.drawRoundRect(inkLeft, inkMaxTop, inkRight, inkBottom2, inkWidth / 2f, inkWidth / 2f, paint);
         canvas.restore();
-        canvas.drawBitmap(gaugeSprite, null, new RectF(gaugeLeft, gaugeTop, gaugeRight, gaugeBottom), paint);
+        gaugeRect.set(gaugeLeft, gaugeTop, gaugeRight, gaugeBottom);
+        canvas.drawBitmap(gaugeSprite, null, gaugeRect, paint);
         canvas.restore();
 
         // HUD stats
@@ -565,7 +645,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         paint.setTextAlign(Paint.Align.CENTER);
         canvas.drawText(String.format(Locale.getDefault(), "%.1fm", totalHeightMeters), screenWidth / 2f, 100, paint);
         paint.setTextSize(36);
-        paint.setColor(Color.parseColor("#888888"));
+        paint.setColor(COLOR_GREY_HUD);
         canvas.drawText(String.format(Locale.getDefault(), "Record: %.1fm", prefs.getMaxHeight()), screenWidth / 2f, 150, paint);
         paint.setColor(Color.BLACK);
         paint.setTextSize(40);
@@ -787,79 +867,64 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     }
 
     private void drawSoccerBall(Canvas canvas, float cx, float cy, float r) {
-        // ── Fond avec gradient radial (lumière en haut-gauche) ──
         float lightX = cx - r * 0.25f;
         float lightY = cy - r * 0.25f;
-        Paint base = new Paint(Paint.ANTI_ALIAS_FLAG);
-        base.setStyle(Paint.Style.FILL);
-        base.setShader(new RadialGradient(
-                lightX, lightY, r * 1.2f,
-                new int[]{ 0xFFFFFFFF, 0xFFE8E8E8, 0xFFCCCCCC },
-                new float[]{ 0f, 0.55f, 1f },
-                Shader.TileMode.CLAMP
-        ));
-        canvas.drawCircle(cx, cy, r, base);
+
+        // ── Fond avec gradient radial ──
+        soccerBaseMatrix.setScale(r * 1.2f, r * 1.2f);
+        soccerBaseMatrix.postTranslate(lightX, lightY);
+        soccerBaseGradient.setLocalMatrix(soccerBaseMatrix);
+        soccerBasePaint.setStyle(Paint.Style.FILL);
+        soccerBasePaint.setShader(soccerBaseGradient);
+        canvas.drawCircle(cx, cy, r, soccerBasePaint);
 
         canvas.save();
-        Path clip = new Path();
-        clip.addCircle(cx, cy, r, Path.Direction.CW);
-        canvas.clipPath(clip);
+        soccerClipPath.reset();
+        soccerClipPath.addCircle(cx, cy, r, Path.Direction.CW);
+        canvas.clipPath(soccerClipPath);
 
         // ── Pentagone central ──
-        float pr = r * 0.28f;
-        Paint pent = new Paint(Paint.ANTI_ALIAS_FLAG);
-        pent.setStyle(Paint.Style.FILL);
-        // Le pentagone central est légèrement plus clair (il est "devant" sur la sphère)
-        pent.setColor(Color.parseColor("#222222"));
-        canvas.drawPath(regularPentagon(cx, cy, pr, -(float)Math.PI / 2), pent);
+        soccerPentPaint.setStyle(Paint.Style.FILL);
+        soccerPentPaint.setColor(Color.parseColor("#222222"));
+        fillPentagonPath(soccerPentPath, cx, cy, r * 0.28f, -(float)Math.PI / 2);
+        canvas.drawPath(soccerPentPath, soccerPentPaint);
 
         // ── 5 pentagones externes ──
-        // Chacun rétrécit proportionnellement à son éloignement du point lumineux
         float ringDist = r * 0.74f;
         for (int i = 0; i < 5; i++) {
-            float angle    = -(float)Math.PI / 2 + (float)(Math.PI * 2 * i / 5);
-            float px       = cx + (float)Math.cos(angle) * ringDist;
-            float py       = cy + (float)Math.sin(angle) * ringDist;
+            float angle = -(float)Math.PI / 2 + (float)(Math.PI * 2 * i / 5);
+            float px    = cx + (float)Math.cos(angle) * ringDist;
+            float py    = cy + (float)Math.sin(angle) * ringDist;
 
-            // Distance normalisée au point lumineux → facteur d'échelle (0.82 à 1.0)
             float dxL = px - lightX;
             float dyL = py - lightY;
             float distToLight = (float)Math.sqrt(dxL * dxL + dyL * dyL);
             float scale = 1.0f - 0.18f * Math.min(1f, distToLight / (2f * r));
-
             float outerPr = r * 0.26f * scale;
 
-            // Teinte plus sombre pour les pentagones côté ombre
             float brightness = 1f - 0.25f * Math.min(1f, distToLight / (2f * r));
-            int grey = (int)(0x22 * brightness); // de #222 à #191919
-            pent.setColor(Color.rgb(grey, grey, grey));
+            int grey = (int)(0x22 * brightness);
+            soccerPentPaint.setColor(Color.rgb(grey, grey, grey));
 
-            float startAngle = angle + (float)Math.PI;
-            canvas.drawPath(regularPentagon(px, py, outerPr, startAngle), pent);
+            fillPentagonPath(soccerPentPath, px, py, outerPr, angle + (float)Math.PI);
+            canvas.drawPath(soccerPentPath, soccerPentPaint);
         }
 
-        // ── Ombre interne en bas-droite (donne le volume) ──
-        Paint shadow = new Paint(Paint.ANTI_ALIAS_FLAG);
-        shadow.setStyle(Paint.Style.FILL);
-        shadow.setShader(new RadialGradient(
-                cx + r * 0.35f, cy + r * 0.35f, r * 0.9f,
-                new int[]{ 0x00000000, 0x00000000, 0x22000000 },
-                new float[]{ 0f, 0.5f, 1f },
-                Shader.TileMode.CLAMP
-        ));
-        canvas.drawCircle(cx, cy, r, shadow);
+        // ── Ombre interne ──
+        soccerShadowMatrix.setScale(r * 0.9f, r * 0.9f);
+        soccerShadowMatrix.postTranslate(cx + r * 0.35f, cy + r * 0.35f);
+        soccerShadowGradient.setLocalMatrix(soccerShadowMatrix);
+        soccerShadowPaint.setStyle(Paint.Style.FILL);
+        soccerShadowPaint.setShader(soccerShadowGradient);
+        canvas.drawCircle(cx, cy, r, soccerShadowPaint);
 
         canvas.restore();
 
         // ── Contour ──
-        Paint stroke = new Paint(Paint.ANTI_ALIAS_FLAG);
-        stroke.setStyle(Paint.Style.STROKE);
-        stroke.setColor(Color.parseColor("#BBBBBB"));
-        stroke.setStrokeWidth(r * 0.025f);
-        canvas.drawCircle(cx, cy, r * 0.988f, stroke);
-
-        // ── Reflet ──
-        //canvas.drawCircle(cx - r * 0.3f, cy - r * 0.3f, r * 0.35f, ballShinePaint);
+        soccerStrokePaint.setStyle(Paint.Style.STROKE);
+        soccerStrokePaint.setColor(Color.parseColor("#BBBBBB"));
+        soccerStrokePaint.setStrokeWidth(r * 0.025f);
+        canvas.drawCircle(cx, cy, r * 0.988f, soccerStrokePaint);
     }
 
     private void drawPetanque(Canvas canvas, float cx, float cy, float r) {
@@ -2429,8 +2494,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         base.setShader(new RadialGradient(
                 cx - r * 0.2f, cy - r * 0.2f, r * 1.1f,
                 new int[]{ 0xFFEDD9A3, 0xFFC8A96E, 0xFF9A7840 },
-                        new float[]{ 0f, 0.55f, 1f },
-                        Shader.TileMode.CLAMP
+                new float[]{ 0f, 0.55f, 1f },
+                Shader.TileMode.CLAMP
         ));
         canvas.drawCircle(cx, cy, r, base);
 
@@ -2492,7 +2557,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                     cx + rx, cy + ry + ringOffY), ringBack);
             canvas.restore();
         }
-}
+    }
 
     private void drawUranus(Canvas canvas, float cx, float cy, float r) {
         // Anneau arrière (fin, sombre, incliné) — dessiné AVANT la planète
@@ -3347,7 +3412,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 {  0.08f, 0.11f, 0.06f, 0xFFA07850, 110 },
                 {  0.28f, 0.13f, 0.04f, 0xFF3A1808, 140 },
                 {  0.48f, 0.10f, 0.05f, 0xFF7A5030, 120 },
-                };
+        };
 
         for (float[] sd : strataData) {
             float sy    = cy + sd[0] * r;
@@ -3394,7 +3459,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         }
 
         canvas.restore();
-}
+    }
 
     private void drawDarknessBall(Canvas canvas, float cx, float cy, float r) {
         long t = System.currentTimeMillis();
@@ -3771,7 +3836,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         float cosM = (float) Math.cos(moveAngle);
         float sinM = (float) Math.sin(moveAngle);
 
-        Path magmaEdge = new Path();
+        // ── Contour magma ondulé ──
+        lavaEdgePath.reset();
         int pts = 120;
         for (int i = 0; i <= pts; i++) {
             double angle = i * 2.0 * Math.PI / pts;
@@ -3779,7 +3845,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             float w1 = (float) Math.sin(angle * 3.0 + time * 1.5f) * r * 0.04f;
             float w2 = (float) Math.cos(angle * 4.0 - time * 1.2f) * r * 0.03f;
             float w3 = (float) Math.sin(angle * 2.0 + time * 0.8f) * r * 0.05f;
-
             float rad = r + w1 + w2 + w3;
 
             float localAngle = (float) (angle - moveAngle);
@@ -3796,74 +3861,77 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             float px = cx + lx * cosM - ly * sinM;
             float py = cy + lx * sinM + ly * cosM;
 
-            if (i == 0) magmaEdge.moveTo(px, py);
-            else        magmaEdge.lineTo(px, py);
+            if (i == 0) lavaEdgePath.moveTo(px, py);
+            else        lavaEdgePath.lineTo(px, py);
         }
-        magmaEdge.close();
+        lavaEdgePath.close();
 
-        Paint body = new Paint(Paint.ANTI_ALIAS_FLAG);
-        body.setStyle(Paint.Style.FILL);
-        body.setShader(new RadialGradient(cx, cy, r * 1.1f,
-                new int[]{ 0xFFFFFF00, 0xFFFF6600, 0xFF990000, 0xFF330000 },
-                new float[]{ 0f, 0.4f, 0.8f, 1f },
-                Shader.TileMode.CLAMP));
-        canvas.drawPath(magmaEdge, body);
+        // ── Corps ──
+        lavaBodyMatrix.setScale(r * 1.1f, r * 1.1f);
+        lavaBodyMatrix.postTranslate(cx, cy);
+        lavaBodyGradient.setLocalMatrix(lavaBodyMatrix);
+        lavaBodyPaint.setStyle(Paint.Style.FILL);
+        lavaBodyPaint.setShader(lavaBodyGradient);
+        canvas.drawPath(lavaEdgePath, lavaBodyPaint);
 
         canvas.save();
-        canvas.clipPath(magmaEdge);
+        canvas.clipPath(lavaEdgePath);
 
-        Paint crust = new Paint(Paint.ANTI_ALIAS_FLAG);
-        crust.setStyle(Paint.Style.FILL);
-        crust.setColor(Color.parseColor("#1A0D00"));
-        crust.setAlpha(200);
+        // ── Plaques de croûte ──
+        lavaCrustPaint.setStyle(Paint.Style.FILL);
+        lavaCrustPaint.setColor(Color.parseColor("#1A0D00"));
+        lavaCrustPaint.setAlpha(200);
+        lavaCrustPaint.setMaskFilter(lavaCrustBlur);
 
         int numPlates = 6;
         for (int i = 0; i < numPlates; i++) {
             float plateAngle = (time * (0.2f + i * 0.05f) + i * (float)Math.PI * 2f / numPlates) % (float)(Math.PI * 2);
-            float plateDist = r * 0.5f + (float)Math.sin(time + i) * r * 0.2f;
+            float plateDist  = r * 0.5f + (float)Math.sin(time + i) * r * 0.2f;
             float px = cx + (float)Math.cos(plateAngle) * plateDist;
             float py = cy + (float)Math.sin(plateAngle) * plateDist;
             float pr = r * (0.2f + (i % 3) * 0.1f);
 
-            Path rock = new Path();
+            Path rock = lavaRockPaths[i];
+            rock.reset();
             for (int j = 0; j < 6; j++) {
-                float a = j * (float)Math.PI * 2f / 6f;
+                float a    = j * (float)Math.PI * 2f / 6f;
                 float radP = pr * (0.7f + 0.3f * (float)Math.abs(Math.sin(a * 2 + i)));
-                float rpx = px + (float)Math.cos(a) * radP;
-                float rpy = py + (float)Math.sin(a) * radP;
+                float rpx  = px + (float)Math.cos(a) * radP;
+                float rpy  = py + (float)Math.sin(a) * radP;
                 if (j == 0) rock.moveTo(rpx, rpy);
-                else rock.lineTo(rpx, rpy);
+                else        rock.lineTo(rpx, rpy);
             }
             rock.close();
-            crust.setMaskFilter(new BlurMaskFilter(r * 0.05f, BlurMaskFilter.Blur.SOLID));
-            canvas.drawPath(rock, crust);
+            canvas.drawPath(rock, lavaCrustPaint);
         }
-        crust.setMaskFilter(null);
+        lavaCrustPaint.setMaskFilter(null);
 
-        Paint bubble = new Paint(Paint.ANTI_ALIAS_FLAG);
-        bubble.setStyle(Paint.Style.FILL);
+        // ── Bulles ──
+        lavaBubblePaint.setStyle(Paint.Style.FILL);
         for (int i = 0; i < 5; i++) {
             float bPhase = ((time * 0.5f) + i * 0.2f) % 1.0f;
             float bAngle = i * 1.2f + (float)Math.sin(time + i);
-            float bDist = bPhase * r * 0.85f;
+            float bDist  = bPhase * r * 0.85f;
             float bx = cx + (float)Math.cos(bAngle) * bDist;
             float by = cy + (float)Math.sin(bAngle) * bDist;
             float br = r * 0.18f * (float)Math.sin(bPhase * Math.PI);
+            if (br < 0.5f) continue;
 
-            bubble.setShader(new RadialGradient(bx, by, br + 0.01f,
-                    new int[]{0xFFFFFFFF, 0xFFFFFF00, 0x00FF6600},
-                    new float[]{0f, 0.4f, 1f}, Shader.TileMode.CLAMP));
-            canvas.drawCircle(bx, by, br, bubble);
+            lavaBubbleMatrices[i].setScale(br, br);
+            lavaBubbleMatrices[i].postTranslate(bx, by);
+            lavaBubbleGradients[i].setLocalMatrix(lavaBubbleMatrices[i]);
+            lavaBubblePaint.setShader(lavaBubbleGradients[i]);
+            canvas.drawCircle(bx, by, br, lavaBubblePaint);
         }
 
         canvas.restore();
 
-        Paint border = new Paint(Paint.ANTI_ALIAS_FLAG);
-        border.setStyle(Paint.Style.STROKE);
-        border.setColor(Color.parseColor("#4D0000"));
-        border.setStrokeWidth(r * 0.08f);
-        border.setMaskFilter(new BlurMaskFilter(r * 0.04f, BlurMaskFilter.Blur.NORMAL));
-        canvas.drawPath(magmaEdge, border);
+        // ── Bordure ──
+        lavaBorderPaint.setStyle(Paint.Style.STROKE);
+        lavaBorderPaint.setColor(Color.parseColor("#4D0000"));
+        lavaBorderPaint.setStrokeWidth(r * 0.08f);
+        lavaBorderPaint.setMaskFilter(lavaBorderBlur);
+        canvas.drawPath(lavaEdgePath, lavaBorderPaint);
 
         canvas.restore();
     }
@@ -3884,10 +3952,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         canvas.restore();
     }
 
-    private void sleep() {
-        try { Thread.sleep(16); }
-        catch (InterruptedException e) { Log.e("GameView", "sleep", e); }
-    }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
@@ -3973,6 +4037,18 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         }
         path.close();
         return path;
+    }
+
+    private void fillPentagonPath(Path path, float cx, float cy, float r, float startAngle) {
+        path.reset();
+        for (int i = 0; i < 5; i++) {
+            double a = startAngle + Math.PI * 2 * i / 5;
+            float x = cx + (float)Math.cos(a) * r;
+            float y = cy + (float)Math.sin(a) * r;
+            if (i == 0) path.moveTo(x, y);
+            else        path.lineTo(x, y);
+        }
+        path.close();
     }
 
     private Path regularPentagon(float cx, float cy, float r, float startAngle) {
