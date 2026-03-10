@@ -66,5 +66,7 @@ public class GameActivity extends Activity {
     protected void onResume() {
         super.onResume();
         upgrades = UpgradeStats.fromPrefs(prefs.getRaw());
+        gameView.loadBallSkin();
+        gameView.loadBgSkin();
     }
 }

@@ -124,7 +124,15 @@ public class CosmeticsPage {
     // ── Données Backgrounds ────────────────────────────
     // {id, nom, couleur preview, gold, diamants}
     private static final Object[][] BACKGROUNDS = {
-            {"bg_white",  "Fond Blanc",       "#FFFFFF", 0,   0  },
+            {"bg_default",  "Fond Blanc",       "#FFFFFF", 0,   0  },
+            {"bg_minimal_triangles",  "Triangles", "#4AADA8", 1, 12 },
+            {"bg_minimal_circles",   "Cercles",         "#4A5568", 3, 12},
+            {"bg_minimal_lines",     "Lignes",          "#2A3550", 3, 12},
+            {"bg_minimal_dots",      "Points",          "#3D1F2A", 3, 12},
+            {"bg_minimal_hexagons",  "Hexagones",       "#3A2D1A", 3, 12},
+            {"bg_urban_rain",    "Pluie Néon",    "#05050F", 4, 15},
+            {"bg_urban_circuit", "Circuit",       "#020D05", 4, 15},
+            {"bg_urban_grid",    "Grille",        "#060010", 4, 15},
             {"bg_night",  "Ciel Nocturne",    "#0D1B2A", 400, 18 },
             {"bg_sunset", "Coucher de Soleil","#FF7043", 500, 20 },
             {"bg_forest", "Forêt",           "#2E7D32", 400, 18 },
@@ -134,7 +142,7 @@ public class CosmeticsPage {
     // Clés equipped par défaut
     private static final String DEFAULT_BALL = "ball_basic";
     private static final String DEFAULT_FX   = "fx_none";
-    private static final String DEFAULT_BG   = "bg_white";
+    private static final String DEFAULT_BG = "bg_default";
 
     // ──────────────────────────────────────────────────
 

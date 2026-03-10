@@ -161,6 +161,7 @@ public class MainActivity extends Activity implements GameView.GameStateListener
     protected void onResume() {
         super.onResume();
         if (gameView != null) gameView.loadBallSkin();
+        if (gameView != null) gameView.loadBgSkin();
     }
 
     /** Met à jour le TextView du record avec la valeur persistée. */
@@ -190,6 +191,7 @@ public class MainActivity extends Activity implements GameView.GameStateListener
     private void hideOverlay(FrameLayout overlay) {
         overlay.setVisibility(View.GONE);
         gameView.loadBallSkin();
+        gameView.loadBgSkin();
         if (!inGame) {
             tapText.setVisibility(View.VISIBLE);
             recordText.setVisibility(View.VISIBLE);
