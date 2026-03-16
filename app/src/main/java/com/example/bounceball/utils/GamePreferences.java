@@ -102,4 +102,20 @@ public class GamePreferences {
     // ACCÈS BRUT (pour UpgradeStats etc.)
     // ─────────────────────────────────────────
     public SharedPreferences getRaw() { return prefs; }
+
+    // ─────────────────────────────────────────
+    // FRAGMENTS (gacha)
+    // Clé stockée : "frag_<skinId>"
+    // ─────────────────────────────────────────
+    public int getFragments(String skinId) {
+        return prefs.getInt("frag_" + skinId, 0);
+    }
+
+    public void addFragments(String skinId, int amount) {
+        prefs.edit().putInt("frag_" + skinId, getFragments(skinId) + amount).apply();
+    }
+
+    public void spendFragments(String skinId, int amount) {
+        prefs.edit().putInt("frag_" + skinId, Math.max(0, getFragments(skinId) - amount)).apply();
+    }
 }
