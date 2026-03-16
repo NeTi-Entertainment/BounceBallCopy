@@ -65,6 +65,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private boolean hasTrampoline;
     private float lastTouchX, lastTouchY;
 
+    private com.example.bounceball.utils.SoundManager soundManager;
+
     private final Paint ballPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint ballShinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
@@ -104,6 +106,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private static final int WARP_EJECT  = 3;
 
     private int   warpState        = WARP_NONE;
+
+    private int warpInStreamId = -1;
+    private int warpOutStreamId = -1;
+    private long warpStartTime = 0;
+    private long warpOutStartTime = 0;
+    private long warpDuration = 0;
     private int   warpAbsorbTimer  = 0;
     private float warpScrollLeft   = 0f;
     private int   warpEjectTimer   = 0;
@@ -143,6 +151,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         this.prefs    = prefs;
         this.upgrades = upgrades;
         applyUpgrades();
+        soundManager = new com.example.bounceball.utils.SoundManager(context, prefs);
         surfaceHolder = getHolder();
         //surfaceHolder.setFormat(PixelFormat.RGBA_8888);
         surfaceHolder.addCallback(this);
@@ -345,6 +354,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     @Override
     public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
         isRunning = false;
+        if (soundManager != null) {
+            soundManager.release();
+        }
         while (true) {
             try { gameThread.join(); break; }
             catch (InterruptedException e) { Log.e("GameView", "thread join", e); }
@@ -442,6 +454,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 float tangentialSpeed = ballVelocityX * tx + ballVelocityY * ty;
 // Spin proportionnel à la vitesse tangentielle et à l'angle d'inclinaison
                 ballAngularSpeed = (tangentialSpeed / ballRadius) * (180f / (float) Math.PI) * 0.8f;
+
+                if (currentBallSkin.startsWith("ball_elem_")) {
+                    soundManager.playElementalSound(currentBallSkin);
+                } else {
+                    soundManager.playSound(com.example.bounceball.utils.SoundManager.SOUND_BOUNCE);
+                }
+
                 hasTrampoline = false;
             }
         }
@@ -462,6 +481,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             }
             if (dist < ballRadius + INK_BLOB_RADIUS) {
                 currentInk = Math.min(currentInk + INK_RECHARGE, maxInk);
+                soundManager.playSound(com.example.bounceball.utils.SoundManager.SOUND_INK);
                 blobIt.remove();
             }
         }
@@ -486,10 +506,37 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
         // Game Over
         if (ballY > screenHeight + ballRadius && !isGameOver) {
+            // 1. On coupe le son de l'élément en cours
+            soundManager.stopElementalSound();
+
+            // 2. On coupe les sons du Warp s'ils étaient en train d'être joués
+            if (warpInStreamId != -1) {
+                soundManager.stopSound(warpInStreamId);
+                warpInStreamId = -1;
+            }
+            if (warpOutStreamId != -1) {
+                soundManager.stopSound(warpOutStreamId);
+                warpOutStreamId = -1;
+            }
+
+            // 3. On joue le son de chute
+            soundManager.playSound(com.example.bounceball.utils.SoundManager.SOUND_FALL);
+
             isGameOver = true;
             float h = totalHeightMeters;
             if (gameStateListener != null) gameStateListener.onGameOver(h);
             resetGame();
+        }
+
+        if (warpOutStreamId != -1) {
+            long elapsed = System.currentTimeMillis() - warpOutStartTime;
+            if (elapsed < warpDuration) {
+                float volume = 1.0f - ((float) elapsed / warpDuration);
+                soundManager.setVolume(warpOutStreamId, Math.max(0f, volume));
+            } else {
+                soundManager.stopSound(warpOutStreamId);
+                warpOutStreamId = -1;
+            }
         }
     }
 
@@ -498,6 +545,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     // ──────────────────────────────────────────────────
 
     private void startWarp(float entryX) {
+        warpStartTime = System.currentTimeMillis();
+        warpInStreamId = soundManager.playSound(com.example.bounceball.utils.SoundManager.SOUND_WARP_IN);
         exitPortalX     = entryX;
         exitPortalY     = screenHeight * 0.42f;
         warpState       = WARP_ABSORB;
@@ -527,6 +576,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 for (float[] w : warps)    w[1] += step;
                 warpScrollLeft -= step;
                 if (warpScrollLeft <= 0f) {
+                    warpDuration = System.currentTimeMillis() - warpStartTime;
+                    soundManager.stopSound(warpInStreamId);
+                    warpOutStreamId = soundManager.playSound(com.example.bounceball.utils.SoundManager.SOUND_WARP_OUT);
+                    warpOutStartTime = System.currentTimeMillis();
+
                     ballX = exitPortalX;
                     ballY = exitPortalY;
                     ballVelocityY  = -22f;
