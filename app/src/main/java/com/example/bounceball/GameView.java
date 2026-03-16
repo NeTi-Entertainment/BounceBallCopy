@@ -51,6 +51,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private float ballAngularSpeed = 0f;
     private final float ballRadius = 48f;
 
+    private float gravityMultiplier = 1.0f;
+    private float bounceMultiplier = 1.0f;
+    private float inkConsumptionMultiplier = 1.0f;
+    private float magnetMultiplier = 1.0f;
+
     private boolean isGameStarted;
     private boolean isGameOver;
     private float totalHeightMeters;
@@ -290,6 +295,60 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             default:              color = Color.parseColor("#E53935"); break;
         }
         ballPaint.setColor(color);
+        applySkinModifiers();
+    }
+
+    private void applySkinModifiers() {
+        gravityMultiplier = 1.0f;
+        bounceMultiplier = 1.0f;
+        inkConsumptionMultiplier = 1.0f;
+        magnetMultiplier = 1.0f;
+
+        String category = getCategoryForSkin(currentBallSkin);
+
+        switch (category) {
+            case "metal":
+                gravityMultiplier = 1.35f;
+                bounceMultiplier = 0.8f;
+                break;
+            case "sport":
+                gravityMultiplier = 0.95f;
+                bounceMultiplier = 1.25f;
+                break;
+            case "space":
+                gravityMultiplier = 0.65f;
+                break;
+            case "elemental":
+                inkConsumptionMultiplier = 0.7f;
+                magnetMultiplier = 1.5f;
+                break;
+            case "classic":
+            default:
+                break;
+        }
+    }
+
+    private String getCategoryForSkin(String skinId) {
+        if (skinId == null) return "classic";
+        if (skinId.startsWith("ball_elem_")) return "elemental";
+
+        if (java.util.Arrays.asList("ball_lead", "ball_nickel", "ball_copper", "ball_chrome",
+                        "ball_bronze", "ball_steel", "ball_silver", "ball_gold", "ball_rosegold",
+                        "ball_titanium", "ball_platinum", "ball_bismuth", "ball_damascus", "ball_meteorite")
+                .contains(skinId)) return "metal";
+
+        if (java.util.Arrays.asList("ball_void", "ball_nebula", "ball_comet", "ball_mercury",
+                        "ball_venus", "ball_earth", "ball_moon", "ball_mars", "ball_jupiter", "ball_saturn",
+                        "ball_uranus", "ball_neptune", "ball_pluto", "ball_red_dwarf", "ball_yellow_dwarf",
+                        "ball_blue_giant", "ball_black_hole", "ball_pulsar")
+                .contains(skinId)) return "space";
+
+        if (java.util.Arrays.asList("ball_soccer", "ball_basket", "ball_tennis", "ball_bowling",
+                        "ball_petanque", "ball_golf", "ball_cateye", "ball_beach", "ball_volleyball",
+                        "ball_baseball", "ball_8ball")
+                .contains(skinId)) return "sport";
+
+        return "classic";
     }
 
     private void resetGame() {
@@ -375,7 +434,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         }
 
         // Physique
-        ballVelocityY += GRAVITY;
+        ballVelocityY += (GRAVITY * gravityMultiplier);
         ballVelocityY *= airResistance;
         ballVelocityX *= airResistance;
         ballY += ballVelocityY;
@@ -422,7 +481,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 if (ny > 0) { nx = -nx; ny = -ny; }
                 float mult = Math.max(0.2f, Math.min(3f, screenWidth / len));
                 float incomingSpeed = (float) Math.hypot(ballVelocityX, ballVelocityY);
-                float bounceForce = (trampElasticity * mult) + (incomingSpeed * 0.5f);
+                float bounceForce = (trampElasticity * bounceMultiplier * mult) + (incomingSpeed * 0.5f);
                 ballVelocityX = nx * bounceForce;
                 ballVelocityY = ny * bounceForce;
                 float tx = ny, ty = -nx;
@@ -442,7 +501,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             float dx   = ballX - blob[0];
             float dy   = ballY - blob[1];
             float dist = (float) Math.hypot(dx, dy);
-            if (dist < MAGNET_RADIUS && dist > 0.1f) {
+            if (dist < (MAGNET_RADIUS * magnetMultiplier) && dist > 0.1f) {
                 blob[0] += (dx / dist) * MAGNET_STRENGTH;
                 blob[1] += (dy / dist) * MAGNET_STRENGTH;
                 dist = (float) Math.hypot(ballX - blob[0], ballY - blob[1]);
@@ -3990,7 +4049,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                     else if (touchX > screenWidth) { touchX = screenWidth;  oob = true; }
                     trampEndX = touchX; trampEndY = touchY;
                     float dist = (float) Math.hypot(touchX - lastTouchX, touchY - lastTouchY);
-                    currentInk = Math.max(0, currentInk - dist * inkConsumptionRate);
+                    currentInk = Math.max(0, currentInk - dist * (inkConsumptionRate * inkConsumptionMultiplier));
                     lastTouchX = touchX; lastTouchY = touchY;
                     if (oob) { isDrawingTrampoline = false; hasTrampoline = true; }
                 }
