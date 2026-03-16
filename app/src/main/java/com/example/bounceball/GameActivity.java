@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.view.Window;
 import android.view.WindowManager;
+import android.graphics.PixelFormat;
 import com.example.bounceball.upgrade.UpgradeStats;
 import com.example.bounceball.utils.AdManager;
 import com.example.bounceball.utils.GamePreferences;
@@ -27,6 +28,7 @@ public class GameActivity extends Activity {
                 WindowManager.LayoutParams.FLAG_FULLSCREEN
         );
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        getWindow().setFormat(PixelFormat.RGBA_8888);
 
         prefs = new GamePreferences(this);
         upgrades = UpgradeStats.fromPrefs(prefs.getRaw());

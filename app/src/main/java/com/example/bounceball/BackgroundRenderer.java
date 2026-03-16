@@ -11,6 +11,8 @@ import android.graphics.LinearGradient;
 import android.graphics.Shader;
 import android.graphics.Matrix;
 import java.util.ArrayList;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 
 public class BackgroundRenderer {
 
@@ -20,8 +22,10 @@ public class BackgroundRenderer {
     private static final int BG_COLOR_DOTS      = 0xFF3D1F2A;
     private static final int BG_COLOR_HEXAGONS  = 0xFF3A2D1A;
     private static final int BG_COLOR_RAIN      = 0xFF12203A;
-    private static final int BG_COLOR_CIRCUIT   = 0xFF020D05;
+    private static final int BG_COLOR_CIRCUIT   = 0xFF1A4A1F;
     private static final int BG_COLOR_GRID      = 0xFF060010;
+    private static final int BG_COLOR_TUNNEL    = 0xFF020008;
+    private static final int BG_COLOR_EQUALIZER = 0xFF050505;
 
     private final Context context;
     private int screenWidth;
@@ -70,11 +74,111 @@ public class BackgroundRenderer {
     };
 
     // ── bg_urban_circuit ──
-    private float[][] bgCircuitNodes = null;
-    private float[][] bgCircuitPulses = null;
+    private float[][] bgCircuitSegs = null;
+    private float[][] bgCircuitPads = null;
+    private final Paint circuitTracePaint  = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint circuitNodeFgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint circuitNodeBgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private static final int CIRCUIT_TRACE = 0xFFCCDAC8;
+    private float[][] bgCircuitPulses  = null;
+    private float[][] bgCircuitTraces = null;
+    private long      bgCircuitLastSpawn = 0L;
+    private final Paint circuitPulse0 = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Matrix circuitPulseMatrix = new Matrix();
+    private final RadialGradient circuitPulseGradient = new RadialGradient(
+            0f, 0f, 1f,
+            new int[]{ 0xFFFFFFEE, 0xCCFFEE00, 0x66FFAA00, 0x22FF6600, 0x00FF0000 },
+            new float[]{ 0f, 0.15f, 0.45f, 0.75f, 1f },
+            Shader.TileMode.CLAMP);
+    private static final int  CIRCUIT_MAX_PULSES = 7;
+    private static final long CIRCUIT_SPAWN_MS   = 450L;
+    private static final float CIRCUIT_PULSE_SPD = 0.011f;
 
-// ── bg_urban_grid ──
-// entièrement calculé, pas d'état persistant
+    // ── bg_urban_grid ──
+    private final Paint  gridFinePaint   = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint  gridMidPaint    = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint  gridWidePaint   = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint  gridSunPaint    = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Path   gridSunClipPath = new Path();
+    private final Path   gridWavePath   = new Path();
+    private final Matrix gridSunMatrix   = new Matrix();
+    private final RadialGradient gridSunGradient = new RadialGradient(
+            0f, 0f, 1f,
+            new int[]{ 0xFFFFEEFF, 0xFFFF44CC, 0xFFCC0066, 0x00660033 },
+            new float[]{ 0f, 0.35f, 0.78f, 1f },
+            Shader.TileMode.CLAMP);
+
+    // ── bg_urban_tunnel ──
+    private static final int   TUNNEL_SEGMENT_COUNT = 8;
+    private static final float TUNNEL_SPEED = 0.065f;
+    private float bgTunnelTime = 0f;
+    private final Paint tunnelPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint tunnelVigPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private RadialGradient tunnelVigGradient = null;
+    private final Matrix tunnelVigMatrix = new Matrix();
+    private int tunnelVigW = 0, tunnelVigH = 0;
+    private static final int[] TUNNEL_COLORS = {
+            0xFFFFEE00, 0xFFFFCC00, 0xFFFFAA22,
+    };
+    private static final float TUNNEL_ORBIT_RADIUS = 0.04f;
+    private static final float TUNNEL_ORBIT_SPEED  = 0.35f;
+
+    // ── bg_urban_equalizer ──
+    private float[] bgEqBarHeights  = null;
+    private float[] bgEqBarTargets  = null;
+    private float[] bgEqBarSpeeds   = null;
+    private float[] bgEqBarPhases   = null;
+    private static final int EQ_BAR_COUNT = 28;
+    private float bgEqTime = 0f;
+    private final Paint eqBarPaint  = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint eqGlowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final RadialGradient eqGlowGrad = new RadialGradient(
+            0f, 0f, 1f,
+            new int[]{ 0xFFFFFFFF, 0xAAFFFFFF, 0x44FFFFFF, 0x11FFFFFF, 0x00FFFFFF },
+            new float[]{ 0f, 0.15f, 0.40f, 0.70f, 1f },
+            Shader.TileMode.CLAMP);
+    private final Matrix eqGlowMatrix = new Matrix();
+    private final RectF  eqGlowRect  = new RectF();
+    private PorterDuffColorFilter[] eqCachedFilters = null;
+    private int[] eqCachedFilterKeys = null;
+
+    // ── bg_grad_* ── (lava-lamp style: per-pixel noise → palette LUT)
+    private static final int GRAD_DOWNSCALE = 6;
+    private static final int GRAD_LUT_SIZE = 256;
+    private int              bgGradVariant = -1;
+    private android.graphics.Bitmap  gradOffscreen      = null;
+    private final Paint              gradBitmapPaint     = new Paint(Paint.FILTER_BITMAP_FLAG);
+    private final RectF              gradDestRect        = new RectF();
+    private int[]   gradPixelBuffer = null;
+    private int[]   gradBlurBuffer  = null;
+    private int[]   gradLUT         = null;
+    private float[] gradTblX1, gradTblX2, gradTblX3, gradTblX4;
+    private float[] gradTblY1, gradTblY2, gradTblY3, gradTblY4;
+    private int     gradTblW, gradTblH;
+    private float[] gradWavePhases = null;
+
+    private static final int[][] GRAD_COLORS = {
+            // 0: Rainbow
+            { 0xFFDD0040, 0xFFFF8800, 0xFFEEDD00, 0xFF00BB44, 0xFF2266FF, 0xFF9900DD },
+            // 1: Sunset
+            { 0xFFEE4400, 0xFFFF6644, 0xFFDD2266, 0xFF772299, 0xFFFF7733, 0xFFCC1166 },
+            // 2: Ocean
+            { 0xFF0033AA, 0xFF00AACC, 0xFF00BB88, 0xFF1155CC, 0xFF007788, 0xFF002255 },
+            // 3: Forest
+            { 0xFF226622, 0xFF557722, 0xFF887733, 0xFFAA7722, 0xFF114411, 0xFF886622 },
+            // 4: Lava
+            { 0xFFCC1100, 0xFFFF4400, 0xFFFF8800, 0xFF331100, 0xFFEE2200, 0xFF552200 },
+            // 5: Aurora
+            { 0xFF00CC66, 0xFF00AAAA, 0xFF6633CC, 0xFF2288AA, 0xFF44DD88, 0xFF7744BB },
+            // 6: Candy
+            { 0xFFFF3388, 0xFFDD44CC, 0xFF8855EE, 0xFFFF66AA, 0xFFCC22FF, 0xFFFF88CC },
+            // 7: Volcano
+            { 0xFF220000, 0xFF880000, 0xFFCC3300, 0xFF110000, 0xFF661100, 0xFFFF5500 },
+            // 8: Galaxy
+            { 0xFF1A0033, 0xFF4400AA, 0xFF8800CC, 0xFFDD44AA, 0xFF2200BB, 0xFF110044 },
+            // 9: Toxic
+            { 0xFF33DD00, 0xFFAAEE00, 0xFF006633, 0xFF88FF00, 0xFF004422, 0xFFCCFF22 },
+    };
 
     public BackgroundRenderer(Context context, int screenWidth, int screenHeight) {
         this.context      = context;
@@ -86,6 +190,23 @@ public class BackgroundRenderer {
         bgRainPMid.setStrokeCap(Paint.Cap.BUTT);
         bgRainPCore.setStyle(Paint.Style.STROKE);
         bgRainPCore.setStrokeCap(Paint.Cap.BUTT);
+        circuitTracePaint.setStyle(Paint.Style.STROKE);
+        circuitTracePaint.setStrokeCap(Paint.Cap.ROUND);
+        circuitTracePaint.setColor(CIRCUIT_TRACE);
+        circuitNodeFgPaint.setStyle(Paint.Style.FILL);
+        circuitNodeFgPaint.setColor(CIRCUIT_TRACE);
+        circuitNodeBgPaint.setStyle(Paint.Style.FILL);
+        circuitNodeBgPaint.setColor(BG_COLOR_CIRCUIT);
+        circuitPulse0.setStyle(Paint.Style.FILL);
+        circuitPulse0.setShader(circuitPulseGradient);
+        gridFinePaint.setStyle(Paint.Style.STROKE);
+        gridMidPaint.setStyle(Paint.Style.STROKE);
+        gridWidePaint.setStyle(Paint.Style.STROKE);
+        gridSunPaint.setStyle(Paint.Style.FILL);
+        tunnelPaint.setStyle(Paint.Style.STROKE);
+        eqBarPaint.setStyle(Paint.Style.FILL);
+        eqGlowPaint.setStyle(Paint.Style.FILL);
+        eqGlowPaint.setShader(eqGlowGrad);
     }
 
     public void onScreenSizeChanged(int w, int h) {
@@ -107,11 +228,34 @@ public class BackgroundRenderer {
         bgHexWaveX    = 0f;
         bgHexWaveDir  = 1f;
         bgRainDrops    = null;
-        bgCircuitNodes = null;
+        bgCircuitSegs = null;
+        bgCircuitPads = null;
         bgCircuitPulses = null;
+        bgCircuitLastSpawn = 0L;
+        bgCircuitTraces = null;
         bgNeonGlowData   = null;
         bgNeonGlowPaints  = null;
         bgNeonGlowShaders = null;
+        bgTunnelTime  = 0f;
+        tunnelVigGradient = null;
+        tunnelVigW = tunnelVigH = 0;
+        bgEqBarHeights = null;
+        bgEqBarTargets = null;
+        bgEqBarSpeeds  = null;
+        bgEqBarPhases  = null;
+        bgEqTime = 0f;
+        bgGradVariant = -1;
+        gradWavePhases = null;
+        gradPixelBuffer = null;
+        gradBlurBuffer = null;
+        gradLUT = null;
+        gradTblX1 = gradTblX2 = gradTblX3 = gradTblX4 = null;
+        gradTblY1 = gradTblY2 = gradTblY3 = gradTblY4 = null;
+        gradTblW = gradTblH = 0;
+        if (gradOffscreen != null) {
+            gradOffscreen.recycle();
+            gradOffscreen = null;
+        }
     }
 
     public void updateParallax(float cameraShift) {
@@ -135,10 +279,143 @@ public class BackgroundRenderer {
             case "bg_urban_rain":    drawBgUrbanRain(canvas);    break;
             case "bg_urban_circuit": drawBgUrbanCircuit(canvas); break;
             case "bg_urban_grid":    drawBgUrbanGrid(canvas);    break;
+            case "bg_urban_tunnel":    drawBgUrbanTunnel(canvas);    break;
+            case "bg_urban_equalizer": drawBgUrbanEqualizer(canvas); break;
+            case "bg_grad_rainbow": drawBgGrad(canvas, 0); break;
+            case "bg_grad_sunset":  drawBgGrad(canvas, 1); break;
+            case "bg_grad_ocean":   drawBgGrad(canvas, 2); break;
+            case "bg_grad_forest":  drawBgGrad(canvas, 3); break;
+            case "bg_grad_lava":    drawBgGrad(canvas, 4); break;
+            case "bg_grad_aurora":  drawBgGrad(canvas, 5); break;
+            case "bg_grad_candy":   drawBgGrad(canvas, 6); break;
+            case "bg_grad_volcano": drawBgGrad(canvas, 7); break;
+            case "bg_grad_galaxy":  drawBgGrad(canvas, 8); break;
+            case "bg_grad_toxic":   drawBgGrad(canvas, 9); break;
             default:
                 canvas.drawColor(Color.WHITE);
                 break;
         }
+    }
+
+    private void drawBgGrad(Canvas canvas, int variant) {
+        int[] palette = GRAD_COLORS[variant];
+        int palLen = palette.length;
+
+        if (bgGradVariant != variant) {
+            bgGradVariant = variant;
+            gradWavePhases = new float[]{ 0f, 0.7f, 1.4f, 2.1f, 2.8f, 3.5f, 4.2f, 4.9f, 0f };
+
+            gradLUT = new int[GRAD_LUT_SIZE];
+            for (int i = 0; i < GRAD_LUT_SIZE; i++) {
+                float t = (float) i / GRAD_LUT_SIZE * palLen;
+                int ci = (int) t;
+                float f = t - ci;
+                f = f * f * (3f - 2f * f);
+                int c1 = palette[ci % palLen];
+                int c2 = palette[(ci + 1) % palLen];
+                int r1 = (c1 >> 16) & 0xFF, g1 = (c1 >> 8) & 0xFF, b1 = c1 & 0xFF;
+                int r2 = (c2 >> 16) & 0xFF, g2 = (c2 >> 8) & 0xFF, b2 = c2 & 0xFF;
+                gradLUT[i] = 0xFF000000
+                        | ((r1 + (int)(f * (r2 - r1))) << 16)
+                        | ((g1 + (int)(f * (g2 - g1))) << 8)
+                        |  (b1 + (int)(f * (b2 - b1)));
+            }
+        }
+
+        int smallW = Math.max(1, screenWidth  / GRAD_DOWNSCALE);
+        int smallH = Math.max(1, screenHeight / GRAD_DOWNSCALE);
+        if (gradOffscreen == null || gradOffscreen.getWidth() != smallW || gradOffscreen.getHeight() != smallH) {
+            if (gradOffscreen != null) gradOffscreen.recycle();
+            gradOffscreen = android.graphics.Bitmap.createBitmap(smallW, smallH, android.graphics.Bitmap.Config.ARGB_8888);
+        }
+        int total = smallW * smallH;
+        if (gradPixelBuffer == null || gradPixelBuffer.length != total) {
+            gradPixelBuffer = new int[total];
+            gradBlurBuffer  = new int[total];
+        }
+        if (gradTblW != smallW || gradTblH != smallH) {
+            gradTblW = smallW;
+            gradTblH = smallH;
+            gradTblX1 = new float[smallW]; gradTblX2 = new float[smallW];
+            gradTblX3 = new float[smallW]; gradTblX4 = new float[smallW];
+            gradTblY1 = new float[smallH]; gradTblY2 = new float[smallH];
+            gradTblY3 = new float[smallH]; gradTblY4 = new float[smallH];
+        }
+
+        gradWavePhases[0] += 0.007f;
+        gradWavePhases[1] += 0.009f;
+        gradWavePhases[2] += 0.005f;
+        gradWavePhases[3] += 0.008f;
+        gradWavePhases[4] += 0.006f;
+        gradWavePhases[5] += 0.010f;
+        gradWavePhases[6] += 0.004f;
+        gradWavePhases[7] += 0.011f;
+        gradWavePhases[8] += 0.0012f;
+
+        float invW = 1f / smallW;
+        float invH = 1f / smallH;
+        for (int x = 0; x < smallW; x++) {
+            float nx = x * invW;
+            gradTblX1[x] = (float) Math.sin(nx * 1.3 + gradWavePhases[0]);
+            gradTblX2[x] = (float) Math.sin(nx * 2.1 + gradWavePhases[2]);
+            gradTblX3[x] = (float) Math.cos(nx * 0.7 + gradWavePhases[4]);
+            gradTblX4[x] = (float) Math.sin(nx * 3.4 + gradWavePhases[6]);
+        }
+        for (int y = 0; y < smallH; y++) {
+            float ny = y * invH;
+            gradTblY1[y] = (float) Math.cos(ny * 1.0 + gradWavePhases[1]);
+            gradTblY2[y] = (float) Math.cos(ny * 1.7 + gradWavePhases[3]);
+            gradTblY3[y] = (float) Math.sin(ny * 0.6 + gradWavePhases[5]);
+            gradTblY4[y] = (float) Math.cos(ny * 2.9 + gradWavePhases[7]);
+        }
+
+        float colorShift = gradWavePhases[8];
+        int lutMask = GRAD_LUT_SIZE - 1;
+
+        int idx = 0;
+        for (int y = 0; y < smallH; y++) {
+            float tY1 = gradTblY1[y], tY2 = gradTblY2[y];
+            float tY3 = gradTblY3[y], tY4 = gradTblY4[y];
+            for (int x = 0; x < smallW; x++) {
+                float n = gradTblX1[x] * tY1
+                        + 0.7f * gradTblX2[x] * tY2
+                        + 0.5f * gradTblX3[x] * tY3
+                        + 0.3f * gradTblX4[x] * tY4;
+                n = n * 0.2f + 0.5f;
+                n = (n + colorShift) % 1f;
+                if (n < 0f) n += 1f;
+                int li = (int)(n * GRAD_LUT_SIZE) & lutMask;
+                gradPixelBuffer[idx++] = gradLUT[li];
+            }
+        }
+
+        for (int y = 1; y < smallH - 1; y++) {
+            int row = y * smallW;
+            for (int x = 1; x < smallW - 1; x++) {
+                int i = row + x;
+                int c  = gradPixelBuffer[i];
+                int cL = gradPixelBuffer[i - 1];
+                int cR = gradPixelBuffer[i + 1];
+                int cU = gradPixelBuffer[i - smallW];
+                int cD = gradPixelBuffer[i + smallW];
+                int r = (((c >> 16) & 0xFF) * 4 + ((cL >> 16) & 0xFF) + ((cR >> 16) & 0xFF) + ((cU >> 16) & 0xFF) + ((cD >> 16) & 0xFF)) >> 3;
+                int g = (((c >>  8) & 0xFF) * 4 + ((cL >>  8) & 0xFF) + ((cR >>  8) & 0xFF) + ((cU >>  8) & 0xFF) + ((cD >>  8) & 0xFF)) >> 3;
+                int b = (( c        & 0xFF) * 4 + ( cL        & 0xFF) + ( cR        & 0xFF) + ( cU        & 0xFF) + ( cD        & 0xFF)) >> 3;
+                gradBlurBuffer[i] = 0xFF000000 | (r << 16) | (g << 8) | b;
+            }
+        }
+        for (int x = 0; x < smallW; x++) {
+            gradBlurBuffer[x] = gradPixelBuffer[x];
+            gradBlurBuffer[(smallH - 1) * smallW + x] = gradPixelBuffer[(smallH - 1) * smallW + x];
+        }
+        for (int y = 0; y < smallH; y++) {
+            gradBlurBuffer[y * smallW] = gradPixelBuffer[y * smallW];
+            gradBlurBuffer[y * smallW + smallW - 1] = gradPixelBuffer[y * smallW + smallW - 1];
+        }
+
+        gradOffscreen.setPixels(gradBlurBuffer, 0, smallW, 0, 0, smallW, smallH);
+        gradDestRect.set(0, 0, screenWidth, screenHeight);
+        canvas.drawBitmap(gradOffscreen, null, gradDestRect, gradBitmapPaint);
     }
 
     // ══════════════════════════════════════════════════
@@ -588,197 +865,661 @@ public class BackgroundRenderer {
 
     private void drawBgUrbanCircuit(Canvas canvas) {
         canvas.drawColor(BG_COLOR_CIRCUIT);
+        if (bgCircuitSegs == null) initCircuit();
 
-        if (bgCircuitNodes == null) initCircuit();
-
-        float parallaxOff = bgParallaxY * 0.12f;
-        int n = bgCircuitNodes.length;
-
-        // Passes glow simulé : large+transparent → moyen → fin+opaque
-        Paint seg1 = new Paint(Paint.ANTI_ALIAS_FLAG);
-        seg1.setStyle(Paint.Style.STROKE);
-        seg1.setStrokeWidth(screenWidth * 0.018f);
-        seg1.setColor(Color.argb(18, 0, 255, 100));
-
-        Paint seg2 = new Paint(Paint.ANTI_ALIAS_FLAG);
-        seg2.setStyle(Paint.Style.STROKE);
-        seg2.setStrokeWidth(screenWidth * 0.008f);
-        seg2.setColor(Color.argb(35, 0, 255, 100));
-
-        Paint seg3 = new Paint(Paint.ANTI_ALIAS_FLAG);
-        seg3.setStyle(Paint.Style.STROKE);
-        seg3.setStrokeWidth(screenWidth * 0.003f);
-        seg3.setColor(Color.argb(90, 0, 255, 100));
-
-        Paint nodePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        nodePaint.setStyle(Paint.Style.FILL);
-
-        for (int i = 0; i < n; i++) {
-            float x1 = bgCircuitNodes[i][0];
-            float y1 = bgCircuitNodes[i][1] + parallaxOff;
-            for (int j = i + 1; j < n; j++) {
-                float x2 = bgCircuitNodes[j][0];
-                float y2 = bgCircuitNodes[j][1] + parallaxOff;
-                float dist = (float) Math.hypot(x2 - x1, y2 - y1);
-                if (dist < screenWidth * 0.32f
-                        && (Math.abs(x2 - x1) < screenWidth * 0.05f
-                        || Math.abs(y2 - y1) < screenWidth * 0.05f)) {
-                    float mx = x2, my = y1;
-                    canvas.drawLine(x1, y1, mx, my, seg1);
-                    canvas.drawLine(mx, my, x2, y2, seg1);
-                    canvas.drawLine(x1, y1, mx, my, seg2);
-                    canvas.drawLine(mx, my, x2, y2, seg2);
-                    canvas.drawLine(x1, y1, mx, my, seg3);
-                    canvas.drawLine(mx, my, x2, y2, seg3);
-                }
-            }
-            // Nœud : 3 cercles concentriques
-            nodePaint.setColor(Color.argb(20,  0, 255, 100));
-            canvas.drawCircle(x1, y1, screenWidth * 0.028f, nodePaint);
-            nodePaint.setColor(Color.argb(50,  0, 255, 100));
-            canvas.drawCircle(x1, y1, screenWidth * 0.016f, nodePaint);
-            nodePaint.setColor(Color.argb(160, 0, 255, 100));
-            canvas.drawCircle(x1, y1, screenWidth * 0.007f, nodePaint);
+        // Init pulses au premier appel
+        if (bgCircuitPulses == null) {
+            bgCircuitPulses = new float[CIRCUIT_MAX_PULSES][3];
+            for (float[] p : bgCircuitPulses) p[0] = -1f;
         }
 
-        // Pulses
-        Paint pulse1 = new Paint(Paint.ANTI_ALIAS_FLAG);
-        pulse1.setStyle(Paint.Style.FILL);
-        Paint pulse2 = new Paint(Paint.ANTI_ALIAS_FLAG);
-        pulse2.setStyle(Paint.Style.FILL);
-        Paint pulse3 = new Paint(Paint.ANTI_ALIAS_FLAG);
-        pulse3.setStyle(Paint.Style.FILL);
+        float cell = screenWidth / 20f;
+        float tw   = cell * 0.45f;
+        float nr   = tw * 1.7f;
+        float hr   = tw * 0.6f;
+        circuitTracePaint.setStrokeWidth(tw);
 
-        for (float[] p : bgCircuitPulses) {
-            p[2] += p[3];
-            if (p[2] > 1f) p[2] = 0f;
+        // ── Traits et pads ──
+        for (float[] s : bgCircuitSegs)
+            canvas.drawLine(s[0], s[1], s[2], s[3], circuitTracePaint);
+        for (float[] p : bgCircuitPads) {
+            canvas.drawCircle(p[0], p[1], nr, circuitNodeFgPaint);
+            canvas.drawCircle(p[0], p[1], hr, circuitNodeBgPaint);
+        }
 
-            int from = (int) p[0], to = (int) p[1];
-            if (from >= n || to >= n) continue;
+        // ── Spawn ──
+        long now = System.currentTimeMillis();
+        if (now - bgCircuitLastSpawn > CIRCUIT_SPAWN_MS) {
+            bgCircuitLastSpawn = now;
+            for (float[] pulse : bgCircuitPulses) {
+                if (pulse[0] >= 0f) continue;
+                for (int attempt = 0; attempt < 30; attempt++) {
+                    int ti = (int)(Math.random() * bgCircuitTraces.length);
+                    boolean busy = false;
+                    for (float[] other : bgCircuitPulses)
+                        if ((int)other[0] == ti) { busy = true; break; }
+                    if (!busy) {
+                        pulse[0] = ti;
+                        pulse[1] = 0f;
+                        pulse[2] = Math.random() < 0.5f ? 1f : -1f;
+                        break;
+                    }
+                }
+                break;
+            }
+        }
 
-            float x1 = bgCircuitNodes[from][0];
-            float y1 = bgCircuitNodes[from][1] + parallaxOff;
-            float x2 = bgCircuitNodes[to][0];
-            float y2 = bgCircuitNodes[to][1] + parallaxOff;
+        // ── Mise à jour + dessin des pulses ──
+        for (float[] pulse : bgCircuitPulses) {
+            if (pulse[0] < 0f) continue;
+            pulse[1] += CIRCUIT_PULSE_SPD;
+            if (pulse[1] >= 1f) { pulse[0] = -1f; continue; }
 
-            float mx = x2, my = y1, t = p[2];
-            float seg1L = Math.abs(mx - x1), seg2L = Math.abs(y2 - my);
-            float total = seg1L + seg2L;
-            if (total < 1f) continue;
+            float[] trace = bgCircuitTraces[(int) pulse[0]];
+            int nPts = trace.length / 2;
+            float prog = (pulse[2] > 0f) ? pulse[1] : (1f - pulse[1]);
 
-            float px, py;
-            if (t < seg1L / total) {
-                px = x1 + (mx - x1) * (t * total / seg1L);
-                py = y1;
-            } else {
-                float t2 = (t * total - seg1L) / seg2L;
-                px = mx;
-                py = my + (y2 - my) * t2;
+            // Calcul longueurs des segments du tracé
+            float totalLen = 0f;
+            for (int k = 0; k < nPts - 1; k++) {
+                float dx = trace[(k+1)*2] - trace[k*2];
+                float dy = trace[(k+1)*2+1] - trace[k*2+1];
+                totalLen += (float) Math.hypot(dx, dy);
+            }
+            float target = prog * totalLen;
+            float px = trace[0], py = trace[1];
+            float acc = 0f;
+            for (int k = 0; k < nPts - 1; k++) {
+                float dx = trace[(k+1)*2] - trace[k*2];
+                float dy = trace[(k+1)*2+1] - trace[k*2+1];
+                float segLen = (float) Math.hypot(dx, dy);
+                if (acc + segLen >= target) {
+                    float t = (target - acc) / segLen;
+                    px = trace[k*2]   + dx * t;
+                    py = trace[k*2+1] + dy * t;
+                    break;
+                }
+                acc += segLen;
             }
 
-            pulse1.setColor(Color.argb(25,  180, 255, 210));
-            canvas.drawCircle(px, py, screenWidth * 0.038f, pulse1);
-            pulse2.setColor(Color.argb(70,  180, 255, 210));
-            canvas.drawCircle(px, py, screenWidth * 0.022f, pulse2);
-            pulse3.setColor(Color.argb(220, 220, 255, 235));
-            canvas.drawCircle(px, py, screenWidth * 0.009f, pulse3);
+            // Fondu court : 5% entrée, 5% sortie
+            float fade = Math.min(pulse[1] / 0.05f, Math.min(1f, (1f - pulse[1]) / 0.05f));
+            float glowR = tw * 4.5f;
+            circuitPulseMatrix.setScale(glowR, glowR);
+            circuitPulseMatrix.postTranslate(px, py);
+            circuitPulseGradient.setLocalMatrix(circuitPulseMatrix);
+            circuitPulse0.setAlpha((int)(255 * fade));
+            canvas.drawCircle(px, py, glowR, circuitPulse0);
         }
     }
 
     private void initCircuit() {
-        int cols = 5, rows = 9;
-        float cellW = screenWidth  / (float) cols;
-        float cellH = screenHeight / (float) rows;
-        int count = cols * rows;
-        bgCircuitNodes = new float[count][2];
-        int idx = 0;
-        for (int row = 0; row < rows; row++) {
-            for (int col = 0; col < cols; col++) {
-                bgCircuitNodes[idx][0] = col * cellW + cellW * 0.2f + (float)(Math.random() * cellW * 0.6f);
-                bgCircuitNodes[idx][1] = row * cellH + cellH * 0.2f + (float)(Math.random() * cellH * 0.6f);
-                idx++;
+        float cell = screenWidth / 20f;
+        int cols = (int)(screenWidth  / cell) + 10;
+        int rows = (int)(screenHeight / cell) + 10;
+        int ox = 5, oy = 5;
+
+        int[][] grid = new int[cols][rows];
+        for (int c = 0; c < cols; c++)
+            for (int r = 0; r < rows; r++)
+                grid[c][r] = -1;
+
+        ArrayList<float[]> segList = new ArrayList<>();
+        ArrayList<float[]> padList = new ArrayList<>();
+        int[][] DIRS = {{1,0},{-1,0},{0,1},{0,-1},{1,1},{-1,-1},{1,-1},{-1,1}};
+        int traceId = 0;
+
+        for (int attempt = 0; attempt < 8000 && traceId < 120; attempt++) {
+            int gx = (int)(Math.random() * cols);
+            int gy = (int)(Math.random() * rows);
+            if (!ccFree(grid, gx, gy, cols, rows, traceId)) continue;
+
+            int dirIdx = (int)(Math.random() * DIRS.length);
+            int[] d = DIRS[dirIdx];
+            int maxLen = 4 + (int)(Math.random() * 4);
+            int len = 0;
+            for (int k = 1; k <= maxLen; k++) {
+                int nx = gx + d[0]*k, ny = gy + d[1]*k;
+                if (nx < 0 || nx >= cols || ny < 0 || ny >= rows) break;
+                if (!ccFree(grid, nx, ny, cols, rows, traceId)) break;
+                len = k;
             }
+            if (len < 2) continue;
+
+            grid[gx][gy] = traceId;
+            for (int k = 1; k <= len; k++)
+                grid[gx + d[0]*k][gy + d[1]*k] = traceId;
+
+            int ex = gx + d[0]*len, ey = gy + d[1]*len;
+            float x1 = (gx - ox) * cell, y1 = (gy - oy) * cell;
+            float x2 = (ex - ox) * cell, y2 = (ey - oy) * cell;
+            segList.add(new float[]{x1, y1, x2, y2});
+            padList.add(new float[]{x1, y1});
+
+            boolean extended = false;
+            if (Math.random() < 0.7f) {
+                // Virages valides par direction : uniquement 90° ou 135°, jamais 45°
+                // Index DIRS : 0={1,0} 1={-1,0} 2={0,1} 3={0,-1}
+                //              4={1,1} 5={-1,-1} 6={1,-1} 7={-1,1}
+                int[][][] VALID_TURNS = {
+                        {{0,1},{0,-1},{1,1},{1,-1}},    // 0: →  90°: ↓↑,  135°: ↘↗
+                        {{0,1},{0,-1},{-1,1},{-1,-1}},  // 1: ←  90°: ↓↑,  135°: ↙↖
+                        {{1,0},{-1,0},{1,1},{-1,1}},    // 2: ↓  90°: →←,  135°: ↘↙
+                        {{1,0},{-1,0},{1,-1},{-1,-1}},  // 3: ↑  90°: →←,  135°: ↗↖
+                        {{1,-1},{-1,1},{1,0},{0,1}},    // 4: ↘  90°: ↗↙,  135°: →↓
+                        {{1,-1},{-1,1},{-1,0},{0,-1}},  // 5: ↖  90°: ↗↙,  135°: ←↑
+                        {{1,1},{-1,-1},{1,0},{0,-1}},   // 6: ↗  90°: ↘↖,  135°: →↑
+                        {{1,1},{-1,-1},{-1,0},{0,1}},   // 7: ↙  90°: ↘↖,  135°: ←↓
+                };
+                int[][] turns = VALID_TURNS[dirIdx];
+                int[] perp = turns[(int)(Math.random() * turns.length)];
+                int maxLen2 = 3 + (int)(Math.random() * 4);
+                int len2 = 0;
+                for (int k = 1; k <= maxLen2; k++) {
+                    int nx = ex + perp[0]*k, ny = ey + perp[1]*k;
+                    if (nx < 0 || nx >= cols || ny < 0 || ny >= rows) break;
+                    if (!ccFree(grid, nx, ny, cols, rows, traceId)) break;
+                    len2 = k;
+                }
+                if (len2 >= 2) {
+                    for (int k = 1; k <= len2; k++)
+                        grid[ex + perp[0]*k][ey + perp[1]*k] = traceId;
+                    float x3 = (ex + perp[0]*len2 - ox) * cell;
+                    float y3 = (ey + perp[1]*len2 - oy) * cell;
+                    segList.add(new float[]{x2, y2, x3, y3});
+                    padList.add(new float[]{x3, y3});
+                    extended = true;
+                }
+            }
+            if (!extended) padList.add(new float[]{x2, y2});
+            traceId++;
         }
-        int pulseCount = 18;
-        bgCircuitPulses = new float[pulseCount][4];
-        for (int i = 0; i < pulseCount; i++) {
-            bgCircuitPulses[i][0] = (float)(int)(Math.random() * count);
-            bgCircuitPulses[i][1] = (float)(int)(Math.random() * count);
-            bgCircuitPulses[i][2] = (float)(Math.random());
-            bgCircuitPulses[i][3] = (float)(0.002f + Math.random() * 0.004f);
+
+        bgCircuitSegs = segList.toArray(new float[0][]);
+        bgCircuitPads = padList.toArray(new float[0][]);
+
+        // Reconstituer les traces (polylines) depuis segList
+        // Chaque traceId produit 1 ou 2 segments consécutifs dans segList
+        ArrayList<float[]> traceList = new ArrayList<>();
+        int si = 0;
+        while (si < bgCircuitSegs.length) {
+            float[] s1 = bgCircuitSegs[si];
+            if (si + 1 < bgCircuitSegs.length) {
+                float[] s2 = bgCircuitSegs[si + 1];
+                // Vérifier si s2 commence là où s1 se termine (coude)
+                if (Math.abs(s2[0] - s1[2]) < 1f && Math.abs(s2[1] - s1[3]) < 1f) {
+                    traceList.add(new float[]{s1[0], s1[1], s1[2], s1[3], s2[2], s2[3]});
+                    si += 2;
+                    continue;
+                }
+            }
+            traceList.add(new float[]{s1[0], s1[1], s1[2], s1[3]});
+            si++;
         }
+        bgCircuitTraces = traceList.toArray(new float[0][]);
+    }
+
+    private boolean ccFree(int[][] grid, int x, int y, int cols, int rows, int id) {
+        if (x < 0 || x >= cols || y < 0 || y >= rows) return false;
+        if (grid[x][y] >= 0 && grid[x][y] != id) return false;
+        for (int dx = -1; dx <= 1; dx++)
+            for (int dy = -1; dy <= 1; dy++) {
+                if (dx == 0 && dy == 0) continue;
+                int nx = x+dx, ny = y+dy;
+                if (nx >= 0 && nx < cols && ny >= 0 && ny < rows) {
+                    int v = grid[nx][ny];
+                    if (v >= 0 && v != id) return false;
+                }
+            }
+        return true;
     }
 
     private void drawBgUrbanGrid(Canvas canvas) {
         canvas.drawColor(BG_COLOR_GRID);
 
         long  t       = System.currentTimeMillis();
-        float gridOff = (t * 0.00012f + bgParallaxY * 0.0003f) % 1.0f;
+        float gridOff = ((float)(t % 8334L) * 0.00012f + bgParallaxY * 0.0003f) % 1.0f;
 
-        float vpX     = screenWidth  * 0.50f;
-        float vpY     = screenHeight * 0.42f;
+        float horizonY = screenHeight * 0.42f;
+        float fpX      = screenWidth  * 0.50f;
+        // Point de fuite au-dessus de l'horizon — lignes convergent mais ne se croisent pas à l'écran
+        float fpY      = horizonY - screenHeight * 0.12f;
 
-        Paint fine = new Paint(Paint.ANTI_ALIAS_FLAG);
-        fine.setStyle(Paint.Style.STROKE);
+        // Onde de surbrillance : remonte du bas vers l'horizon en boucle
+        float waveProgress = (float)(t % 2858L) * 0.00035f;
+        float waveY        = Math.max(horizonY, screenHeight - waveProgress * (screenHeight - horizonY));
+        float waveH        = screenHeight * 0.12f;
 
-        Paint mid = new Paint(Paint.ANTI_ALIAS_FLAG);
-        mid.setStyle(Paint.Style.STROKE);
+        // ── Soleil trois-quarts vaporwave ──
+        float sunR = screenWidth * 0.22f;
+        canvas.save();
+        gridSunClipPath.reset();
+        gridSunClipPath.addCircle(fpX, horizonY, sunR, Path.Direction.CW);
+        canvas.clipPath(gridSunClipPath);
+        canvas.clipRect(0, horizonY - sunR, screenWidth, horizonY);
 
-        Paint wide = new Paint(Paint.ANTI_ALIAS_FLAG);
-        wide.setStyle(Paint.Style.STROKE);
+        gridSunMatrix.setScale(sunR, sunR);
+        gridSunMatrix.postTranslate(fpX, horizonY);
+        gridSunGradient.setLocalMatrix(gridSunMatrix);
+        gridSunPaint.setShader(gridSunGradient);
+        gridSunPaint.setAlpha(255);
+        canvas.drawCircle(fpX, horizonY, sunR, gridSunPaint);
+
+        // Bandes animées : montent de horizonY vers mi-hauteur, s'affinent et disparaissent
+        gridSunPaint.setShader(null);
+        gridSunPaint.setColor(BG_COLOR_GRID);
+        float sunMid    = horizonY - sunR * 0.5f;
+        float sunRange  = sunR * 0.5f;
+        float bandPhase = (float)(t % 18182L) * 0.000055f;
+        int   numBands  = 5;
+        for (int b = 0; b < numBands; b++) {
+            float phase = (bandPhase + (float) b / numBands) % 1.0f;
+            float by    = horizonY - phase * sunRange;
+            float bh    = sunR * 0.07f * (1f - phase * 0.85f);
+            int   ba    = (int)(240f * (1f - phase * phase));
+            if (bh < 1f || by < sunMid) continue;
+            gridSunPaint.setAlpha(ba);
+            canvas.drawRect(fpX - sunR, by - bh * 0.5f, fpX + sunR, by + bh * 0.5f, gridSunPaint);
+        }
+        canvas.restore();
 
         // ── Lignes horizontales ──
-        int hLines = 10;
+        int hLines = 12;
         for (int i = 0; i < hLines; i++) {
             float frac = (i + gridOff) / (float) hLines;
             float t2   = frac * frac * frac;
-            float y    = vpY + t2 * (screenHeight - vpY + screenHeight * 0.3f);
-            if (y > screenHeight * 1.1f || y < vpY) continue;
+            float y    = horizonY + t2 * (screenHeight - horizonY + screenHeight * 0.08f);
+            if (y > screenHeight * 1.05f || y < horizonY) continue;
 
-            int a = (int) Math.min(220f, 40f + t2 * 180f);
+            float dist  = Math.abs(y - waveY);
+            float wave  = dist < waveH ? (1f - dist / waveH) * (1f - dist / waveH) : 0f;
 
-            wide.setStrokeWidth(screenWidth * 0.018f);
-            wide.setColor(Color.argb(a / 8, 80, 40, 220));
-            canvas.drawLine(0, y, screenWidth, y, wide);
+            int aBase = (int) Math.min(220f, 70f + t2 * 150f);
+            int a     = (int) Math.min(255f, aBase + wave * 160f);
 
-            mid.setStrokeWidth(screenWidth * 0.008f);
-            mid.setColor(Color.argb(a / 4, 80, 40, 220));
-            canvas.drawLine(0, y, screenWidth, y, mid);
+            gridWidePaint.setStrokeWidth(screenWidth * (0.022f + wave * 0.010f));
+            gridWidePaint.setColor(Color.argb(a / 5, 80, 40, 220));
+            canvas.drawLine(0, y, screenWidth, y, gridWidePaint);
 
-            fine.setStrokeWidth(screenWidth * 0.003f);
-            fine.setColor(Color.argb(a, 80, 40, 220));
-            canvas.drawLine(0, y, screenWidth, y, fine);
+            gridMidPaint.setStrokeWidth(screenWidth * (0.010f + wave * 0.006f));
+            gridMidPaint.setColor(Color.argb(a / 2, 80, 40, 220));
+            canvas.drawLine(0, y, screenWidth, y, gridMidPaint);
+
+            gridFinePaint.setStrokeWidth(screenWidth * (0.004f + wave * 0.003f));
+            gridFinePaint.setColor(Color.argb(a, 80, 40, 220));
+            canvas.drawLine(0, y, screenWidth, y, gridFinePaint);
         }
 
         // ── Lignes de fuite ──
         int vLines = 12;
         for (int i = 0; i <= vLines; i++) {
-            float startX = -screenWidth * 0.3f + i * (screenWidth * 1.6f / vLines);
+            float startX = -screenWidth * 2.0f + i * (screenWidth * 6.0f / vLines);
             float startY = screenHeight * 1.05f;
 
-            int a = (int) Math.max(30f, Math.min(180f,
-                    60f + (1f - Math.abs(startX - screenWidth / 2f) / (screenWidth * 0.8f)) * 120f));
+            float tInter = (horizonY - startY) / (fpY - startY);
+            float endX   = startX + tInter * (fpX - startX);
 
-            wide.setStrokeWidth(screenWidth * 0.018f);
-            wide.setColor(Color.argb(a / 8, 80, 40, 220));
-            canvas.drawLine(startX, startY, vpX, vpY, wide);
+            int aBase = (int) Math.max(40f, Math.min(200f,
+                    70f + (1f - Math.abs(startX - screenWidth * 0.5f) / (screenWidth * 3.0f)) * 130f));
 
-            mid.setStrokeWidth(screenWidth * 0.008f);
-            mid.setColor(Color.argb(a / 4, 80, 40, 220));
-            canvas.drawLine(startX, startY, vpX, vpY, mid);
+            gridWidePaint.setStrokeWidth(screenWidth * 0.022f);
+            gridWidePaint.setColor(Color.argb(aBase / 5, 80, 40, 220));
+            canvas.drawLine(startX, startY, endX, horizonY, gridWidePaint);
+            gridMidPaint.setStrokeWidth(screenWidth * 0.010f);
+            gridMidPaint.setColor(Color.argb(aBase / 2, 80, 40, 220));
+            canvas.drawLine(startX, startY, endX, horizonY, gridMidPaint);
+            gridFinePaint.setStrokeWidth(screenWidth * 0.004f);
+            gridFinePaint.setColor(Color.argb(aBase, 80, 40, 220));
+            canvas.drawLine(startX, startY, endX, horizonY, gridFinePaint);
 
-            fine.setStrokeWidth(screenWidth * 0.003f);
-            fine.setColor(Color.argb(a, 80, 40, 220));
-            canvas.drawLine(startX, startY, vpX, vpY, fine);
+            // Onde : épaisseur progressive (fuselée) — 7 sous-segments
+            if (waveY > horizonY && waveY < startY) {
+                float lineT    = (waveY - startY) / (horizonY - startY);
+                float waveIntX = startX + lineT * (endX - startX);
+                float dx = endX - startX, dy = horizonY - startY;
+                float len  = (float) Math.hypot(dx, dy);
+                float ux = dx / len, uy = dy / len;
+                // Perpendiculaire à la ligne
+                float px = -uy, py = ux;
+                float half     = screenWidth * 0.018f;  // demi-longueur
+                float maxWidth = screenWidth * 0.006f;  // largeur max au centre
+
+                // Pointe haute, côté droit, pointe basse, côté gauche
+                float tipTopX  = waveIntX - ux * half, tipTopY  = waveY - uy * half;
+                float tipBotX  = waveIntX + ux * half, tipBotY  = waveY + uy * half;
+                float midRX    = waveIntX + px * maxWidth, midRY = waveY + py * maxWidth;
+                float midLX    = waveIntX - px * maxWidth, midLY = waveY - py * maxWidth;
+
+                canvas.save();
+                canvas.clipRect(0, horizonY, screenWidth, screenHeight * 1.1f);
+
+                // Passe glow large
+                gridWavePath.reset();
+                float gw = maxWidth * 2.2f;
+                float gTipTopX = waveIntX - ux * half, gTipTopY = waveY - uy * half;
+                float gTipBotX = waveIntX + ux * half, gTipBotY = waveY + uy * half;
+                float gMidRX = waveIntX + px * gw,  gMidRY = waveY + py * gw;
+                float gMidLX = waveIntX - px * gw,  gMidLY = waveY - py * gw;
+                gridWavePath.moveTo(gTipTopX, gTipTopY);
+                gridWavePath.quadTo(gMidRX, gMidRY, gTipBotX, gTipBotY);
+                gridWavePath.quadTo(gMidLX, gMidLY, gTipTopX, gTipTopY);
+                gridWavePath.close();
+                gridWidePaint.setStyle(Paint.Style.FILL);
+                gridWidePaint.setColor(Color.argb(aBase / 4, 80, 40, 220));
+                canvas.drawPath(gridWavePath, gridWidePaint);
+                gridWidePaint.setStyle(Paint.Style.STROKE);
+
+                // Passe mid
+                gridWavePath.reset();
+                gridWavePath.moveTo(tipTopX, tipTopY);
+                gridWavePath.quadTo(midRX, midRY, tipBotX, tipBotY);
+                gridWavePath.quadTo(midLX, midLY, tipTopX, tipTopY);
+                gridWavePath.close();
+                gridMidPaint.setStyle(Paint.Style.FILL);
+                gridMidPaint.setColor(Color.argb(Math.min(255, aBase * 2), 80, 40, 220));
+                canvas.drawPath(gridWavePath, gridMidPaint);
+                gridMidPaint.setStyle(Paint.Style.STROKE);
+
+                // Passe core fine (contour seulement pour l'éclat)
+                gridFinePaint.setStyle(Paint.Style.STROKE);
+                gridFinePaint.setStrokeWidth(screenWidth * 0.004f);
+                gridFinePaint.setColor(Color.argb(255, 80, 40, 220));
+                canvas.drawPath(gridWavePath, gridFinePaint);
+
+                canvas.restore();
+            }
         }
 
-        // ── Halo central (point de fuite) ──
-        Paint vpGlow = new Paint(Paint.ANTI_ALIAS_FLAG);
-        vpGlow.setStyle(Paint.Style.FILL);
-        vpGlow.setShader(new RadialGradient(vpX, vpY, screenWidth * 0.25f,
-                new int[]{ 0x55AAAAFF, 0x224444FF, 0x00000000 },
-                new float[]{ 0f, 0.4f, 1f },
-                Shader.TileMode.CLAMP));
-        canvas.drawCircle(vpX, vpY, screenWidth * 0.25f, vpGlow);
+        // ── Ligne d'horizon ──
+        gridWidePaint.setStrokeWidth(screenWidth * 0.030f);
+        gridWidePaint.setColor(Color.argb(50, 80, 40, 220));
+        canvas.drawLine(0, horizonY, screenWidth, horizonY, gridWidePaint);
+
+        gridMidPaint.setStrokeWidth(screenWidth * 0.014f);
+        gridMidPaint.setColor(Color.argb(120, 80, 40, 220));
+        canvas.drawLine(0, horizonY, screenWidth, horizonY, gridMidPaint);
+
+        gridFinePaint.setStrokeWidth(screenWidth * 0.006f);
+        gridFinePaint.setColor(Color.argb(220, 80, 40, 220));
+        canvas.drawLine(0, horizonY, screenWidth, horizonY, gridFinePaint);
+    }
+
+    // ══════════════════════════════════════════════════
+    // NÉON — Tunnel
+    // Vignette RadialGradient + parois légères
+    // + néons circulaires aux joints
+    // ~45 drawCircle/frame au lieu de ~170
+    // ══════════════════════════════════════════════════
+
+    private void drawBgUrbanTunnel(Canvas canvas) {
+        canvas.drawColor(BG_COLOR_TUNNEL);
+        float dt = 0.016f;
+        bgTunnelTime += dt;
+
+        float baseCx = screenWidth * 0.5f;
+        float baseCy = screenHeight * 0.45f;
+        float orbitR = Math.min(screenWidth, screenHeight) * TUNNEL_ORBIT_RADIUS;
+        float maxRadius = Math.max(screenWidth, screenHeight) * 0.95f;
+        float diagHalf = (float) Math.hypot(screenWidth, screenHeight) * 0.55f;
+
+        // ── Vignette radiale (1 seul drawCircle via RadialGradient) ──
+        if (tunnelVigGradient == null || tunnelVigW != screenWidth || tunnelVigH != screenHeight) {
+            tunnelVigW = screenWidth;
+            tunnelVigH = screenHeight;
+            tunnelVigGradient = new RadialGradient(
+                    0f, 0f, 1f,
+                    new int[]{  0x00161820, 0x00161820, 0x28161820, 0x60161820, 0xAA161820 },
+                    new float[]{ 0f,          0.30f,      0.55f,      0.78f,      1f },
+                    Shader.TileMode.CLAMP);
+            tunnelVigPaint.setStyle(Paint.Style.FILL);
+            tunnelVigPaint.setShader(tunnelVigGradient);
+        }
+
+        float vigCx = baseCx + (float) Math.cos(bgTunnelTime * TUNNEL_ORBIT_SPEED) * orbitR * 0.15f;
+        float vigCy = baseCy + (float) Math.sin(bgTunnelTime * TUNNEL_ORBIT_SPEED * 0.7f) * orbitR * 0.1f;
+        tunnelVigMatrix.setScale(diagHalf, diagHalf);
+        tunnelVigMatrix.postTranslate(vigCx, vigCy);
+        tunnelVigGradient.setLocalMatrix(tunnelVigMatrix);
+        canvas.drawCircle(vigCx, vigCy, diagHalf, tunnelVigPaint);
+
+        // ── Calcul des positions de segment ──
+        float segDepth = 1.0f / TUNNEL_SEGMENT_COUNT;
+        float scroll = (bgTunnelTime * TUNNEL_SPEED) % segDepth;
+
+        int totalBounds = TUNNEL_SEGMENT_COUNT + 2;
+        float[] radii  = new float[totalBounds];
+        float[] cxArr  = new float[totalBounds];
+        float[] cyArr  = new float[totalBounds];
+        float[] alphas = new float[totalBounds];
+
+        for (int s = 0; s < totalBounds; s++) {
+            float progress = s * segDepth + scroll;
+            float birthTime = bgTunnelTime - progress / Math.max(TUNNEL_SPEED, 0.001f);
+            float angle = birthTime * TUNNEL_ORBIT_SPEED;
+            float parallax = Math.min(1f, progress * 1.5f);
+            cxArr[s]  = baseCx + (float) Math.cos(angle) * orbitR * parallax;
+            cyArr[s]  = baseCy + (float) Math.sin(angle * 0.7f) * orbitR * 0.7f * parallax;
+
+            float eased = progress * progress;
+            radii[s] = eased * maxRadius;
+
+            float fadeIn  = Math.min(1f, progress * 3f);
+            float fadeOut = progress < 0.55f ? 1f : Math.max(0f, 1f - (progress - 0.55f) * 2f);
+            alphas[s] = fadeIn * fadeOut;
+        }
+
+        tunnelPaint.setStyle(Paint.Style.STROKE);
+
+        // ── Parois (2 passes par segment au lieu de 13) ──
+        for (int s = totalBounds - 2; s >= 0; s--) {
+            float a = (alphas[s] + alphas[s + 1]) * 0.5f;
+            if (a <= 0.01f) continue;
+
+            float rInner = radii[s];
+            float rOuter = radii[s + 1];
+            float wallThick = rOuter - rInner;
+            if (wallThick < 4f) continue;
+
+            float wCx = (cxArr[s] + cxArr[s + 1]) * 0.5f;
+            float wCy = (cyArr[s] + cyArr[s + 1]) * 0.5f;
+            float wR  = (rInner + rOuter) * 0.5f;
+
+            // Passe large (bords diffus grâce au stroke épais + alpha faible)
+            tunnelPaint.setStrokeWidth(wallThick * 0.95f);
+            tunnelPaint.setColor(Color.argb((int)(a * 18), 35, 38, 50));
+            canvas.drawCircle(wCx, wCy, wR, tunnelPaint);
+
+            // Passe étroite au centre (cœur plus visible)
+            tunnelPaint.setStrokeWidth(wallThick * 0.45f);
+            tunnelPaint.setColor(Color.argb((int)(a * 12), 45, 48, 60));
+            canvas.drawCircle(wCx, wCy, wR, tunnelPaint);
+        }
+
+        // ── Néons aux joints (3 passes par segment) ──
+        for (int s = 0; s < totalBounds; s++) {
+            float a = alphas[s];
+            if (a <= 0.01f || radii[s] < 2f) continue;
+
+            float cx = cxArr[s];
+            float cy = cyArr[s];
+            float r  = radii[s];
+
+            int colorIdx  = s % TUNNEL_COLORS.length;
+            int baseColor = TUNNEL_COLORS[colorIdx];
+            int cr = (baseColor >> 16) & 0xFF;
+            int cg = (baseColor >> 8) & 0xFF;
+            int cb = baseColor & 0xFF;
+
+            // Halo large (illumine les parois adjacentes)
+            tunnelPaint.setStrokeWidth(screenWidth * 0.045f);
+            tunnelPaint.setColor(Color.argb((int)(a * 16), cr, cg, cb));
+            canvas.drawCircle(cx, cy, r, tunnelPaint);
+
+            // Mid glow
+            tunnelPaint.setStrokeWidth(screenWidth * 0.012f);
+            tunnelPaint.setColor(Color.argb((int)(a * 70), cr, cg, cb));
+            canvas.drawCircle(cx, cy, r, tunnelPaint);
+
+            // Core
+            tunnelPaint.setStrokeWidth(screenWidth * 0.003f);
+            tunnelPaint.setColor(Color.argb((int)(a * 200), cr, cg, cb));
+            canvas.drawCircle(cx, cy, r, tunnelPaint);
+        }
+
+        // ── Point de fuite (2 cercles au lieu de 3) ──
+        float pulse = 0.08f + 0.03f * (float) Math.sin(bgTunnelTime * 0.5);
+        float glowR = Math.min(screenWidth, screenHeight) * 0.06f;
+        tunnelPaint.setStyle(Paint.Style.FILL);
+        tunnelPaint.setColor(Color.argb((int)(pulse * 55), 255, 238, 180));
+        canvas.drawCircle(vigCx, vigCy, glowR * 2f, tunnelPaint);
+        tunnelPaint.setColor(Color.argb((int)(pulse * 160), 255, 248, 220));
+        canvas.drawCircle(vigCx, vigCy, glowR * 0.5f, tunnelPaint);
+        tunnelPaint.setStyle(Paint.Style.STROKE);
+    }
+
+    // ══════════════════════════════════════════════════
+    // NÉON — Equalizer
+    // 1 seul ovale RadialGradient par barre = pas de seam
+    // ColorFilters cachés = pas d'allocation par frame
+    // ══════════════════════════════════════════════════
+
+    private void drawBgUrbanEqualizer(Canvas canvas) {
+        canvas.drawColor(BG_COLOR_EQUALIZER);
+        float dt = 0.016f;
+        bgEqTime += dt;
+
+        float barTotalW = screenWidth / (float) EQ_BAR_COUNT;
+        float barW = barTotalW * 0.72f;
+        float gap = barTotalW * 0.28f;
+        float maxBarH = screenHeight * 0.75f;
+        float baseY = screenHeight * 0.95f;
+
+        if (bgEqBarHeights == null) {
+            bgEqBarHeights = new float[EQ_BAR_COUNT];
+            bgEqBarTargets = new float[EQ_BAR_COUNT];
+            bgEqBarSpeeds  = new float[EQ_BAR_COUNT];
+            bgEqBarPhases  = new float[EQ_BAR_COUNT];
+            eqCachedFilters    = new PorterDuffColorFilter[EQ_BAR_COUNT];
+            eqCachedFilterKeys = new int[EQ_BAR_COUNT];
+            for (int i = 0; i < EQ_BAR_COUNT; i++) {
+                bgEqBarPhases[i] = (float)(Math.random() * Math.PI * 2);
+                bgEqBarSpeeds[i] = 0.8f + (float)(Math.random() * 1.2f);
+            }
+        }
+
+        for (int i = 0; i < EQ_BAR_COUNT; i++) {
+            float center = (float) i / EQ_BAR_COUNT;
+            float dist = Math.abs(center - 0.5f) * 2f;
+            float envelope = 1f - dist * dist * 0.6f;
+
+            float wave1 = (float) Math.sin(bgEqTime * bgEqBarSpeeds[i] * 2.0 + bgEqBarPhases[i]);
+            float wave2 = (float) Math.sin(bgEqTime * 1.3 + i * 0.4);
+            float wave3 = (float) Math.sin(bgEqTime * 0.7 + i * 0.15);
+            float combined = (wave1 * 0.5f + wave2 * 0.3f + wave3 * 0.2f) * 0.5f + 0.5f;
+
+            bgEqBarTargets[i] = combined * envelope * maxBarH;
+            bgEqBarTargets[i] = Math.max(maxBarH * 0.03f, bgEqBarTargets[i]);
+
+            float diff = bgEqBarTargets[i] - bgEqBarHeights[i];
+            float speed = diff > 0 ? 8f : 3f;
+            bgEqBarHeights[i] += diff * dt * speed;
+        }
+
+        // ── Passe glow (shader identique pour toutes les barres) ──
+        eqGlowPaint.setShader(eqGlowGrad);
+        for (int i = 0; i < EQ_BAR_COUNT; i++) {
+            float x = gap * 0.5f + i * barTotalW;
+            float h = bgEqBarHeights[i];
+            float topY = baseY - h;
+            float barCx = x + barW * 0.5f;
+            float barCy = topY + h * 0.35f;
+
+            float frac = (float) i / (EQ_BAR_COUNT - 1);
+            float hNorm = h / maxBarH;
+            float hNorm2 = hNorm * hNorm;
+
+            int cr, cg, cb;
+            if (frac < 0.5f) {
+                float t = frac * 2f;
+                cr = (int)(t * 0xFF);
+                cg = (int)(0xFF + t * (0xDD - 0xFF));
+                cb = (int)(0x88 + t * (0x00 - 0x88));
+            } else {
+                float t = (frac - 0.5f) * 2f;
+                cr = 0xFF;
+                cg = (int)(0xDD + t * (0x22 - 0xDD));
+                cb = (int)(t * 0x44);
+            }
+
+            int litR = Math.min(255, cr + (int)((255 - cr) * hNorm2 * 0.6f));
+            int litG = Math.min(255, cg + (int)((255 - cg) * hNorm2 * 0.6f));
+            int litB = Math.min(255, cb + (int)((255 - cb) * hNorm2 * 0.6f));
+
+            int glowAlpha = (int)(35 + hNorm2 * 185);
+
+            // ColorFilter caché : quantize sur 8 niveaux par canal
+            int key = ((glowAlpha >> 5) << 24)
+                    | ((litR >> 5) << 16)
+                    | ((litG >> 5) << 8)
+                    |  (litB >> 5);
+            if (eqCachedFilterKeys[i] != key) {
+                eqCachedFilterKeys[i] = key;
+                eqCachedFilters[i] = new PorterDuffColorFilter(
+                        Color.argb(glowAlpha, litR, litG, litB),
+                        PorterDuff.Mode.SRC_IN);
+            }
+
+            float ovalRadX = barW * (2f + hNorm * 3.5f);
+            float ovalRadY = h * (0.55f + hNorm * 0.25f) + barW;
+
+            eqGlowMatrix.setScale(ovalRadX, ovalRadY);
+            eqGlowMatrix.postTranslate(barCx, barCy);
+            eqGlowGrad.setLocalMatrix(eqGlowMatrix);
+            eqGlowPaint.setColorFilter(eqCachedFilters[i]);
+            eqGlowRect.set(barCx - ovalRadX, barCy - ovalRadY,
+                    barCx + ovalRadX, barCy + ovalRadY);
+            canvas.drawOval(eqGlowRect, eqGlowPaint);
+        }
+        eqGlowPaint.setColorFilter(null);
+
+        // ── Passe barres (pas de shader, pas de filter) ──
+        eqGlowPaint.setShader(null);
+        for (int i = 0; i < EQ_BAR_COUNT; i++) {
+            float x = gap * 0.5f + i * barTotalW;
+            float h = bgEqBarHeights[i];
+            float topY = baseY - h;
+
+            float frac = (float) i / (EQ_BAR_COUNT - 1);
+            float hNorm = h / maxBarH;
+            float hNorm2 = hNorm * hNorm;
+
+            int cr, cg, cb;
+            if (frac < 0.5f) {
+                float t = frac * 2f;
+                cr = (int)(t * 0xFF);
+                cg = (int)(0xFF + t * (0xDD - 0xFF));
+                cb = (int)(0x88 + t * (0x00 - 0x88));
+            } else {
+                float t = (frac - 0.5f) * 2f;
+                cr = 0xFF;
+                cg = (int)(0xDD + t * (0x22 - 0xDD));
+                cb = (int)(t * 0x44);
+            }
+
+            int litR = Math.min(255, cr + (int)((255 - cr) * hNorm2 * 0.6f));
+            int litG = Math.min(255, cg + (int)((255 - cg) * hNorm2 * 0.6f));
+            int litB = Math.min(255, cb + (int)((255 - cb) * hNorm2 * 0.6f));
+
+            int barAlpha = (int)(120 + hNorm * 135);
+            eqBarPaint.setColor(Color.argb(barAlpha, litR, litG, litB));
+            canvas.drawRect(x, topY, x + barW, baseY, eqBarPaint);
+
+            float capH = screenWidth * (0.003f + hNorm2 * 0.005f);
+            int capR = Math.min(255, litR + (int)((255 - litR) * 0.5f));
+            int capG = Math.min(255, litG + (int)((255 - litG) * 0.5f));
+            int capB = Math.min(255, litB + (int)((255 - litB) * 0.5f));
+            eqBarPaint.setColor(Color.argb((int)(180 + hNorm * 75), capR, capG, capB));
+            canvas.drawRect(x, topY, x + barW, topY + capH, eqBarPaint);
+        }
     }
 }

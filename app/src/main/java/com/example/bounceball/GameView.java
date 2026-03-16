@@ -24,6 +24,7 @@ import android.graphics.Shader;
 import android.graphics.BlurMaskFilter;
 import android.graphics.CornerPathEffect;
 import android.graphics.Matrix;
+import android.graphics.PixelFormat;
 
 public class GameView extends SurfaceView implements SurfaceHolder.Callback, Runnable {
 
@@ -185,6 +186,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         this.upgrades = upgrades;
         applyUpgrades();
         surfaceHolder = getHolder();
+        //surfaceHolder.setFormat(PixelFormat.RGBA_8888);
         surfaceHolder.addCallback(this);
         paint = new Paint();
         paint.setAntiAlias(false);
@@ -557,7 +559,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     // ══════════════════════════════════════════════════
     private void draw() {
         if (!surfaceHolder.getSurface().isValid()) return;
-        Canvas canvas = surfaceHolder.lockCanvas();
+        //Canvas canvas = surfaceHolder.lockCanvas();
+        Canvas canvas;
+        if (android.os.Build.VERSION.SDK_INT >= 26) {
+            canvas = surfaceHolder.lockHardwareCanvas();
+        } else {
+            canvas = surfaceHolder.lockCanvas();
+        }
         if (canvas == null) return;
         if (bgRenderer != null) bgRenderer.draw(canvas);
         else canvas.drawColor(Color.WHITE);
