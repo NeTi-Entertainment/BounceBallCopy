@@ -29,6 +29,7 @@ public class MainActivity extends Activity implements GameView.GameStateListener
     private FrameLayout eggOverlay;
 
     private ScrollView cosmeticsScrollView;
+    private FrameLayout gachaOverlay;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -103,9 +104,11 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         settingsOverlay = buildSettingsOverlay();
         shopOverlay     = buildShopOverlay();
         eggOverlay      = buildEggOverlay();
+        gachaOverlay    = GachaPage.buildOverlay(this, prefs);
         root.addView(settingsOverlay, matchParentFl());
         root.addView(shopOverlay,     matchParentFl());
         root.addView(eggOverlay,      matchParentFl());
+        root.addView(gachaOverlay,    matchParentFl());
 
         setContentView(root);
     }
@@ -393,19 +396,29 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         sheetLp.rightMargin  = dpToPx(12);
         overlay.addView(sheet, sheetLp);
 
-        LinearLayout tabRow = new LinearLayout(this);
-        tabRow.setOrientation(LinearLayout.HORIZONTAL);
-        TextView upgradesTab  = makeTab("upgrades");
-        TextView cosmeticsTab = makeTab("cosmétiques");
-        upgradesTab.setLayoutParams(new LinearLayout.LayoutParams(
-                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-        cosmeticsTab.setLayoutParams(new LinearLayout.LayoutParams(
-                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-        tabRow.addView(upgradesTab);
-        tabRow.addView(cosmeticsTab);
-        sheet.addView(tabRow, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT));
+        // ── Barre d'onglets (4 onglets sur 2 rangées) ──
+        LinearLayout tabRow1 = new LinearLayout(this);
+        tabRow1.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout tabRow2 = new LinearLayout(this);
+        tabRow2.setOrientation(LinearLayout.HORIZONTAL);
+
+        TextView upgradesTab  = makeTab("⚡ Upgrades");
+        TextView cosmeticsTab = makeTab("🎨 Cosmétiques");
+        TextView gachaTab     = makeTab("🎰 Gacha");
+        TextView eclosionTab  = makeTab("🥚 Éclosion");
+
+        upgradesTab.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        cosmeticsTab.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        gachaTab.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        eclosionTab.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+
+        tabRow1.addView(upgradesTab);
+        tabRow1.addView(cosmeticsTab);
+        tabRow2.addView(gachaTab);
+        tabRow2.addView(eclosionTab);
+
+        sheet.addView(tabRow1, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        sheet.addView(tabRow2, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
 
         FrameLayout content = new FrameLayout(this);
         content.setBackgroundColor(Color.parseColor("#111E2C"));
@@ -457,6 +470,22 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         ScrollView cosmeticsPage = cosmeticsScrollView;
         cosmeticsPage.setVisibility(View.GONE);
         content.addView(cosmeticsPage, matchParentFl());
+
+        // ── Page Éclosion (placeholder) ──
+        ScrollView eclosionPage = new ScrollView(this);
+        LinearLayout eclosionInner = new LinearLayout(this);
+        eclosionInner.setOrientation(LinearLayout.VERTICAL);
+        eclosionInner.setGravity(Gravity.CENTER);
+        TextView eclosionTv = new TextView(this);
+        eclosionTv.setText("🥚  Éclosion\n\nBientôt disponible…");
+        eclosionTv.setTextSize(20f);
+        eclosionTv.setTextColor(Color.WHITE);
+        eclosionTv.setGravity(Gravity.CENTER);
+        eclosionInner.addView(eclosionTv);
+        eclosionPage.addView(eclosionInner);
+        eclosionPage.setVisibility(View.GONE);
+        content.addView(eclosionPage, matchParentFl());
+
         sheet.addView(content);
 
         LinearLayout bottomBar = new LinearLayout(this);
@@ -474,31 +503,67 @@ public class MainActivity extends Activity implements GameView.GameStateListener
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT));
 
-        Runnable selUpgrades = () -> {
-            upgradesScroll.setVisibility(View.VISIBLE);
-            cosmeticsPage.setVisibility(View.GONE);
-            upgradesTab.setBackgroundColor(Color.parseColor("#111E2C"));
-            upgradesTab.setTextColor(Color.WHITE);
-            upgradesTab.setAlpha(1f);
-            cosmeticsTab.setBackgroundColor(Color.parseColor("#0A1520"));
-            cosmeticsTab.setTextColor(Color.parseColor("#888888"));
-            cosmeticsTab.setAlpha(0.8f);
+        // ── Logique de sélection des onglets ──
+        // Upgrades et Cosmétiques affichent leur page dans le sheet.
+        // Gacha ouvre l'overlay séparé en superposition.
+        // Éclosion affiche le placeholder dans le sheet.
+
+        TextView[] pageTabs  = {upgradesTab, cosmeticsTab, eclosionTab};
+        View[]     pages     = {upgradesScroll, cosmeticsPage, eclosionPage};
+
+        Runnable activateUpgrades = () -> {
+            for (int i = 0; i < pages.length; i++) {
+                pages[i].setVisibility(i == 0 ? View.VISIBLE : View.GONE);
+                pageTabs[i].setBackgroundColor(Color.parseColor(i == 0 ? "#111E2C" : "#0A1520"));
+                pageTabs[i].setTextColor(Color.parseColor(i == 0 ? "#FFFFFF" : "#888888"));
+                pageTabs[i].setAlpha(i == 0 ? 1f : 0.8f);
+            }
+            gachaTab.setBackgroundColor(Color.parseColor("#0A1520"));
+            gachaTab.setTextColor(Color.parseColor("#888888"));
+            gachaTab.setAlpha(0.8f);
             refreshCurr.run();
         };
-        Runnable selCosmetics = () -> {
-            upgradesScroll.setVisibility(View.GONE);
-            cosmeticsPage.setVisibility(View.VISIBLE);
+        Runnable activateCosmetics = () -> {
+            for (int i = 0; i < pages.length; i++) {
+                pages[i].setVisibility(i == 1 ? View.VISIBLE : View.GONE);
+                pageTabs[i].setBackgroundColor(Color.parseColor(i == 1 ? "#111E2C" : "#0A1520"));
+                pageTabs[i].setTextColor(Color.parseColor(i == 1 ? "#FFFFFF" : "#888888"));
+                pageTabs[i].setAlpha(i == 1 ? 1f : 0.8f);
+            }
+            gachaTab.setBackgroundColor(Color.parseColor("#0A1520"));
+            gachaTab.setTextColor(Color.parseColor("#888888"));
+            gachaTab.setAlpha(0.8f);
             CosmeticsPage.refreshAll(cosmeticsPage);
-            cosmeticsTab.setBackgroundColor(Color.parseColor("#111E2C"));
-            cosmeticsTab.setTextColor(Color.WHITE);
-            cosmeticsTab.setAlpha(1f);
-            upgradesTab.setBackgroundColor(Color.parseColor("#0A1520"));
-            upgradesTab.setTextColor(Color.parseColor("#888888"));
-            upgradesTab.setAlpha(0.8f);
         };
-        upgradesTab.setOnClickListener(v -> selUpgrades.run());
-        cosmeticsTab.setOnClickListener(v -> selCosmetics.run());
-        selUpgrades.run();
+        Runnable activateEclosion = () -> {
+            for (int i = 0; i < pages.length; i++) {
+                pages[i].setVisibility(i == 2 ? View.VISIBLE : View.GONE);
+                pageTabs[i].setBackgroundColor(Color.parseColor(i == 2 ? "#111E2C" : "#0A1520"));
+                pageTabs[i].setTextColor(Color.parseColor(i == 2 ? "#FFFFFF" : "#888888"));
+                pageTabs[i].setAlpha(i == 2 ? 1f : 0.8f);
+            }
+            gachaTab.setBackgroundColor(Color.parseColor("#0A1520"));
+            gachaTab.setTextColor(Color.parseColor("#888888"));
+            gachaTab.setAlpha(0.8f);
+        };
+
+        upgradesTab.setOnClickListener(v -> activateUpgrades.run());
+        cosmeticsTab.setOnClickListener(v -> activateCosmetics.run());
+        eclosionTab.setOnClickListener(v -> activateEclosion.run());
+
+        // Gacha → ouvre l'overlay séparé en superposition par-dessus le shop
+        gachaTab.setOnClickListener(v -> {
+            gachaTab.setBackgroundColor(Color.parseColor("#111E2C"));
+            gachaTab.setTextColor(Color.parseColor("#FFD700"));
+            gachaTab.setAlpha(1f);
+            if (gachaOverlay != null) {
+                Object r = gachaOverlay.getTag(R.id.tag_refresh);
+                if (r instanceof Runnable) ((Runnable) r).run();
+                gachaOverlay.setVisibility(View.VISIBLE);
+            }
+        });
+
+        activateUpgrades.run();
 
         return overlay;
     }
@@ -667,8 +732,11 @@ public class MainActivity extends Activity implements GameView.GameStateListener
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public void onBackPressed() {
-        if (settingsOverlay != null && settingsOverlay.getVisibility() == View.VISIBLE) {
+        if (gachaOverlay != null && gachaOverlay.getVisibility() == View.VISIBLE) {
+            gachaOverlay.setVisibility(View.GONE);
+        } else if (settingsOverlay != null && settingsOverlay.getVisibility() == View.VISIBLE) {
             hideOverlay(settingsOverlay);
         } else if (shopOverlay != null && shopOverlay.getVisibility() == View.VISIBLE) {
             hideOverlay(shopOverlay);
