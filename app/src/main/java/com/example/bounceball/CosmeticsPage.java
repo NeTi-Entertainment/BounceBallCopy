@@ -27,7 +27,7 @@ import com.example.bounceball.utils.GamePreferences;
  */
 public class CosmeticsPage {
 
-// {id, nom, couleur preview, gold, diamants, cat_stats, sous_cat}
+    // {id, nom, couleur preview, gold, diamants, cat_stats, sous_cat}
 // cat_stats : "classic" | "metal" | "space" | "sport" | "elemental"
 // sous_cat  : label affiché en en-tête de section dans le shop
     private static final Object[][] BALLS = {
@@ -59,8 +59,8 @@ public class CosmeticsPage {
             {"ball_cateye",   "Œil de Chat",      "#44DDBB", 1, 16,    "sport", "Sport"},
             {"ball_beach",    "Plage",            "#FFD700", 1, 8,     "sport", "Sport"},
             {"ball_volleyball", "Volleyball",     "#F5E6C8", 1, 9,     "sport", "Sport"},
-        {"ball_baseball", "Baseball", "#F5EED8", 1, 9, "sport", "Sport"},
-        {"ball_8ball", "Billard 8", "#111111", 1, 10, "sport", "Sport"},
+            {"ball_baseball", "Baseball", "#F5EED8", 1, 9, "sport", "Sport"},
+            {"ball_8ball", "Billard 8", "#111111", 1, 10, "sport", "Sport"},
 
             // ── METAL ──────────────────────────────────────────
             {"ball_lead",      "Balle Plomb",      "#707880", 1,  18, "metal", "Metal"},
@@ -125,6 +125,15 @@ public class CosmeticsPage {
     // {id, nom, couleur preview, gold, diamants}
     private static final Object[][] BACKGROUNDS = {
             {"bg_default",  "Fond Blanc",       "#FFFFFF", 0,   0  },
+            {"bg_grad_rainbow", "Dégradé Arc-en-ciel", "#DD0040", 5, 20},
+            {"bg_grad_sunset",  "Dégradé Sunset",      "#EE4400", 5, 20},
+            {"bg_grad_ocean",   "Dégradé Océan",       "#0033AA", 5, 20},
+            {"bg_grad_forest",  "Dégradé Forêt",       "#226622", 5, 20},
+            {"bg_grad_aurora",  "Dégradé Aurore",      "#00CC66", 5, 22},
+            {"bg_grad_candy",   "Dégradé Candy",       "#FF3388", 5, 22},
+            {"bg_grad_volcano", "Dégradé Volcan",      "#880000", 5, 24},
+            {"bg_grad_galaxy",  "Dégradé Galaxie",     "#4400AA", 5, 24},
+            {"bg_grad_toxic",   "Dégradé Toxique",     "#33DD00", 5, 24},
             {"bg_minimal_triangles",  "Triangles", "#4AADA8", 1, 12 },
             {"bg_minimal_circles",   "Cercles",         "#4A5568", 3, 12},
             {"bg_minimal_lines",     "Lignes",          "#2A3550", 3, 12},
@@ -133,10 +142,8 @@ public class CosmeticsPage {
             {"bg_urban_rain",    "Pluie Néon",    "#05050F", 4, 15},
             {"bg_urban_circuit", "Circuit",       "#020D05", 4, 15},
             {"bg_urban_grid",    "Grille",        "#060010", 4, 15},
-            {"bg_night",  "Ciel Nocturne",    "#0D1B2A", 400, 18 },
-            {"bg_sunset", "Coucher de Soleil","#FF7043", 500, 20 },
-            {"bg_forest", "Forêt",           "#2E7D32", 400, 18 },
-            {"bg_space",  "Espace",          "#1A0A2E", 800, 30 },
+            {"bg_urban_tunnel",    "Tunnel Néon",   "#020008", 4, 15},
+            {"bg_urban_equalizer", "Equalizer",     "#050505", 4, 15},
     };
 
     // Clés equipped par défaut
