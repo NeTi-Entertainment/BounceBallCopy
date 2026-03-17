@@ -81,8 +81,6 @@ public class CosmeticsPage {
             {"ball_meteorite", "Météorite",      "#7A7060",   1, 24, "metal", "Metal", "rare"},
 
             // ── SPACE ──────────────────────────────────────────
-            {"ball_void",         "Balle Néant",    "#212121",   1, 35, "space", "Space", "legendary"},
-            {"ball_nebula",       "Balle Nébuleuse","#7B1FA2",   1, 28, "space", "Space", "rare"},
             {"ball_comet",        "Balle Comète",   "#A0825A",   1, 26, "space", "Space", "rare"},
             {"ball_mercury",      "Mercure",        "#9E9585",   1, 18, "space", "Space", "rare"},
             {"ball_venus",        "Vénus",          "#E8D5A3",   1, 20, "space", "Space", "rare"},
@@ -275,14 +273,21 @@ public class CosmeticsPage {
         // NOUVEAU
         View preview = new View(ctx) {
             @Override protected void onDraw(Canvas canvas) {
-                float r = getWidth() / 2f;
-                try { BallRenderer.setColor(Color.parseColor(colorHex)); } catch (Exception ignored) {}
-                BallRenderer.draw(canvas, r, r, r, id);
+                float cx = getWidth()  / 2f;
+                float cy = getHeight() / 2f;
+                float r  = getWidth()  * 0.30f;
+                if (id.startsWith("bg_")) {
+                    BgPreviewRenderer.draw(canvas, cx, cy, r, id);
+                } else {
+                    try { BallRenderer.setColor(Color.parseColor(colorHex)); } catch (Exception ignored) {}
+                    BallRenderer.setAnimState(id, 0f, 0f, 0f);
+                    BallRenderer.draw(canvas, cx, cy, r, id);
+                }
             }
         };
-        int previewSize = px(ctx, 48);
+        int previewSize = px(ctx, 80);
         LinearLayout.LayoutParams prevLp = new LinearLayout.LayoutParams(previewSize, previewSize);
-        prevLp.setMargins(0, 0, px(ctx, 12), 0);
+        prevLp.setMargins(0, 0, px(ctx, 8), 0);
         preview.setLayoutParams(prevLp);
         row.addView(preview);
 
