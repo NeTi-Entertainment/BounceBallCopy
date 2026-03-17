@@ -27,7 +27,7 @@ import java.util.Random;
  */
 public class GachaSystem {
 
-    public static final int COST_GOLD      = 500;
+    public static final int COST_GOLD      = 1;
     public static final int COST_DIAMONDS  =  50;
 
     public static final int FRAGS_COMMON    =  30;
