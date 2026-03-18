@@ -1,13 +1,20 @@
 package com.example.bounceball;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import com.example.bounceball.colony.ColonyActivity;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.view.*;
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
+import com.example.bounceball.utils.EggHatchManager;
 import android.widget.*;
 import com.example.bounceball.upgrade.UpgradeStats;
 import com.example.bounceball.utils.AdManager;
@@ -30,6 +37,8 @@ public class MainActivity extends Activity implements GameView.GameStateListener
 
     private ScrollView cosmeticsScrollView;
     private FrameLayout gachaOverlay;
+    private FrameLayout eggContentFrame;
+    private ObjectAnimator eggBtnAnimator;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,7 +79,7 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         btnCol.addView(makeRoundBtn("⚙", v -> showOverlay(settingsOverlay)));
         shopBtn = makeRoundBtn("🏪", v -> showOverlay(shopOverlay));
         btnCol.addView(shopBtn);
-        eggBtn = makeRoundBtn("🥚", v -> showOverlay(eggOverlay));
+        eggBtn = makeRoundBtn("🥚", v -> showEggOverlay());
         btnCol.addView(eggBtn);
 
         // ── Record d'ascension affiché en permanence ──
@@ -111,6 +120,7 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         root.addView(gachaOverlay,    matchParentFl());
 
         setContentView(root);
+        refreshEggButton();
     }
 
     // ══════════════════════════════════════════════════════
@@ -134,11 +144,11 @@ public class MainActivity extends Activity implements GameView.GameStateListener
     public void onGameOver(float heightReached) {
         // ── 3. Sauvegarde le progrès (record + or) ──
         UpgradeStats upgrades = UpgradeStats.fromPrefs(prefs.getRaw());
-        boolean newRecord = prefs.updateMaxHeight(heightReached);       // sauvegarde record
+        boolean newRecord = prefs.updateMaxHeight(heightReached);
         int goldEarned = (int) Math.floor(heightReached * upgrades.goldMultiplier);
-        prefs.addGold(goldEarned);                                      // sauvegarde or
+        prefs.addGold(goldEarned);
+        EggHatchManager.checkAndSetReady(prefs, heightReached);
 
-        // ── Pub interstitielle ──
         AdManager.getInstance().onGameOver(this);
 
         runOnUiThread(() -> {
@@ -148,10 +158,10 @@ public class MainActivity extends Activity implements GameView.GameStateListener
             eggBtn.setVisibility(View.VISIBLE);
             tapText.setVisibility(View.VISIBLE);
             recordText.setVisibility(View.VISIBLE);
-            refreshRecordDisplay();   // met à jour le record affiché
+            refreshRecordDisplay();
+            refreshEggButton();
             startPulse();
 
-            // Toast si nouveau record
             if (newRecord) {
                 Toast.makeText(this,
                         String.format("🏆 Nouveau record : %.1f m !", heightReached),
@@ -165,6 +175,7 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         super.onResume();
         if (gameView != null) gameView.loadBallSkin();
         if (gameView != null) gameView.loadBgSkin();
+        refreshEggButton();
     }
 
     /** Met à jour le TextView du record avec la valeur persistée. */
@@ -314,6 +325,31 @@ public class MainActivity extends Activity implements GameView.GameStateListener
 
         addSettingsDivider(inner);
 
+        // ─── Hard Reset ────────────────────────────────────
+        addSettingsSectionHeader(inner, "⚠️ Zone dangereuse");
+
+        Button resetBtn = new Button(this);
+        resetBtn.setText("🗑  Effacer toute la progression");
+        resetBtn.setTextColor(Color.WHITE);
+        resetBtn.setBackgroundColor(Color.parseColor("#7F0000"));
+        LinearLayout.LayoutParams resetLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        resetLp.setMargins(0, dpToPx(8), 0, 0);
+        resetBtn.setLayoutParams(resetLp);
+        resetBtn.setOnClickListener(v -> new android.app.AlertDialog.Builder(this)
+                .setTitle("Reset total")
+                .setMessage("Toute ta progression, tes achats in-app, tes cosmétiques et l'éclosion seront effacés. Cette action est irréversible.")
+                .setPositiveButton("Tout effacer", (d, w) -> {
+                    prefs.resetAll();
+                    refreshRecordDisplay();
+                    refreshEggButton();
+                    hideOverlay(overlay);
+                    Toast.makeText(this, "Progression réinitialisée.", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("Annuler", null)
+                .show());
+        inner.addView(resetBtn);
+
         // ─── Bouton Retour ─────────────────────────────────
         Button backBtn = new Button(this);
         backBtn.setText("← Retour");
@@ -358,18 +394,9 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         FrameLayout overlay = new FrameLayout(this);
         overlay.setVisibility(View.GONE);
         overlay.setClickable(true);
-        overlay.setBackgroundColor(Color.argb(210, 10, 20, 40));
-        LinearLayout inner = new LinearLayout(this);
-        inner.setOrientation(LinearLayout.VERTICAL);
-        inner.setGravity(Gravity.CENTER);
-        TextView tv = new TextView(this);
-        tv.setText("🥚  Éclosion");
-        tv.setTextSize(28f);
-        tv.setTextColor(Color.WHITE);
-        tv.setGravity(Gravity.CENTER);
-        inner.addView(tv);
-        inner.addView(makeRetourBtn(v -> hideOverlay(overlay)));
-        overlay.addView(inner, matchParentFl());
+        overlay.setBackgroundColor(Color.argb(235, 5, 10, 20));
+        eggContentFrame = new FrameLayout(this);
+        overlay.addView(eggContentFrame, matchParentFl());
         return overlay;
     }
 
@@ -729,6 +756,204 @@ public class MainActivity extends Activity implements GameView.GameStateListener
 
     private int dpToPx(int dp) {
         return (int) (dp * getResources().getDisplayMetrics().density);
+    }
+
+    // ══════════════════════════════════════════════════════
+    // OVERLAY ŒUF — logique dynamique
+    // ══════════════════════════════════════════════════════
+
+    private void showEggOverlay() {
+        showOverlay(eggOverlay);
+        eggContentFrame.removeAllViews();
+        if (EggHatchManager.shouldShowHatchAnimation(prefs)) {
+            startHatchAnimation(eggContentFrame, () -> {
+                EggHatchManager.completeHatch(prefs);
+                refreshEggButton();
+                runOnUiThread(() -> showPostHatchState(eggContentFrame));
+            });
+        } else if (prefs.hasHatched()) {
+            showPostHatchState(eggContentFrame);
+        } else {
+            showLockedEggState(eggContentFrame);
+        }
+    }
+
+    private void showLockedEggState(FrameLayout container) {
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setGravity(Gravity.CENTER);
+        layout.setPadding(dpToPx(32), dpToPx(48), dpToPx(32), dpToPx(48));
+
+        TextView eggTv = new TextView(this);
+        eggTv.setText("🥚");
+        eggTv.setTextSize(96f);
+        eggTv.setGravity(Gravity.CENTER);
+        layout.addView(eggTv);
+
+        TextView hintTv = new TextView(this);
+        hintTv.setText("Atteins 1000 m\npour faire éclore l'œuf.");
+        hintTv.setTextColor(Color.parseColor("#AAAAAA"));
+        hintTv.setTextSize(18f);
+        hintTv.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams hintLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        hintLp.setMargins(0, dpToPx(24), 0, dpToPx(10));
+        hintTv.setLayoutParams(hintLp);
+        layout.addView(hintTv);
+
+        float maxH = prefs.getMaxHeight();
+        TextView progressTv = new TextView(this);
+        progressTv.setText(String.format("Record actuel : %.0f m / 1000 m", maxH));
+        progressTv.setTextColor(Color.parseColor("#FFD700"));
+        progressTv.setTextSize(15f);
+        progressTv.setGravity(Gravity.CENTER);
+        layout.addView(progressTv);
+
+        Button backBtn = makeRetourBtn(v -> hideOverlay(eggOverlay));
+        LinearLayout.LayoutParams backLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        backLp.topMargin = dpToPx(40);
+        backBtn.setLayoutParams(backLp);
+        layout.addView(backBtn);
+
+        container.addView(layout, matchParentFl());
+    }
+
+    private void startHatchAnimation(FrameLayout container, Runnable onComplete) {
+        container.removeAllViews();
+
+        TextView eggView = new TextView(this);
+        eggView.setText("🥚");
+        eggView.setTextSize(96f);
+        eggView.setGravity(Gravity.CENTER);
+        FrameLayout.LayoutParams elp = new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT);
+        elp.gravity = Gravity.CENTER;
+        container.addView(eggView, elp);
+
+        View flashView = new View(this);
+        flashView.setBackgroundColor(Color.WHITE);
+        flashView.setAlpha(0f);
+        container.addView(flashView, matchParentFl());
+
+        ObjectAnimator shake1 = ObjectAnimator.ofFloat(eggView, "translationX",
+                0f, -8f, 8f, -8f, 8f, -6f, 6f, -6f, 6f, 0f);
+        shake1.setDuration(1800);
+
+        ObjectAnimator shake2 = ObjectAnimator.ofFloat(eggView, "translationX",
+                0f, -22f, 22f, -28f, 28f, -22f, 22f, -32f, 32f, -26f, 26f, 0f);
+        shake2.setDuration(1400);
+
+        ObjectAnimator flashIn = ObjectAnimator.ofFloat(flashView, "alpha", 0f, 1f);
+        flashIn.setDuration(350);
+
+        ObjectAnimator flashOut = ObjectAnimator.ofFloat(flashView, "alpha", 1f, 0f);
+        flashOut.setDuration(750);
+        flashOut.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationStart(Animator animation) {
+                eggView.setText("👽");
+            }
+        });
+
+        AnimatorSet set = new AnimatorSet();
+        set.playSequentially(shake1, shake2, flashIn, flashOut);
+        set.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                onComplete.run();
+            }
+        });
+        set.start();
+    }
+
+    private void showPostHatchState(FrameLayout container) {
+        container.removeAllViews();
+
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setGravity(Gravity.CENTER);
+        layout.setPadding(dpToPx(32), dpToPx(48), dpToPx(32), dpToPx(48));
+
+        TextView alienTv = new TextView(this);
+        alienTv.setText("👽");
+        alienTv.setTextSize(96f);
+        alienTv.setGravity(Gravity.CENTER);
+        layout.addView(alienTv);
+
+        FrameLayout bubble = new FrameLayout(this);
+        GradientDrawable bubbleBg = new GradientDrawable();
+        bubbleBg.setColor(Color.parseColor("#0D2010"));
+        bubbleBg.setCornerRadius(dpToPx(16));
+        bubbleBg.setStroke(dpToPx(2), Color.parseColor("#00E676"));
+        bubble.setBackground(bubbleBg);
+        bubble.setPadding(dpToPx(24), dpToPx(16), dpToPx(24), dpToPx(16));
+
+        TextView dialogTv = new TextView(this);
+        dialogTv.setText("Bonjour.");
+        dialogTv.setTextColor(Color.WHITE);
+        dialogTv.setTextSize(20f);
+        dialogTv.setGravity(Gravity.CENTER);
+        bubble.addView(dialogTv);
+
+        LinearLayout.LayoutParams bubbleLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        bubbleLp.setMargins(0, dpToPx(24), 0, dpToPx(36));
+        bubble.setLayoutParams(bubbleLp);
+        layout.addView(bubble);
+
+        Button colonyBtn = new Button(this);
+        colonyBtn.setText("🌕  Construire la base");
+        colonyBtn.setTextSize(17f);
+        colonyBtn.setTextColor(Color.parseColor("#0A0A0A"));
+        GradientDrawable colonyBg = new GradientDrawable();
+        colonyBg.setColor(Color.parseColor("#FFD700"));
+        colonyBg.setCornerRadius(dpToPx(12));
+        colonyBtn.setBackground(colonyBg);
+        LinearLayout.LayoutParams colLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        colLp.setMargins(0, 0, 0, 0);
+        colonyBtn.setLayoutParams(colLp);
+        colonyBtn.setOnClickListener(v ->
+                startActivity(new Intent(this, ColonyActivity.class)));
+        layout.addView(colonyBtn);
+
+        Button backBtn = makeRetourBtn(v -> hideOverlay(eggOverlay));
+        LinearLayout.LayoutParams backLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        backLp.topMargin = dpToPx(20);
+        backBtn.setLayoutParams(backLp);
+        layout.addView(backBtn);
+
+        container.addView(layout, matchParentFl());
+    }
+
+    private void refreshEggButton() {
+        if (eggBtn == null) return;
+        if (EggHatchManager.shouldShowHatchAnimation(prefs)) {
+            GradientDrawable glowBg = new GradientDrawable();
+            glowBg.setShape(GradientDrawable.OVAL);
+            glowBg.setColor(Color.parseColor("#FFFDE7"));
+            glowBg.setStroke(dpToPx(3), Color.parseColor("#FFD700"));
+            eggBtn.setBackground(glowBg);
+            if (eggBtnAnimator != null) eggBtnAnimator.cancel();
+            eggBtnAnimator = ObjectAnimator.ofFloat(eggBtn, "alpha", 1f, 0.35f);
+            eggBtnAnimator.setRepeatCount(ObjectAnimator.INFINITE);
+            eggBtnAnimator.setRepeatMode(ObjectAnimator.REVERSE);
+            eggBtnAnimator.setDuration(650);
+            eggBtnAnimator.start();
+        } else {
+            if (eggBtnAnimator != null) {
+                eggBtnAnimator.cancel();
+                eggBtnAnimator = null;
+            }
+            eggBtn.setAlpha(1f);
+            GradientDrawable normalBg = new GradientDrawable();
+            normalBg.setShape(GradientDrawable.OVAL);
+            normalBg.setColor(Color.WHITE);
+            normalBg.setStroke(dpToPx(2), Color.parseColor("#CCCCCC"));
+            eggBtn.setBackground(normalBg);
+        }
     }
 
     @Override

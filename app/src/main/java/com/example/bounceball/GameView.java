@@ -17,6 +17,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.RectF;
 import com.example.bounceball.upgrade.UpgradeStats;
 import com.example.bounceball.utils.GamePreferences;
+import com.example.bounceball.colony.ColonyManager;
 import android.graphics.Path;
 import android.graphics.RadialGradient;
 import android.graphics.LinearGradient;
@@ -85,15 +86,22 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private BackgroundRenderer bgRenderer;
 
     // ── Power-ups ──────────────────────────────────────
-    private final ArrayList<float[]> inkBlobs = new ArrayList<>();
-    private final ArrayList<float[]> warps    = new ArrayList<>();
+    private final ArrayList<float[]> inkBlobs  = new ArrayList<>();
+    private final ArrayList<float[]> warps     = new ArrayList<>();
+    private final ArrayList<float[]> rareMetals = new ArrayList<>();
+    private final ArrayList<float[]> alienDrops = new ArrayList<>();
 
-    private static final float INK_BLOB_RADIUS = 32f * 0.67f;
-    private static final float WARP_WIDTH      = 32f * 4f;
-    private static final float WARP_HEIGHT     = 28f;
-    private static final float INK_RECHARGE    = 80f;
+    private static final float INK_BLOB_RADIUS  = 32f * 0.67f;
+    private static final float WARP_WIDTH       = 32f * 4f;
+    private static final float WARP_HEIGHT      = 28f;
+    private static final float INK_RECHARGE     = 80f;
     private static final float INK_SPAWN_CHANCE  = 0.004f;
     private static final float WARP_SPAWN_CHANCE = 0.001f;
+
+    private static final float METAL_RADIUS      = 22f;
+    private static final float ALIEN_RADIUS      = 28f;
+    private static final float METAL_SPAWN_CHANCE = 0.00035f;
+    private static final float ALIEN_SPAWN_CHANCE = 0.00012f;//change back to 0.00012f when testing is done
 
     // ── Aimant ─────────────────────────────────────────
     private static final float MAGNET_RADIUS   = 220f;
@@ -124,8 +132,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private static final float SCROLL_EASE = 0.09f;
     private static final float SCROLL_MIN  = 4f;
 
-    private final Paint blobPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint warpPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint blobPaint  = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint warpPaint  = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint metalPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint alienPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     private float currentRunGold = 0f;
 
@@ -331,6 +341,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         ballAngularSpeed = 0f;
         inkBlobs.clear();
         warps.clear();
+        rareMetals.clear();
+        alienDrops.clear();
     }
 
     @Override
@@ -425,8 +437,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             float shift = (idealCameraY - ballY) * 0.1f;
             ballY += shift;
             if (hasTrampoline) { trampStartY += shift; trampEndY += shift; }
-            for (float[] b : inkBlobs) b[1] += shift;
-            for (float[] w : warps)    w[1] += shift;
+            for (float[] b : inkBlobs)    b[1] += shift;
+            for (float[] w : warps)       w[1] += shift;
+            for (float[] m : rareMetals)  m[1] += shift;
+            for (float[] a : alienDrops)  a[1] += shift;
             totalHeightMeters += shift / 100f;
             currentRunGold += shift / 100f * upgrades.goldMultiplier;
             if (bgRenderer != null) bgRenderer.updateParallax(shift);
@@ -504,6 +518,47 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         inkBlobs.removeIf(b -> b[1] > screenHeight + 100f);
         warps.removeIf(w -> w[1] > screenHeight + 100f);
 
+        if (prefs.hasHatched()) {
+            Iterator<float[]> metalIt = rareMetals.iterator();
+            while (metalIt.hasNext()) {
+                float[] m  = metalIt.next();
+                float dx   = ballX - m[0];
+                float dy   = ballY - m[1];
+                float dist = (float) Math.hypot(dx, dy);
+                if (dist < (MAGNET_RADIUS * magnetMultiplier) && dist > 0.1f) {
+                    m[0] += (dx / dist) * MAGNET_STRENGTH;
+                    m[1] += (dy / dist) * MAGNET_STRENGTH;
+                    dist = (float) Math.hypot(ballX - m[0], ballY - m[1]);
+                }
+                if (dist < ballRadius + METAL_RADIUS) {
+                    prefs.addRareMetal(1);
+                    metalIt.remove();
+                }
+            }
+
+            Iterator<float[]> alienIt = alienDrops.iterator();
+            while (alienIt.hasNext()) {
+                float[] a  = alienIt.next();
+                float dx   = ballX - a[0];
+                float dy   = ballY - a[1];
+                float dist = (float) Math.hypot(dx, dy);
+                boolean canCollect = ColonyManager.canCollectAlien(
+                        ColonyManager.loadSlots(prefs), prefs.getAlienCount());
+                if (canCollect && dist < (MAGNET_RADIUS * magnetMultiplier) && dist > 0.1f) {
+                    a[0] += (dx / dist) * MAGNET_STRENGTH;
+                    a[1] += (dy / dist) * MAGNET_STRENGTH;
+                    dist = (float) Math.hypot(ballX - a[0], ballY - a[1]);
+                }
+                if (canCollect && dist < ballRadius + ALIEN_RADIUS) {
+                    prefs.addAlien(1);
+                    alienIt.remove();
+                }
+            }
+
+            rareMetals.removeIf(m -> m[1] > screenHeight + 100f);
+            alienDrops.removeIf(a -> a[1] > screenHeight + 100f);
+        }
+
         // Game Over
         if (ballY > screenHeight + ballRadius && !isGameOver) {
             // 1. On coupe le son de l'élément en cours
@@ -572,8 +627,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             case WARP_SCROLL:
                 float step = Math.min(warpScrollLeft, Math.max(SCROLL_MIN, warpScrollLeft * SCROLL_EASE));
                 if (hasTrampoline) { trampStartY += step; trampEndY += step; }
-                for (float[] b : inkBlobs) b[1] += step;
-                for (float[] w : warps)    w[1] += step;
+                for (float[] b : inkBlobs)   b[1] += step;
+                for (float[] w : warps)      w[1] += step;
+                for (float[] m : rareMetals) m[1] += step;
+                for (float[] a : alienDrops) a[1] += step;
                 warpScrollLeft -= step;
                 if (warpScrollLeft <= 0f) {
                     warpDuration = System.currentTimeMillis() - warpStartTime;
@@ -619,6 +676,16 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             float x = halfW + (float)(Math.random() * (screenWidth - 2 * halfW));
             warps.add(new float[]{ x, -WARP_HEIGHT });
         }
+        if (prefs.hasHatched()) {
+            if (Math.random() < METAL_SPAWN_CHANCE) {
+                float x = margin + (float)(Math.random() * (screenWidth - 2 * margin));
+                rareMetals.add(new float[]{ x, -METAL_RADIUS });
+            }
+            if (Math.random() < ALIEN_SPAWN_CHANCE) {
+                float x = margin + (float)(Math.random() * (screenWidth - 2 * margin));
+                alienDrops.add(new float[]{ x, -ALIEN_RADIUS });
+            }
+        }
     }
 
     // ══════════════════════════════════════════════════
@@ -648,6 +715,51 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             canvas.drawCircle(blob[0] - INK_BLOB_RADIUS * 0.25f,
                     blob[1] - INK_BLOB_RADIUS * 0.25f,
                     INK_BLOB_RADIUS * 0.3f, blobPaint);
+        }
+
+        // Métal rare
+        if (prefs.hasHatched()) {
+            metalPaint.setStyle(Paint.Style.FILL);
+            for (float[] m : rareMetals) {
+                metalPaint.setColor(Color.parseColor("#80DEEA"));
+                metalPaint.setAlpha(255);
+                canvas.drawCircle(m[0], m[1], METAL_RADIUS, metalPaint);
+                metalPaint.setColor(Color.parseColor("#26C6DA"));
+                canvas.drawCircle(m[0], m[1], METAL_RADIUS, metalPaint);
+                metalPaint.setColor(Color.WHITE);
+                metalPaint.setAlpha(180);
+                canvas.drawCircle(m[0] - METAL_RADIUS * 0.28f,
+                        m[1] - METAL_RADIUS * 0.28f,
+                        METAL_RADIUS * 0.32f, metalPaint);
+                metalPaint.setColor(Color.parseColor("#B2EBF2"));
+                metalPaint.setAlpha(200);
+                metalPaint.setStyle(Paint.Style.STROKE);
+                metalPaint.setStrokeWidth(3f);
+                canvas.drawCircle(m[0], m[1], METAL_RADIUS + 4f, metalPaint);
+                metalPaint.setStyle(Paint.Style.FILL);
+            }
+
+            // Alien drop
+            alienPaint.setStyle(Paint.Style.FILL);
+            for (float[] a : alienDrops) {
+                alienPaint.setColor(Color.parseColor("#1B5E20"));
+                alienPaint.setAlpha(255);
+                canvas.drawCircle(a[0], a[1], ALIEN_RADIUS, alienPaint);
+                alienPaint.setColor(Color.parseColor("#4CAF50"));
+                canvas.drawCircle(a[0], a[1], ALIEN_RADIUS * 0.78f, alienPaint);
+                alienPaint.setColor(Color.WHITE);
+                alienPaint.setAlpha(200);
+                canvas.drawCircle(a[0] - ALIEN_RADIUS * 0.25f,
+                        a[1] - ALIEN_RADIUS * 0.25f,
+                        ALIEN_RADIUS * 0.28f, alienPaint);
+                alienPaint.setColor(Color.parseColor("#A5D6A7"));
+                alienPaint.setAlpha(220);
+                alienPaint.setStyle(Paint.Style.STROKE);
+                alienPaint.setStrokeWidth(3.5f);
+                canvas.drawCircle(a[0], a[1], ALIEN_RADIUS + 5f, alienPaint);
+                alienPaint.setStyle(Paint.Style.FILL);
+                alienPaint.setAlpha(255);
+            }
         }
 
         // Warps en jeu

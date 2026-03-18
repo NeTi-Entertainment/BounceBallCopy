@@ -52,7 +52,7 @@ public class SoundManager {
     }
 
     public int playSound(int soundId) {
-        if (!prefs.isSoundEnabled()) return -1;
+        if (soundPool == null || !prefs.isSoundEnabled()) return -1;
 
         int idToPlay = -1;
         switch(soundId) {
@@ -69,7 +69,7 @@ public class SoundManager {
     }
 
     public void playElementalSound(String skinId) {
-        if (!prefs.isSoundEnabled()) return;
+        if (soundPool == null || !prefs.isSoundEnabled()) return;
 
         if (currentElemStream != -1) {
             soundPool.stop(currentElemStream);
