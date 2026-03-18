@@ -118,4 +118,46 @@ public class GamePreferences {
     public void spendFragments(String skinId, int amount) {
         prefs.edit().putInt("frag_" + skinId, Math.max(0, getFragments(skinId) - amount)).apply();
     }
+
+    // ─────────────────────────────────────────
+    // ÉCLOSION
+    // egg_hatched  : animation d'éclosion définitivement jouée
+    // hatch_ready  : seuil 1000m atteint, animation pas encore jouée
+    // ─────────────────────────────────────────
+    public boolean hasHatched() { return prefs.getBoolean("egg_hatched", false); }
+
+    public void setHatched(boolean v) { prefs.edit().putBoolean("egg_hatched", v).apply(); }
+
+    public boolean isHatchReady() { return prefs.getBoolean("hatch_ready", false); }
+
+    public void setHatchReady(boolean v) { prefs.edit().putBoolean("hatch_ready", v).apply(); }
+
+    // ─────────────────────────────────────────
+    // MÉTAL RARE (débloqué après éclosion)
+    // ─────────────────────────────────────────
+    public int getRareMetal() { return prefs.getInt("rare_metal", 0); }
+
+    public void addRareMetal(int amount) {
+        prefs.edit().putInt("rare_metal", getRareMetal() + amount).apply();
+    }
+
+    public void spendRareMetal(int amount) {
+        prefs.edit().putInt("rare_metal", Math.max(0, getRareMetal() - amount)).apply();
+    }
+
+    // ─────────────────────────────────────────
+    // ALIENS COLLECTÉS (colons de la base)
+    // ─────────────────────────────────────────
+    public int getAlienCount() { return prefs.getInt("alien_count", 0); }
+
+    public void addAlien(int amount) {
+        prefs.edit().putInt("alien_count", getAlienCount() + amount).apply();
+    }
+
+    // ─────────────────────────────────────────
+    // RESET TOTAL
+    // ─────────────────────────────────────────
+    public void resetAll() {
+        prefs.edit().clear().apply();
+    }
 }
