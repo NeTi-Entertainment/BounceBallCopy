@@ -20,6 +20,7 @@ import com.example.bounceball.upgrade.UpgradeStats;
 import com.example.bounceball.utils.AdManager;
 import com.example.bounceball.utils.GamePreferences;
 import com.example.bounceball.utils.LocaleManager;
+import com.example.bounceball.utils.ImmersiveHelper;
 
 public class MainActivity extends Activity implements GameView.GameStateListener {
 
@@ -173,9 +174,16 @@ public class MainActivity extends Activity implements GameView.GameStateListener
     @Override
     protected void onResume() {
         super.onResume();
+        ImmersiveHelper.enable(getWindow());
         if (gameView != null) gameView.loadBallSkin();
         if (gameView != null) gameView.loadBgSkin();
         refreshEggButton();
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) ImmersiveHelper.enable(getWindow());
     }
 
     /** Met à jour le TextView du record avec la valeur persistée. */
@@ -423,29 +431,23 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         sheetLp.rightMargin  = dpToPx(12);
         overlay.addView(sheet, sheetLp);
 
-        // ── Barre d'onglets (4 onglets sur 2 rangées) ──
+        // ── Barre d'onglets (1 rangée, 3 onglets) ──
         LinearLayout tabRow1 = new LinearLayout(this);
         tabRow1.setOrientation(LinearLayout.HORIZONTAL);
-        LinearLayout tabRow2 = new LinearLayout(this);
-        tabRow2.setOrientation(LinearLayout.HORIZONTAL);
 
         TextView upgradesTab  = makeTab("⚡ Upgrades");
         TextView cosmeticsTab = makeTab("🎨 Cosmétiques");
         TextView gachaTab     = makeTab("🎰 Gacha");
-        TextView eclosionTab  = makeTab("🥚 Éclosion");
 
-        upgradesTab.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        upgradesTab.setLayoutParams( new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
         cosmeticsTab.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-        gachaTab.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-        eclosionTab.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        gachaTab.setLayoutParams(    new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
 
         tabRow1.addView(upgradesTab);
         tabRow1.addView(cosmeticsTab);
-        tabRow2.addView(gachaTab);
-        tabRow2.addView(eclosionTab);
+        tabRow1.addView(gachaTab);
 
         sheet.addView(tabRow1, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-        sheet.addView(tabRow2, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
 
         FrameLayout content = new FrameLayout(this);
         content.setBackgroundColor(Color.parseColor("#111E2C"));
@@ -498,20 +500,7 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         cosmeticsPage.setVisibility(View.GONE);
         content.addView(cosmeticsPage, matchParentFl());
 
-        // ── Page Éclosion (placeholder) ──
-        ScrollView eclosionPage = new ScrollView(this);
-        LinearLayout eclosionInner = new LinearLayout(this);
-        eclosionInner.setOrientation(LinearLayout.VERTICAL);
-        eclosionInner.setGravity(Gravity.CENTER);
-        TextView eclosionTv = new TextView(this);
-        eclosionTv.setText("🥚  Éclosion\n\nBientôt disponible…");
-        eclosionTv.setTextSize(20f);
-        eclosionTv.setTextColor(Color.WHITE);
-        eclosionTv.setGravity(Gravity.CENTER);
-        eclosionInner.addView(eclosionTv);
-        eclosionPage.addView(eclosionInner);
-        eclosionPage.setVisibility(View.GONE);
-        content.addView(eclosionPage, matchParentFl());
+        // ── Page Éclosion supprimée — onglet retiré du shop ──
 
         sheet.addView(content);
 
@@ -531,12 +520,8 @@ public class MainActivity extends Activity implements GameView.GameStateListener
                 LinearLayout.LayoutParams.WRAP_CONTENT));
 
         // ── Logique de sélection des onglets ──
-        // Upgrades et Cosmétiques affichent leur page dans le sheet.
-        // Gacha ouvre l'overlay séparé en superposition.
-        // Éclosion affiche le placeholder dans le sheet.
-
-        TextView[] pageTabs  = {upgradesTab, cosmeticsTab, eclosionTab};
-        View[]     pages     = {upgradesScroll, cosmeticsPage, eclosionPage};
+        TextView[] pageTabs = {upgradesTab, cosmeticsTab};
+        View[]     pages    = {upgradesScroll, cosmeticsPage};
 
         Runnable activateUpgrades = () -> {
             for (int i = 0; i < pages.length; i++) {
@@ -562,21 +547,9 @@ public class MainActivity extends Activity implements GameView.GameStateListener
             gachaTab.setAlpha(0.8f);
             CosmeticsPage.refreshAll(cosmeticsPage);
         };
-        Runnable activateEclosion = () -> {
-            for (int i = 0; i < pages.length; i++) {
-                pages[i].setVisibility(i == 2 ? View.VISIBLE : View.GONE);
-                pageTabs[i].setBackgroundColor(Color.parseColor(i == 2 ? "#111E2C" : "#0A1520"));
-                pageTabs[i].setTextColor(Color.parseColor(i == 2 ? "#FFFFFF" : "#888888"));
-                pageTabs[i].setAlpha(i == 2 ? 1f : 0.8f);
-            }
-            gachaTab.setBackgroundColor(Color.parseColor("#0A1520"));
-            gachaTab.setTextColor(Color.parseColor("#888888"));
-            gachaTab.setAlpha(0.8f);
-        };
 
         upgradesTab.setOnClickListener(v -> activateUpgrades.run());
         cosmeticsTab.setOnClickListener(v -> activateCosmetics.run());
-        eclosionTab.setOnClickListener(v -> activateEclosion.run());
 
         // Gacha → ouvre l'overlay séparé en superposition par-dessus le shop
         gachaTab.setOnClickListener(v -> {

@@ -10,6 +10,7 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import com.example.bounceball.utils.GamePreferences;
 import com.example.bounceball.utils.LocaleManager;
+import com.example.bounceball.utils.ImmersiveHelper;
 
 public class SettingsActivity extends Activity {
 
@@ -123,6 +124,18 @@ public class SettingsActivity extends Activity {
 
         scroll.addView(root);
         setContentView(scroll);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        ImmersiveHelper.enable(getWindow());
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) ImmersiveHelper.enable(getWindow());
     }
 
     private void addSectionHeader(LinearLayout parent, String text) {

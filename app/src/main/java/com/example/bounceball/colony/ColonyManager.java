@@ -7,10 +7,9 @@ public class ColonyManager {
 
     private static final ColonyBuilding[] SLOT_LAYOUT = {
             ColonyBuilding.HOUSE,
-            ColonyBuilding.OXYGEN,
             ColonyBuilding.WATER,
-            ColonyBuilding.FOOD,
-            ColonyBuilding.DEFENSE
+            ColonyBuilding.OXYGEN,
+            ColonyBuilding.FOOD
     };
 
     public static final int SLOT_COUNT = SLOT_LAYOUT.length;
