@@ -1,5 +1,7 @@
 package com.example.bounceball.colony;
 
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.graphics.Color;
@@ -11,6 +13,7 @@ import android.os.Looper;
 import android.view.*;
 import android.widget.*;
 import com.example.bounceball.utils.GamePreferences;
+import com.example.bounceball.utils.ImmersiveHelper;
 
 public class ColonyActivity extends Activity {
 
@@ -18,8 +21,13 @@ public class ColonyActivity extends Activity {
     private ColonyBuildingSlot[] slots;
     private ColonyView colonyView;
 
-    private TextView tvPop, tvO2, tvWater, tvFood, tvDefense;
+    private TextView tvPop, tvO2, tvWater, tvFood;
     private TextView tvGold, tvMetal, tvAlien;
+    private TextView tvComplete;
+    private TextView btnNextColony;
+    private LinearLayout page1;
+    private LinearLayout page2;
+    private boolean isOnPage2 = false;
 
     private final Handler tickerHandler = new Handler(Looper.getMainLooper());
     private Runnable tickerRunnable;
@@ -45,6 +53,7 @@ public class ColonyActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        ImmersiveHelper.enable(getWindow());
         if (slots != null) {
             ColonyManager.checkAndCompleteAll(slots, prefs);
             refreshStats();
@@ -52,6 +61,12 @@ public class ColonyActivity extends Activity {
             colonyView.setSlots(slots);
         }
         startTicker();
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) ImmersiveHelper.enable(getWindow());
     }
 
     @Override
@@ -69,21 +84,151 @@ public class ColonyActivity extends Activity {
     }
 
     private void buildUI() {
-        LinearLayout root = new LinearLayout(this);
-        root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(Color.parseColor("#0A130A"));
+        FrameLayout rootFrame = new FrameLayout(this);
+        rootFrame.setBackgroundColor(Color.parseColor("#0A130A"));
 
-        root.addView(buildStatBar());
-
+        page1 = new LinearLayout(this);
+        page1.setOrientation(LinearLayout.VERTICAL);
+        page1.setBackgroundColor(Color.parseColor("#0A130A"));
+        page1.addView(buildStatBar());
+        page1.addView(buildCompletionBanner());
         colonyView = new ColonyView(this, slots);
         colonyView.setOnSlotTappedListener(this::showSlotDialog);
-        root.addView(colonyView, new LinearLayout.LayoutParams(
+        page1.addView(colonyView, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
+        page1.addView(buildBottomBar());
 
-        root.addView(buildBottomBar());
+        page2 = buildPlaceholderPage();
+        page2.setVisibility(View.GONE);
 
-        setContentView(root);
+        rootFrame.addView(page1, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT));
+        rootFrame.addView(page2, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT));
+
+        btnNextColony = new TextView(this);
+        btnNextColony.setText("▶");
+        btnNextColony.setTextSize(28f);
+        btnNextColony.setTextColor(Color.parseColor("#FFD700"));
+        btnNextColony.setGravity(Gravity.CENTER);
+        btnNextColony.setPadding(dpToPx(10), dpToPx(20), dpToPx(10), dpToPx(20));
+        btnNextColony.setVisibility(View.GONE);
+        GradientDrawable arrowBg = new GradientDrawable();
+        arrowBg.setColor(Color.parseColor("#1B3A1B"));
+        arrowBg.setCornerRadius(dpToPx(8));
+        btnNextColony.setBackground(arrowBg);
+        FrameLayout.LayoutParams arrowLp = new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT);
+        arrowLp.gravity = Gravity.CENTER_VERTICAL | Gravity.END;
+        arrowLp.rightMargin = dpToPx(8);
+        btnNextColony.setLayoutParams(arrowLp);
+        btnNextColony.setOnClickListener(v -> slideToPage2());
+        rootFrame.addView(btnNextColony);
+
+        setContentView(rootFrame);
         refreshStats();
+    }
+
+    private View buildCompletionBanner() {
+        tvComplete = new TextView(this);
+        tvComplete.setText("✨ Colonie complète ! Une nouvelle planète vous attend.");
+        tvComplete.setTextColor(Color.parseColor("#FFD700"));
+        tvComplete.setTextSize(13f);
+        tvComplete.setGravity(Gravity.CENTER);
+        tvComplete.setPadding(dpToPx(12), dpToPx(8), dpToPx(12), dpToPx(8));
+        tvComplete.setBackgroundColor(Color.parseColor("#1B3A00"));
+        tvComplete.setVisibility(View.GONE);
+        return tvComplete;
+    }
+
+    private LinearLayout buildPlaceholderPage() {
+        LinearLayout page = new LinearLayout(this);
+        page.setOrientation(LinearLayout.VERTICAL);
+        page.setGravity(Gravity.CENTER);
+        page.setBackgroundColor(Color.parseColor("#050D1A"));
+
+        TextView planetTv = new TextView(this);
+        planetTv.setText("🪐");
+        planetTv.setTextSize(96f);
+        planetTv.setGravity(Gravity.CENTER);
+        page.addView(planetTv);
+
+        TextView titleTv = new TextView(this);
+        titleTv.setText("Nouvelle colonie");
+        titleTv.setTextSize(24f);
+        titleTv.setTextColor(Color.WHITE);
+        titleTv.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        tlp.setMargins(0, dpToPx(16), 0, dpToPx(8));
+        titleTv.setLayoutParams(tlp);
+        page.addView(titleTv);
+
+        TextView subTv = new TextView(this);
+        subTv.setText("Bientôt disponible…");
+        subTv.setTextSize(16f);
+        subTv.setTextColor(Color.parseColor("#888888"));
+        subTv.setGravity(Gravity.CENTER);
+        page.addView(subTv);
+
+        TextView backArrow = new TextView(this);
+        backArrow.setText("◀  Retour à la lune");
+        backArrow.setTextSize(15f);
+        backArrow.setTextColor(Color.parseColor("#80DEEA"));
+        backArrow.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        blp.setMargins(0, dpToPx(48), 0, 0);
+        backArrow.setLayoutParams(blp);
+        backArrow.setOnClickListener(v -> slideToPage1());
+        page.addView(backArrow);
+
+        return page;
+    }
+
+    private void slideToPage2() {
+        if (isOnPage2) return;
+        int w = page1.getWidth();
+        page2.setVisibility(View.VISIBLE);
+        page2.setTranslationX(w);
+        ObjectAnimator a1 = ObjectAnimator.ofFloat(page1, "translationX", 0f, -w);
+        ObjectAnimator a2 = ObjectAnimator.ofFloat(page2, "translationX", w, 0f);
+        AnimatorSet set = new AnimatorSet();
+        set.playTogether(a1, a2);
+        set.setDuration(380);
+        set.addListener(new android.animation.AnimatorListenerAdapter() {
+            @Override public void onAnimationEnd(android.animation.Animator animation) {
+                page1.setVisibility(View.GONE);
+                btnNextColony.setVisibility(View.GONE);
+                isOnPage2 = true;
+            }
+        });
+        set.start();
+    }
+
+    private void slideToPage1() {
+        if (!isOnPage2) return;
+        int w = page2.getWidth();
+        page1.setVisibility(View.VISIBLE);
+        page1.setTranslationX(-w);
+        ObjectAnimator a1 = ObjectAnimator.ofFloat(page1, "translationX", -w, 0f);
+        ObjectAnimator a2 = ObjectAnimator.ofFloat(page2, "translationX", 0f, w);
+        AnimatorSet set = new AnimatorSet();
+        set.playTogether(a1, a2);
+        set.setDuration(380);
+        set.addListener(new android.animation.AnimatorListenerAdapter() {
+            @Override public void onAnimationEnd(android.animation.Animator animation) {
+                page2.setVisibility(View.GONE);
+                isOnPage2 = false;
+                checkCompletion();
+            }
+        });
+        set.start();
     }
 
     // ── Ticker 1s — rafraîchit la vue pendant les constructions ──
@@ -128,23 +273,20 @@ public class ColonyActivity extends Activity {
         bar.setPadding(dpToPx(4), dpToPx(10), dpToPx(4), dpToPx(10));
         bar.setGravity(Gravity.CENTER_VERTICAL);
 
-        tvPop     = makeStatChip("👥", "0");
-        tvO2      = makeStatChip("💨", "0");
-        tvWater   = makeStatChip("💧", "0");
-        tvFood    = makeStatChip("🌾", "0");
-        tvDefense = makeStatChip("🛡", "0");
+        tvPop   = makeStatChip("👥", "0");
+        tvO2    = makeStatChip("💨", "0");
+        tvWater = makeStatChip("💧", "0");
+        tvFood  = makeStatChip("🌾", "0");
 
-        tvPop.setLayoutParams(    new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-        tvO2.setLayoutParams(     new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-        tvWater.setLayoutParams(  new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-        tvFood.setLayoutParams(   new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-        tvDefense.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        tvPop.setLayoutParams(  new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        tvO2.setLayoutParams(   new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        tvWater.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        tvFood.setLayoutParams( new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
 
         bar.addView(tvPop);
         bar.addView(tvO2);
         bar.addView(tvWater);
         bar.addView(tvFood);
-        bar.addView(tvDefense);
 
         return bar;
     }
@@ -167,9 +309,9 @@ public class ColonyActivity extends Activity {
         tvPop.setText("👥\n" + pop + " / " + s.populationCapacity);
         tvPop.setTextColor(Color.WHITE);
 
-        boolean o2ok    = s.oxygenCapacity  >= pop + 1 || pop == 0;
-        boolean waterOk = s.waterCapacity   >= pop + 1 || pop == 0;
-        boolean foodOk  = s.foodCapacity    >= pop + 1 || pop == 0;
+        boolean o2ok    = s.oxygenCapacity  == 0 || s.oxygenCapacity  >= pop + 1 || pop == 0;
+        boolean waterOk = s.waterCapacity   == 0 || s.waterCapacity   >= pop + 1 || pop == 0;
+        boolean foodOk  = s.foodCapacity    == 0 || s.foodCapacity    >= pop + 1 || pop == 0;
 
         tvO2.setText("💨\n"   + s.oxygenCapacity);
         tvO2.setTextColor(Color.parseColor(o2ok    ? "#A5D6A7" : "#EF9A9A"));
@@ -180,8 +322,14 @@ public class ColonyActivity extends Activity {
         tvFood.setText("🌾\n"  + s.foodCapacity);
         tvFood.setTextColor(Color.parseColor(foodOk   ? "#A5D6A7" : "#EF9A9A"));
 
-        tvDefense.setText("🛡\n" + s.defenseRating);
-        tvDefense.setTextColor(Color.WHITE);
+        checkCompletion();
+    }
+
+    private void checkCompletion() {
+        if (isOnPage2) return;
+        boolean complete = ColonyManager.isComplete(slots, prefs.getAlienCount());
+        tvComplete.setVisibility(complete ? View.VISIBLE : View.GONE);
+        btnNextColony.setVisibility(complete ? View.VISIBLE : View.GONE);
     }
 
     // ── Barre de ressources (bas) ───────────────────────────
@@ -480,6 +628,10 @@ public class ColonyActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        finish();
+        if (isOnPage2) {
+            slideToPage1();
+        } else {
+            finish();
+        }
     }
 }

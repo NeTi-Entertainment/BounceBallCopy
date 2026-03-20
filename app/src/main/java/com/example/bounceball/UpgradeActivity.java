@@ -12,6 +12,7 @@ import com.example.bounceball.utils.LocaleManager;
 import com.android.billingclient.api.*;
 import java.util.Arrays;
 import java.util.List;
+import com.example.bounceball.utils.ImmersiveHelper;
 
 /**
  * UpgradeActivity — deux onglets :
@@ -168,6 +169,18 @@ public class UpgradeActivity extends Activity {
         tabShopBtn.setOnClickListener(v -> switchTab(false));
 
         setContentView(root);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        ImmersiveHelper.enable(getWindow());
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) ImmersiveHelper.enable(getWindow());
     }
 
     // ══════════════════════════════════════════════════

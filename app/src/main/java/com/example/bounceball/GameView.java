@@ -139,6 +139,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
     private float currentRunGold = 0f;
 
+    private long colonyFullNotifTime = 0L;
+    private static final long COLONY_NOTIF_DURATION_MS = 2500L;
+    private final Paint notifPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
     // ──────────────────────────────────────────────────
 
     public void setHudVisible(boolean visible) { hudShouldBeVisible = visible; }
@@ -552,6 +556,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 if (canCollect && dist < ballRadius + ALIEN_RADIUS) {
                     prefs.addAlien(1);
                     alienIt.remove();
+                } else if (!canCollect && dist < MAGNET_RADIUS * 1.5f) {
+                    colonyFullNotifTime = System.currentTimeMillis();
                 }
             }
 
@@ -838,6 +844,35 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         paint.setTextSize(40);
         canvas.drawText("Or: " + prefs.getGold() + " (+" + (int)currentRunGold + ")", screenWidth / 2f, 200, paint);
         canvas.restore();
+
+        // Notification colonie pleine
+        if (prefs.hasHatched() && colonyFullNotifTime > 0) {
+            long elapsed = System.currentTimeMillis() - colonyFullNotifTime;
+            if (elapsed < COLONY_NOTIF_DURATION_MS) {
+                float progress = (float) elapsed / COLONY_NOTIF_DURATION_MS;
+                int alpha = (int)(255 * (1f - Math.max(0f, (progress - 0.7f) / 0.3f)));
+                String msg = "👽 Colonie pleine — améliorez vos bâtiments !";
+                notifPaint.setTextSize(32f);
+                notifPaint.setTextAlign(Paint.Align.CENTER);
+                float textW = notifPaint.measureText(msg);
+                float boxW  = textW + 40f;
+                float boxH  = 56f;
+                float boxL  = (screenWidth - boxW) / 2f;
+                float boxT  = screenHeight * 0.72f;
+                notifPaint.setStyle(Paint.Style.FILL);
+                notifPaint.setColor(Color.argb(alpha * 180 / 255, 10, 30, 10));
+                canvas.drawRoundRect(boxL, boxT, boxL + boxW, boxT + boxH, 18f, 18f, notifPaint);
+                notifPaint.setColor(Color.argb(alpha * 80 / 255, 76, 175, 80));
+                notifPaint.setStyle(Paint.Style.STROKE);
+                notifPaint.setStrokeWidth(2f);
+                canvas.drawRoundRect(boxL, boxT, boxL + boxW, boxT + boxH, 18f, 18f, notifPaint);
+                notifPaint.setStyle(Paint.Style.FILL);
+                notifPaint.setColor(Color.argb(alpha, 165, 214, 167));
+                canvas.drawText(msg, screenWidth / 2f, boxT + boxH * 0.65f, notifPaint);
+            } else {
+                colonyFullNotifTime = 0L;
+            }
+        }
 
         // Trampoline
         if (isDrawingTrampoline || hasTrampoline) {

@@ -9,6 +9,7 @@ import com.example.bounceball.upgrade.UpgradeStats;
 import com.example.bounceball.utils.AdManager;
 import com.example.bounceball.utils.GamePreferences;
 import com.example.bounceball.utils.LocaleManager;
+import com.example.bounceball.utils.ImmersiveHelper;
 
 public class GameActivity extends Activity {
 
@@ -67,8 +68,14 @@ public class GameActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        ImmersiveHelper.enable(getWindow());
         upgrades = UpgradeStats.fromPrefs(prefs.getRaw());
         gameView.loadBallSkin();
         gameView.loadBgSkin();
+    }
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) ImmersiveHelper.enable(getWindow());
     }
 }
