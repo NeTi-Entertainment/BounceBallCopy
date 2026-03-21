@@ -353,17 +353,8 @@ public class ColonyActivity extends Activity {
         metalLp.setMargins(dpToPx(16), 0, 0, 0);
         tvMetal.setLayoutParams(metalLp);
 
-        tvAlien = new TextView(this);
-        tvAlien.setTextColor(Color.parseColor("#A5D6A7"));
-        tvAlien.setTextSize(13f);
-        LinearLayout.LayoutParams alienLp = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        alienLp.setMargins(dpToPx(16), 0, 0, 0);
-        tvAlien.setLayoutParams(alienLp);
-
         bar.addView(tvGold);
         bar.addView(tvMetal);
-        bar.addView(tvAlien);
 
         View spacer = new View(this);
         bar.addView(spacer, new LinearLayout.LayoutParams(0, 1, 1f));
@@ -387,7 +378,6 @@ public class ColonyActivity extends Activity {
     private void refreshResources() {
         tvGold.setText("⬡ " + prefs.getGold());
         tvMetal.setText("⚙ " + prefs.getRareMetal());
-        tvAlien.setText("👽 " + prefs.getAlienCount());
     }
 
     // ── Dialog détail bâtiment (avec upgrade) ─────────────

@@ -34,6 +34,9 @@ public class CosmeticsPage {
 // sous_cat  : label affiché en en-tête de section dans le shop
     private static final Object[][] BALLS = {
 
+            // ── DÉFAUT ─────────────────────────────────────────
+            {"ball_basic",     "Balle Basique", "#F5EDD0", 0, 0, "classic", "Défaut", null},
+
             // ── CLASSIC ────────────────────────────────────────
             {"ball_red",       "Rouge",      "#E82020", 0,  0, "classic", "Classique", null},
             {"ball_blue",      "Bleu",       "#2050E8", 0,  0, "classic", "Classique", null},

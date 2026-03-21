@@ -26,6 +26,7 @@ import android.graphics.BlurMaskFilter;
 import android.graphics.CornerPathEffect;
 import android.graphics.Matrix;
 import android.graphics.PixelFormat;
+import com.example.bounceball.utils.SoundManager;
 
 public class GameView extends SurfaceView implements SurfaceHolder.Callback, Runnable {
 
@@ -267,6 +268,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             case "ball_elem_lightning": color = Color.parseColor("#FFF176"); break;
             case "ball_elem_plasma": color = Color.parseColor("#E040FB"); break;
             case "ball_elem_lava": color = Color.parseColor("#FF3300"); break;
+
+            case "ball_basic": color = Color.parseColor("#F5EDD0"); break;
             // Défaut
             default:              color = Color.parseColor("#E53935"); break;
         }
@@ -354,6 +357,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         screenWidth  = getWidth();
         screenHeight = getHeight();
         bgRenderer = new BackgroundRenderer(getContext(), screenWidth, screenHeight);
+        if (soundManager == null) soundManager = new SoundManager(getContext(), prefs);
         loadBgSkin();
         resetGame();
         isRunning  = true;
@@ -372,6 +376,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         isRunning = false;
         if (soundManager != null) {
             soundManager.release();
+            soundManager = null;
         }
         while (true) {
             try { gameThread.join(); break; }
@@ -916,7 +921,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 performClick();
-                if (currentInk > 0 && !hasTrampoline) {
+                if (currentInk > 0) {
                     if (!isGameStarted) {
                         isGameStarted      = true;
                         hudShouldBeVisible = true;
