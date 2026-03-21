@@ -12,6 +12,11 @@ import android.graphics.Shader;
 import android.graphics.Matrix;
 
 public class BallRenderer {
+    private static final Paint sOutlinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    static {
+        sOutlinePaint.setStyle(Paint.Style.STROKE);
+        sOutlinePaint.setColor(Color.BLACK);
+    }
     private static final Paint sBallPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     public static void setColor(int color) {
@@ -66,6 +71,45 @@ public class BallRenderer {
             new RadialGradient(0,0,1,new int[]{0xFFFFAA00,0xFFFF4400},new float[]{0f,1f},Shader.TileMode.CLAMP),
             new RadialGradient(0,0,1,new int[]{0xFFFFCC00,0xFFFF6600},new float[]{0f,1f},Shader.TileMode.CLAMP)
     };
+
+    // APRÈS
+    private static void drawEggBall(Canvas canvas, float cx, float cy, float r) {
+        // ── Fond blanc cassé ──
+        Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG);
+        fill.setStyle(Paint.Style.FILL);
+        fill.setColor(Color.parseColor("#F5EDD0"));
+        canvas.drawCircle(cx, cy, r, fill);
+
+        // ── Tâches vertes (clipées dans la balle) ──
+        Paint spot = new Paint(Paint.ANTI_ALIAS_FLAG);
+        spot.setStyle(Paint.Style.FILL);
+        spot.setColor(Color.parseColor("#2E7D32"));
+
+        canvas.save();
+        Path clip = new Path();
+        clip.addCircle(cx, cy, r, Path.Direction.CW);
+        canvas.clipPath(clip);
+
+        // Tâche 1 : très grosse, coupée à gauche (centre hors balle à gauche)
+        canvas.drawCircle(cx - r * 0.82f, cy + r * 0.15f, r * 0.62f, spot);
+
+        // Tâche 2 : moins grosse, coupée à droite (centre hors balle à droite)
+        canvas.drawCircle(cx + r * 0.82f, cy + r * 0.18f, r * 0.46f, spot);
+
+        // Tâche 3 : petite, entièrement visible, légèrement haut-droite
+        canvas.drawCircle(cx + r * 0.18f, cy - r * 0.30f, r * 0.18f, spot);
+
+        canvas.drawCircle(cx - r * 0.05f, cy - r * 0.44f, r * 0.08f, spot);
+
+        canvas.restore();
+
+        // ── Contour épais ──
+        Paint outline = new Paint(Paint.ANTI_ALIAS_FLAG);
+        outline.setStyle(Paint.Style.STROKE);
+        outline.setColor(Color.parseColor("#1A1A1A"));
+        outline.setStrokeWidth(r * 0.13f);
+        canvas.drawCircle(cx, cy, r - outline.getStrokeWidth() / 2f, outline);
+    }
 
     public static void drawBasketball(Canvas canvas, float cx, float cy, float r) {
         sBallPaint.setStyle(Paint.Style.FILL);
@@ -3348,6 +3392,7 @@ public class BallRenderer {
 
     public static void draw(Canvas canvas, float cx, float cy, float r, String skinId) {
         switch (skinId != null ? skinId : "") {
+            case "ball_basic":        drawEggBall(canvas, cx, cy, r); break;
             case "ball_basket":       drawBasketball(canvas, cx, cy, r);  break;
             case "ball_tennis":       drawTennisBall(canvas, cx, cy, r);  break;
             case "ball_bowling":      drawBowlingBall(canvas, cx, cy, r); break;
@@ -3392,7 +3437,12 @@ public class BallRenderer {
             case "ball_elem_lightning":drawLightningBall(canvas, cx, cy, r); break;
             case "ball_elem_plasma":  drawPlasmaBall(canvas, cx, cy, r); break;
             case "ball_elem_lava":    drawLavaBall(canvas, cx, cy, r);  break;
-            default: canvas.drawCircle(cx, cy, r, sBallPaint); break;
+            default:
+                sBallPaint.setStyle(Paint.Style.FILL);
+                canvas.drawCircle(cx, cy, r, sBallPaint);
+                sOutlinePaint.setStrokeWidth(r * 0.09f);
+                canvas.drawCircle(cx, cy, r - sOutlinePaint.getStrokeWidth() / 2f, sOutlinePaint);
+                break;
         }
     }
 
