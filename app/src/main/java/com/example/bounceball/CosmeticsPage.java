@@ -14,6 +14,7 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import com.example.bounceball.utils.GamePreferences;
+import com.example.bounceball.utils.Strings;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,84 +35,84 @@ public class CosmeticsPage {
 // sous_cat  : label affiché en en-tête de section dans le shop
     private static final Object[][] BALLS = {
 
-            // ── DÉFAUT ─────────────────────────────────────────
-            {"ball_basic",     "Balle Basique", "#F5EDD0", 0, 0, "classic", "Défaut", null},
+            // ── DEFAULT ────────────────────────────────────────
+            {"ball_basic",     "Balle Basique", "#F5EDD0", 0, 0, "classic", "default", null},
 
             // ── CLASSIC ────────────────────────────────────────
-            {"ball_red",       "Rouge",      "#E82020", 0,  0, "classic", "Classique", null},
-            {"ball_blue",      "Bleu",       "#2050E8", 0,  0, "classic", "Classique", null},
-            {"ball_yellow",    "Jaune",      "#F5D800", 0,  0, "classic", "Classique", null},
-            {"ball_green",     "Vert",       "#20B020", 0,  0, "classic", "Classique", null},
-            {"ball_orange",    "Orange",     "#F07010", 50, 0, "classic", "Classique", null},
-            {"ball_pink",      "Rose",       "#F060A0", 50, 0, "classic", "Classique", null},
-            {"ball_purple",    "Violet",     "#8030D0", 50, 0, "classic", "Classique", null},
-            {"ball_cyan",      "Cyan",       "#00C8D8", 50, 0, "classic", "Classique", null},
-            {"ball_lime",      "Lime",       "#80E000", 50, 0, "classic", "Classique", null},
-            {"ball_brown",     "Marron",     "#8B4513", 50, 0, "classic", "Classique", null},
-            {"ball_beige",     "Beige",      "#F5DEB3", 50, 0, "classic", "Classique", null},
-            {"ball_white",     "Blanc",      "#F5F5F5", 80, 0, "classic", "Classique", null},
-            {"ball_black",     "Noir",       "#1A1A1A", 80, 0, "classic", "Classique", null},
-            {"ball_lightgray", "Gris clair", "#C0C0C0", 80, 0, "classic", "Classique", null},
-            {"ball_darkgray",  "Gris foncé", "#505050", 80, 0, "classic", "Classique", null},
+            {"ball_red",       "Rouge",      "#E82020", 0,  0, "classic", "classic", null},
+            {"ball_blue",      "Bleu",       "#2050E8", 0,  0, "classic", "classic", null},
+            {"ball_yellow",    "Jaune",      "#F5D800", 0,  0, "classic", "classic", null},
+            {"ball_green",     "Vert",       "#20B020", 0,  0, "classic", "classic", null},
+            {"ball_orange",    "Orange",     "#F07010", 50, 0, "classic", "classic", null},
+            {"ball_pink",      "Rose",       "#F060A0", 50, 0, "classic", "classic", null},
+            {"ball_purple",    "Violet",     "#8030D0", 50, 0, "classic", "classic", null},
+            {"ball_cyan",      "Cyan",       "#00C8D8", 50, 0, "classic", "classic", null},
+            {"ball_lime",      "Lime",       "#80E000", 50, 0, "classic", "classic", null},
+            {"ball_brown",     "Marron",     "#8B4513", 50, 0, "classic", "classic", null},
+            {"ball_beige",     "Beige",      "#F5DEB3", 50, 0, "classic", "classic", null},
+            {"ball_white",     "Blanc",      "#F5F5F5", 80, 0, "classic", "classic", null},
+            {"ball_black",     "Noir",       "#1A1A1A", 80, 0, "classic", "classic", null},
+            {"ball_lightgray", "Gris clair", "#C0C0C0", 80, 0, "classic", "classic", null},
+            {"ball_darkgray",  "Gris foncé", "#505050", 80, 0, "classic", "classic", null},
 
             // ── SPORT ──────────────────────────────────────────
-            {"ball_soccer",    "Ballon Foot",    "#F5F5F5", 450, 15, "sport", "Sport", "common"},
-            {"ball_basket",    "Ballon Basket",  "#E65100", 450, 15, "sport", "Sport", "common"},
-            {"ball_tennis",    "Balle Tennis",   "#CDDC39", 450, 15, "sport", "Sport", "common"},
-            {"ball_bowling",   "Boule Bowling",  "#311B92", 600, 22, "sport", "Sport", "rare"},
-            {"ball_petanque",  "Pétanque",       "#A0A8B0",   1, 12, "sport", "Sport", "common"},
-            {"ball_golf",      "Golf",           "#F5F5F5",   1, 10, "sport", "Sport", "common"},
-            {"ball_cateye",    "Œil de Chat",    "#44DDBB",   1, 16, "sport", "Sport", "rare"},
-            {"ball_beach",     "Plage",          "#FFD700",   1,  8, "sport", "Sport", "common"},
-            {"ball_volleyball","Volleyball",     "#F5E6C8",   1,  9, "sport", "Sport", "common"},
-            {"ball_baseball",  "Baseball",       "#F5EED8",   1,  9, "sport", "Sport", "common"},
-            {"ball_8ball",     "Billard 8",      "#111111",   1, 10, "sport", "Sport", "common"},
+            {"ball_soccer",    "Ballon Foot",    "#F5F5F5", 450, 15, "sport", "sport", "common"},
+            {"ball_basket",    "Ballon Basket",  "#E65100", 450, 15, "sport", "sport", "common"},
+            {"ball_tennis",    "Balle Tennis",   "#CDDC39", 450, 15, "sport", "sport", "common"},
+            {"ball_bowling",   "Boule Bowling",  "#311B92", 600, 22, "sport", "sport", "rare"},
+            {"ball_petanque",  "Pétanque",       "#A0A8B0",   1, 12, "sport", "sport", "common"},
+            {"ball_golf",      "Golf",           "#F5F5F5",   1, 10, "sport", "sport", "common"},
+            {"ball_cateye",    "Œil de Chat",    "#44DDBB",   1, 16, "sport", "sport", "rare"},
+            {"ball_beach",     "Plage",          "#FFD700",   1,  8, "sport", "sport", "common"},
+            {"ball_volleyball","Volleyball",     "#F5E6C8",   1,  9, "sport", "sport", "common"},
+            {"ball_baseball",  "Baseball",       "#F5EED8",   1,  9, "sport", "sport", "common"},
+            {"ball_8ball",     "Billard 8",      "#111111",   1, 10, "sport", "sport", "common"},
 
             // ── METAL ──────────────────────────────────────────
-            {"ball_lead",      "Balle Plomb",    "#707880",   1, 18, "metal", "Metal", "rare"},
-            {"ball_nickel",    "Nickel",         "#C8B87A",   1,  9, "metal", "Metal", "common"},
-            {"ball_copper",    "Balle Cuivrée",  "#BF6830",   1, 22, "metal", "Metal", "rare"},
-            {"ball_chrome",    "Balle Chrome",   "#90CAF9",   1, 35, "metal", "Metal", "legendary"},
-            {"ball_bronze",    "Bronze",         "#CD7F32",   1, 10, "metal", "Metal", "common"},
-            {"ball_steel",     "Acier",          "#6B7FA8",   1, 10, "metal", "Metal", "common"},
-            {"ball_silver",    "Balle Argentée", "#B0BEC5",   1, 22, "metal", "Metal", "rare"},
-            {"ball_gold",      "Balle Dorée",    "#FFD700",   1, 30, "metal", "Metal", "legendary"},
-            {"ball_rosegold",  "Or Rose",        "#E8A090",   1, 14, "metal", "Metal", "common"},
-            {"ball_titanium",  "Titane",         "#5B6B7C",   1, 12, "metal", "Metal", "common"},
-            {"ball_platinum",  "Balle Platine",  "#D8DCE0",   1, 45, "metal", "Metal", "legendary"},
-            {"ball_bismuth",   "Bismuth",        "#C8A0C0",   1, 22, "metal", "Metal", "rare"},
-            {"ball_damascus",  "Damas",          "#4A4A4A",   1, 26, "metal", "Metal", "rare"},
-            {"ball_meteorite", "Météorite",      "#7A7060",   1, 24, "metal", "Metal", "rare"},
+            {"ball_lead",      "Balle Plomb",    "#707880",   1, 18, "metal", "metal", "rare"},
+            {"ball_nickel",    "Nickel",         "#C8B87A",   1,  9, "metal", "metal", "common"},
+            {"ball_copper",    "Balle Cuivrée",  "#BF6830",   1, 22, "metal", "metal", "rare"},
+            {"ball_chrome",    "Balle Chrome",   "#90CAF9",   1, 35, "metal", "metal", "legendary"},
+            {"ball_bronze",    "Bronze",         "#CD7F32",   1, 10, "metal", "metal", "common"},
+            {"ball_steel",     "Acier",          "#6B7FA8",   1, 10, "metal", "metal", "common"},
+            {"ball_silver",    "Balle Argentée", "#B0BEC5",   1, 22, "metal", "metal", "rare"},
+            {"ball_gold",      "Balle Dorée",    "#FFD700",   1, 30, "metal", "metal", "legendary"},
+            {"ball_rosegold",  "Or Rose",        "#E8A090",   1, 14, "metal", "metal", "common"},
+            {"ball_titanium",  "Titane",         "#5B6B7C",   1, 12, "metal", "metal", "common"},
+            {"ball_platinum",  "Balle Platine",  "#D8DCE0",   1, 45, "metal", "metal", "legendary"},
+            {"ball_bismuth",   "Bismuth",        "#C8A0C0",   1, 22, "metal", "metal", "rare"},
+            {"ball_damascus",  "Damas",          "#4A4A4A",   1, 26, "metal", "metal", "rare"},
+            {"ball_meteorite", "Météorite",      "#7A7060",   1, 24, "metal", "metal", "rare"},
 
             // ── SPACE ──────────────────────────────────────────
-            {"ball_comet",        "Balle Comète",   "#A0825A",   1, 26, "space", "Space", "rare"},
-            {"ball_mercury",      "Mercure",        "#9E9585",   1, 18, "space", "Space", "rare"},
-            {"ball_venus",        "Vénus",          "#E8D5A3",   1, 20, "space", "Space", "rare"},
-            {"ball_earth",        "Terre",          "#1A6FA8",   1, 20, "space", "Space", "rare"},
-            {"ball_moon",         "Lune",           "#B8B8B8",   1, 18, "space", "Space", "rare"},
-            {"ball_mars",         "Mars",           "#C1440E",   1, 25, "space", "Space", "rare"},
-            {"ball_jupiter",      "Jupiter",        "#C88B3A",   1, 25, "space", "Space", "rare"},
-            {"ball_saturn",       "Saturn",         "#C8A96E",   1, 30, "space", "Space", "legendary"},
-            {"ball_uranus",       "Uranus",         "#7DE8E8",   1, 30, "space", "Space", "legendary"},
-            {"ball_neptune",      "Neptune",        "#2A5FD4",   1, 40, "space", "Space", "legendary"},
-            {"ball_pluto",        "Pluton",         "#C4A882",   1, 40, "space", "Space", "legendary"},
-            {"ball_red_dwarf",    "Naine Rouge",    "#CC2200",   1, 18, "space", "Space", "rare"},
-            {"ball_yellow_dwarf", "Naine Jaune",    "#FFD700",   1, 18, "space", "Space", "rare"},
-            {"ball_blue_giant",   "Géante Bleue",   "#4488FF",   1, 22, "space", "Space", "rare"},
-            {"ball_black_hole",   "Trou Noir",      "#0A0010",   1, 40, "space", "Space", "legendary"},
-            {"ball_pulsar",       "Pulsar",         "#4488FF",   1, 44, "space", "Space", "legendary"},
+            {"ball_comet",        "Balle Comète",   "#A0825A",   1, 26, "space", "space", "rare"},
+            {"ball_mercury",      "Mercure",        "#9E9585",   1, 18, "space", "space", "rare"},
+            {"ball_venus",        "Vénus",          "#E8D5A3",   1, 20, "space", "space", "rare"},
+            {"ball_earth",        "Terre",          "#1A6FA8",   1, 20, "space", "space", "rare"},
+            {"ball_moon",         "Lune",           "#B8B8B8",   1, 18, "space", "space", "rare"},
+            {"ball_mars",         "Mars",           "#C1440E",   1, 25, "space", "space", "rare"},
+            {"ball_jupiter",      "Jupiter",        "#C88B3A",   1, 25, "space", "space", "rare"},
+            {"ball_saturn",       "Saturn",         "#C8A96E",   1, 30, "space", "space", "legendary"},
+            {"ball_uranus",       "Uranus",         "#7DE8E8",   1, 30, "space", "space", "legendary"},
+            {"ball_neptune",      "Neptune",        "#2A5FD4",   1, 40, "space", "space", "legendary"},
+            {"ball_pluto",        "Pluton",         "#C4A882",   1, 40, "space", "space", "legendary"},
+            {"ball_red_dwarf",    "Naine Rouge",    "#CC2200",   1, 18, "space", "space", "rare"},
+            {"ball_yellow_dwarf", "Naine Jaune",    "#FFD700",   1, 18, "space", "space", "rare"},
+            {"ball_blue_giant",   "Géante Bleue",   "#4488FF",   1, 22, "space", "space", "rare"},
+            {"ball_black_hole",   "Trou Noir",      "#0A0010",   1, 40, "space", "space", "legendary"},
+            {"ball_pulsar",       "Pulsar",         "#4488FF",   1, 44, "space", "space", "legendary"},
 
             // ── ELEMENTAL ──────────────────────────────────────
-            {"ball_elem_fire",      "Feu",      "#FF4400", 1, 18, "elemental", "Élémental", "rare"},
-            {"ball_elem_water",     "Eau",      "#0088CC", 1, 18, "elemental", "Élémental", "rare"},
-            {"ball_elem_earth",     "Terre",    "#6B4226", 1, 18, "elemental", "Élémental", "rare"},
-            {"ball_elem_ice",       "Glace",    "#A8D8EA", 1, 18, "elemental", "Élémental", "rare"},
-            {"ball_elem_darkness",  "Ténèbres", "#050505", 1, 18, "elemental", "Élémental", "rare"},
-            {"ball_elem_light",     "Lumière",  "#FFFFEE", 1, 18, "elemental", "Élémental", "rare"},
-            {"ball_elem_air",       "Air",      "#E0F7FA", 1, 18, "elemental", "Élémental", "rare"},
-            {"ball_elem_lightning", "Foudre",   "#FFF176", 1, 18, "elemental", "Élémental", "rare"},
-            {"ball_elem_plasma",    "Plasma",   "#E040FB", 1, 18, "elemental", "Élémental", "rare"},
-            {"ball_elem_lava",      "Lave",     "#FF3300", 1, 18, "elemental", "Élémental", "rare"},
+            {"ball_elem_fire",      "Feu",      "#FF4400", 1, 18, "elemental", "elemental", "rare"},
+            {"ball_elem_water",     "Eau",      "#0088CC", 1, 18, "elemental", "elemental", "rare"},
+            {"ball_elem_earth",     "Terre",    "#6B4226", 1, 18, "elemental", "elemental", "rare"},
+            {"ball_elem_ice",       "Glace",    "#A8D8EA", 1, 18, "elemental", "elemental", "rare"},
+            {"ball_elem_darkness",  "Ténèbres", "#050505", 1, 18, "elemental", "elemental", "rare"},
+            {"ball_elem_light",     "Lumière",  "#FFFFEE", 1, 18, "elemental", "elemental", "rare"},
+            {"ball_elem_air",       "Air",      "#E0F7FA", 1, 18, "elemental", "elemental", "rare"},
+            {"ball_elem_lightning", "Foudre",   "#FFF176", 1, 18, "elemental", "elemental", "rare"},
+            {"ball_elem_plasma",    "Plasma",   "#E040FB", 1, 18, "elemental", "elemental", "rare"},
+            {"ball_elem_lava",      "Lave",     "#FF3300", 1, 18, "elemental", "elemental", "rare"},
     };
 
     // ── Données Effets ─────────────────────────────────
@@ -192,32 +193,29 @@ public class CosmeticsPage {
         page.addView(currRow);
 
         Runnable refreshCurr = () -> {
-            goldTv.setText("⬡ " + prefs.getGold() + " Or");
-            diamTv.setText("◆ " + prefs.getDiamonds() + " Diam");
+            goldTv.setText(Strings.fmt("common.currency_gold_fmt", prefs.getGold()));
+            diamTv.setText(Strings.fmt("common.currency_diam_fmt", prefs.getDiamonds()));
         };
         refreshCurr.run();
         scroll.setTag(R.id.tag_refresh, refreshCurr);
 
-        // ── Section Balles ──
-        addSectionHeader(ctx, page, "Balles");
+        addSectionHeader(ctx, page, Strings.get("cosmetics.section_balls"));
         String lastSubCat = "";
         for (Object[] ball : BALLS) {
             String subCat = (String) ball[6];
             if (!subCat.equals(lastSubCat)) {
-                addSubSectionHeader(ctx, page, subCat);
+                addSubSectionHeader(ctx, page, Strings.get("cosmetics.subcats." + subCat));
                 lastSubCat = subCat;
             }
             page.addView(buildCosmeticRow(ctx, prefs, raw, ball, "equipped_ball", refreshCurr));
         }
 
-        // ── Section Effets ──
-        addSectionHeader(ctx, page, "Effets");
+        addSectionHeader(ctx, page, Strings.get("cosmetics.section_effects"));
         for (Object[] fx : EFFECTS) {
             page.addView(buildCosmeticRow(ctx, prefs, raw, fx, "equipped_fx", refreshCurr));
         }
 
-        // ── Section Backgrounds ──
-        addSectionHeader(ctx, page, "Backgrounds");
+        addSectionHeader(ctx, page, Strings.get("cosmetics.section_backgrounds"));
         for (Object[] bg : BACKGROUNDS) {
             page.addView(buildCosmeticRow(ctx, prefs, raw, bg, "equipped_bg", refreshCurr));
         }
@@ -249,11 +247,17 @@ public class CosmeticsPage {
     // ──────────────────────────────────────────────────
     // ROW
     // ──────────────────────────────────────────────────
+    private static String skinName(String id, String fallback) {
+        String key = "cosmetics.skins." + id;
+        String v   = Strings.get(key);
+        return key.equals(v) ? fallback : v;
+    }
+
     private static View buildCosmeticRow(Context ctx, GamePreferences prefs,
                                          SharedPreferences raw, Object[] data,
                                          String equippedKey, Runnable refreshCurr) {
         String id       = (String) data[0];
-        String name     = (String) data[1];
+        String name     = skinName(id, (String) data[1]);
         String colorHex = (String) data[2];
         int goldCost    = (int)    data[3];
         int diamCost    = (int)    data[4];
@@ -377,14 +381,14 @@ public class CosmeticsPage {
             boolean equipped = id.equals(raw.getString(equippedKey, ""));
 
             if (equipped) {
-                actionBtn.setText("Équipée");
+                actionBtn.setText(Strings.get("cosmetics.btn_equipped"));
                 actionBtn.setTextColor(Color.parseColor("#00E676"));
                 actionBtn.setBackgroundColor(Color.parseColor("#0A2A0A"));
                 actionBtn.setEnabled(false);
                 diam2Btn.setVisibility(View.GONE);
                 fragRow.setVisibility(View.GONE);
             } else if (owned) {
-                actionBtn.setText("Équiper");
+                actionBtn.setText(Strings.get("cosmetics.btn_equip"));
                 actionBtn.setTextColor(Color.WHITE);
                 actionBtn.setBackgroundColor(Color.parseColor("#1B3A5A"));
                 actionBtn.setEnabled(true);
@@ -405,11 +409,11 @@ public class CosmeticsPage {
                 });
                 fragRow.setVisibility(View.GONE);
             } else {
-                actionBtn.setText("⬡ " + goldCost + " Or");
+                actionBtn.setText(Strings.fmt("common.currency_gold_fmt", goldCost));
                 actionBtn.setTextColor(Color.parseColor("#FFD700"));
                 actionBtn.setBackgroundColor(Color.parseColor("#1B3A1B"));
                 actionBtn.setEnabled(prefs.getGold() >= goldCost);
-                diam2Btn.setText("◆ " + diamCost + " Diam");
+                diam2Btn.setText(Strings.fmt("common.currency_diam_fmt", diamCost));
                 diam2Btn.setTextColor(Color.parseColor("#80DEEA"));
                 diam2Btn.setBackgroundColor(Color.parseColor("#1A1A3A"));
                 diam2Btn.setEnabled(prefs.getDiamonds() >= diamCost);
@@ -454,7 +458,7 @@ public class CosmeticsPage {
                 });
                 if (isGacha) {
                     int frags = prefs.getFragments(id);
-                    fragBtn.setText("🧩 " + frags + " / " + fragThreshold + "  Débloquer");
+                    fragBtn.setText(Strings.fmt("cosmetics.frag_btn_fmt", frags, fragThreshold));
                     fragBtn.setTextColor(frags >= fragThreshold
                             ? Color.parseColor("#FFD700")
                             : Color.parseColor("#666666"));

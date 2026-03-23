@@ -14,6 +14,8 @@ import android.view.*;
 import android.widget.*;
 import com.example.bounceball.utils.GamePreferences;
 import com.example.bounceball.utils.ImmersiveHelper;
+import com.example.bounceball.utils.LocaleManager;
+import com.example.bounceball.utils.Strings;
 
 public class ColonyActivity extends Activity {
 
@@ -37,6 +39,7 @@ public class ColonyActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        LocaleManager.applyLocale(this);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(
                 WindowManager.LayoutParams.FLAG_FULLSCREEN,
@@ -134,7 +137,7 @@ public class ColonyActivity extends Activity {
 
     private View buildCompletionBanner() {
         tvComplete = new TextView(this);
-        tvComplete.setText("✨ Colonie complète ! Une nouvelle planète vous attend.");
+        tvComplete.setText(Strings.get("colony.colony_complete"));
         tvComplete.setTextColor(Color.parseColor("#FFD700"));
         tvComplete.setTextSize(13f);
         tvComplete.setGravity(Gravity.CENTER);
@@ -157,7 +160,7 @@ public class ColonyActivity extends Activity {
         page.addView(planetTv);
 
         TextView titleTv = new TextView(this);
-        titleTv.setText("Nouvelle colonie");
+        titleTv.setText(Strings.get("colony.page2_title"));
         titleTv.setTextSize(24f);
         titleTv.setTextColor(Color.WHITE);
         titleTv.setGravity(Gravity.CENTER);
@@ -169,14 +172,14 @@ public class ColonyActivity extends Activity {
         page.addView(titleTv);
 
         TextView subTv = new TextView(this);
-        subTv.setText("Bientôt disponible…");
+        subTv.setText(Strings.get("colony.page2_subtitle"));
         subTv.setTextSize(16f);
         subTv.setTextColor(Color.parseColor("#888888"));
         subTv.setGravity(Gravity.CENTER);
         page.addView(subTv);
 
         TextView backArrow = new TextView(this);
-        backArrow.setText("◀  Retour à la lune");
+        backArrow.setText(Strings.get("colony.page2_back"));
         backArrow.setTextSize(15f);
         backArrow.setTextColor(Color.parseColor("#80DEEA"));
         backArrow.setGravity(Gravity.CENTER);
@@ -231,8 +234,6 @@ public class ColonyActivity extends Activity {
         set.start();
     }
 
-    // ── Ticker 1s — rafraîchit la vue pendant les constructions ──
-
     private void startTicker() {
         stopTicker();
         tickerRunnable = new Runnable() {
@@ -263,8 +264,6 @@ public class ColonyActivity extends Activity {
             tickerRunnable = null;
         }
     }
-
-    // ── Barre de stats colonie (haut) ──────────────────────
 
     private View buildStatBar() {
         LinearLayout bar = new LinearLayout(this);
@@ -332,8 +331,6 @@ public class ColonyActivity extends Activity {
         btnNextColony.setVisibility(complete ? View.VISIBLE : View.GONE);
     }
 
-    // ── Barre de ressources (bas) ───────────────────────────
-
     private View buildBottomBar() {
         LinearLayout bar = new LinearLayout(this);
         bar.setOrientation(LinearLayout.HORIZONTAL);
@@ -360,7 +357,7 @@ public class ColonyActivity extends Activity {
         bar.addView(spacer, new LinearLayout.LayoutParams(0, 1, 1f));
 
         Button backBtn = new Button(this);
-        backBtn.setText("← Retour");
+        backBtn.setText(Strings.get("colony.btn_back"));
         backBtn.setTextColor(Color.WHITE);
         GradientDrawable backBg = new GradientDrawable();
         backBg.setColor(Color.parseColor("#1B3A1B"));
@@ -380,8 +377,6 @@ public class ColonyActivity extends Activity {
         tvMetal.setText("⚙ " + prefs.getRareMetal());
     }
 
-    // ── Dialog détail bâtiment (avec upgrade) ─────────────
-
     private void showSlotDialog(int slotIndex) {
         ColonyBuildingSlot slot = slots[slotIndex];
         ColonyBuilding type = slot.type;
@@ -392,7 +387,7 @@ public class ColonyActivity extends Activity {
         layout.setBackgroundColor(Color.parseColor("#0D1A0D"));
 
         TextView titleTv = new TextView(this);
-        titleTv.setText(type.icon + "  " + type.displayName);
+        titleTv.setText(type.icon + "  " + type.getDisplayName());
         titleTv.setTextSize(20f);
         titleTv.setTextColor(Color.WHITE);
         titleTv.setGravity(Gravity.CENTER);
@@ -400,10 +395,10 @@ public class ColonyActivity extends Activity {
 
         TextView levelTv = new TextView(this);
         if (slot.isBuilt()) {
-            levelTv.setText("Niveau " + slot.getLevel() + " / " + ColonyBuilding.MAX_LEVEL);
+            levelTv.setText(Strings.fmt("colony.dialog_level_fmt", slot.getLevel(), ColonyBuilding.MAX_LEVEL));
             levelTv.setTextColor(Color.parseColor("#4CAF50"));
         } else {
-            levelTv.setText("Emplacement vide");
+            levelTv.setText(Strings.get("colony.dialog_slot_empty"));
             levelTv.setTextColor(Color.parseColor("#888888"));
         }
         levelTv.setTextSize(15f);
@@ -417,14 +412,14 @@ public class ColonyActivity extends Activity {
         layout.addView(makeDialogDivider());
 
         if (slot.isBuilt()) {
-            addDialogRow(layout, type.statLabel,
+            addDialogRow(layout, type.getStatLabel(),
                     String.valueOf(type.getStatAtLevel(slot.getLevel())), "#A5D6A7");
         }
 
         if (slot.isMaxLevel()) {
             layout.addView(makeDialogDivider());
             TextView maxTv = new TextView(this);
-            maxTv.setText("✨ Niveau maximum atteint");
+            maxTv.setText(Strings.get("colony.dialog_level_max"));
             maxTv.setTextColor(Color.parseColor("#FFD700"));
             maxTv.setTextSize(13f);
             maxTv.setGravity(Gravity.CENTER);
@@ -437,12 +432,12 @@ public class ColonyActivity extends Activity {
         } else if (slot.isUpgrading()) {
             layout.addView(makeDialogDivider());
             int next = slot.getNextLevel();
-            addDialogRow(layout, "→ Niveau " + next,
+            addDialogRow(layout, Strings.fmt("colony.dialog_next_level_fmt", next),
                     String.valueOf(type.getStatAtLevel(next)), "#80DEEA");
             layout.addView(makeDialogDivider());
 
             TextView timerLabel = new TextView(this);
-            timerLabel.setText("⏳ Construction en cours…");
+            timerLabel.setText(Strings.get("colony.dialog_building"));
             timerLabel.setTextColor(Color.parseColor("#FFF176"));
             timerLabel.setTextSize(13f);
             timerLabel.setGravity(Gravity.CENTER);
@@ -491,24 +486,32 @@ public class ColonyActivity extends Activity {
             long durSecs  = type.getDurationSecondsForLevel(next);
 
             layout.addView(makeDialogDivider());
-            addDialogRow(layout, "→ Niveau " + next,
+            addDialogRow(layout, Strings.fmt("colony.dialog_next_level_fmt", next),
                     String.valueOf(type.getStatAtLevel(next)), "#80DEEA");
             layout.addView(makeDialogDivider());
-            addDialogRow(layout, "⬡ Coût",   goldCost + " or",   "#FFD700");
+            addDialogRow(layout,
+                    Strings.get("colony.dialog_row_cost"),
+                    Strings.fmt("colony.dialog_row_gold_value_fmt", goldCost),
+                    "#FFD700");
             if (metalCost > 0) {
                 boolean hasEnoughMetal = prefs.getRareMetal() >= metalCost;
-                addDialogRow(layout, "⚙ Métal rare", metalCost + " métal",
+                addDialogRow(layout,
+                        Strings.get("colony.dialog_row_metal"),
+                        Strings.fmt("colony.dialog_row_metal_value_fmt", metalCost),
                         hasEnoughMetal ? "#80DEEA" : "#EF9A9A");
             }
-            addDialogRow(layout, "⏱ Durée", formatDuration(durSecs * 1000L), "#AAAAAA");
+            addDialogRow(layout,
+                    Strings.get("colony.dialog_row_duration"),
+                    formatDuration(durSecs * 1000L),
+                    "#AAAAAA");
 
             layout.addView(makeDialogDivider());
 
             boolean canUpgrade = ColonyManager.canStartUpgrade(slot, prefs);
             Button upgradeBtn = new Button(this);
             String btnLabel = slot.isBuilt()
-                    ? "⬆  Améliorer (Lv" + slot.getLevel() + " → " + next + ")"
-                    : "🔨  Construire";
+                    ? Strings.fmt("colony.dialog_btn_upgrade_fmt", slot.getLevel(), next)
+                    : Strings.get("colony.dialog_btn_build");
             upgradeBtn.setText(btnLabel);
             upgradeBtn.setTextSize(15f);
             upgradeBtn.setTextColor(Color.parseColor(canUpgrade ? "#0A0A0A" : "#777777"));
@@ -539,8 +542,10 @@ public class ColonyActivity extends Activity {
                 TextView cantTv = new TextView(this);
                 boolean goldOk  = prefs.getGold() >= goldCost;
                 boolean metalOk = metalCost == 0 || prefs.getRareMetal() >= metalCost;
-                if (!goldOk)  cantTv.setText("⬡ Or insuffisant (" + prefs.getGold() + " / " + goldCost + ")");
-                else if (!metalOk) cantTv.setText("⚙ Métal rare insuffisant (" + prefs.getRareMetal() + " / " + metalCost + ")");
+                if (!goldOk)
+                    cantTv.setText(Strings.fmt("colony.error_gold_fmt", prefs.getGold(), goldCost));
+                else if (!metalOk)
+                    cantTv.setText(Strings.fmt("colony.error_metal_fmt", prefs.getRareMetal(), metalCost));
                 cantTv.setTextColor(Color.parseColor("#EF9A9A"));
                 cantTv.setTextSize(12f);
                 cantTv.setGravity(Gravity.CENTER);
@@ -554,7 +559,7 @@ public class ColonyActivity extends Activity {
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this)
                 .setView(layout)
-                .setPositiveButton("Fermer", (d, w) -> {
+                .setPositiveButton(Strings.get("colony.dialog_btn_close"), (d, w) -> {
                     if (activeCountDown != null) {
                         activeCountDown.cancel();
                         activeCountDown = null;
@@ -598,8 +603,6 @@ public class ColonyActivity extends Activity {
         v.setBackgroundColor(Color.parseColor("#1E3A1E"));
         return v;
     }
-
-    // ── Helpers ────────────────────────────────────────────
 
     private String formatDuration(long millis) {
         long totalSecs = millis / 1000L;

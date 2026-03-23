@@ -20,7 +20,7 @@ import com.example.bounceball.upgrade.UpgradeStats;
 import com.example.bounceball.utils.AdManager;
 import com.example.bounceball.utils.GamePreferences;
 import com.example.bounceball.utils.LocaleManager;
-import com.example.bounceball.utils.ImmersiveHelper;
+import com.example.bounceball.utils.Strings;
 
 public class MainActivity extends Activity implements GameView.GameStateListener {
 
@@ -29,7 +29,7 @@ public class MainActivity extends Activity implements GameView.GameStateListener
 
     private TextView shopBtn, eggBtn;
     private TextView tapText;
-    private TextView recordText;   // affiche le record en permanence sur l'écran
+    private TextView recordText;
     private boolean inGame = false;
 
     private FrameLayout settingsOverlay;
@@ -45,7 +45,6 @@ public class MainActivity extends Activity implements GameView.GameStateListener
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // ── 1. Applique la langue sauvegardée AVANT tout affichage ──
         LocaleManager.applyLocale(this);
 
         requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -56,7 +55,6 @@ public class MainActivity extends Activity implements GameView.GameStateListener
 
         prefs = new GamePreferences(this);
 
-        // ── 2. Initialisation AdMob (une seule fois au lancement) ──
         AdManager.getInstance().initialize(this);
 
         UpgradeStats upgrades = UpgradeStats.fromPrefs(prefs.getRaw());
@@ -67,7 +65,6 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         gameView.setGameStateListener(this);
         root.addView(gameView, matchParentFl());
 
-        // ── Boutons ronds en haut à droite ──
         LinearLayout btnCol = new LinearLayout(this);
         btnCol.setOrientation(LinearLayout.VERTICAL);
         btnCol.setPadding(0, dpToPx(50), dpToPx(18), 0);
@@ -83,7 +80,6 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         eggBtn = makeRoundBtn("🥚", v -> showEggOverlay());
         btnCol.addView(eggBtn);
 
-        // ── Record d'ascension affiché en permanence ──
         recordText = new TextView(this);
         recordText.setTextColor(Color.parseColor("#888888"));
         recordText.setTextSize(16f);
@@ -96,9 +92,8 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         root.addView(recordText, recLp);
         refreshRecordDisplay();
 
-        // ── Texte "Appuyer pour jouer" ──
         tapText = new TextView(this);
-        tapText.setText("Appuyer pour jouer");
+        tapText.setText(Strings.get("main.tap_to_play"));
         tapText.setTextColor(Color.parseColor("#222222"));
         tapText.setTextSize(22f);
         tapText.setGravity(Gravity.CENTER);
@@ -110,7 +105,6 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         root.addView(tapText, tapLp);
         startPulse();
 
-        // ── Overlays (construits APRÈS les vues qu'ils référencent) ──
         settingsOverlay = buildSettingsOverlay();
         shopOverlay     = buildShopOverlay();
         eggOverlay      = buildEggOverlay();
@@ -122,6 +116,11 @@ public class MainActivity extends Activity implements GameView.GameStateListener
 
         setContentView(root);
         refreshEggButton();
+
+        if (prefs.getRaw().getBoolean("reopen_settings", false)) {
+            prefs.getRaw().edit().putBoolean("reopen_settings", false).apply();
+            showOverlay(settingsOverlay);
+        }
     }
 
     // ══════════════════════════════════════════════════════
@@ -143,7 +142,6 @@ public class MainActivity extends Activity implements GameView.GameStateListener
 
     @Override
     public void onGameOver(float heightReached) {
-        // ── 3. Sauvegarde le progrès (record + or) ──
         UpgradeStats upgrades = UpgradeStats.fromPrefs(prefs.getRaw());
         boolean newRecord = prefs.updateMaxHeight(heightReached);
         int goldEarned = (int) Math.floor(heightReached * upgrades.goldMultiplier);
@@ -165,7 +163,7 @@ public class MainActivity extends Activity implements GameView.GameStateListener
 
             if (newRecord) {
                 Toast.makeText(this,
-                        String.format("🏆 Nouveau record : %.1f m !", heightReached),
+                        Strings.fmt("main.record_new_fmt", heightReached),
                         Toast.LENGTH_SHORT).show();
             }
         });
@@ -174,7 +172,7 @@ public class MainActivity extends Activity implements GameView.GameStateListener
     @Override
     protected void onResume() {
         super.onResume();
-        ImmersiveHelper.enable(getWindow());
+        com.example.bounceball.utils.ImmersiveHelper.enable(getWindow());
         if (gameView != null) gameView.loadBallSkin();
         if (gameView != null) gameView.loadBgSkin();
         refreshEggButton();
@@ -183,16 +181,15 @@ public class MainActivity extends Activity implements GameView.GameStateListener
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
-        if (hasFocus) ImmersiveHelper.enable(getWindow());
+        if (hasFocus) com.example.bounceball.utils.ImmersiveHelper.enable(getWindow());
     }
 
-    /** Met à jour le TextView du record avec la valeur persistée. */
     private void refreshRecordDisplay() {
         float maxH = prefs.getMaxHeight();
         if (maxH > 0f) {
-            recordText.setText(String.format("🏆 Record : %.1f m", maxH));
+            recordText.setText(Strings.fmt("main.record_fmt", maxH));
         } else {
-            recordText.setText("Aucun record encore");
+            recordText.setText(Strings.get("main.record_none"));
         }
     }
 
@@ -235,17 +232,15 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         inner.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
         inner.setPadding(dpToPx(32), dpToPx(60), dpToPx(32), dpToPx(40));
 
-        // Titre
         TextView title = new TextView(this);
-        title.setText("⚙  Paramètres");
+        title.setText(Strings.get("settings.title"));
         title.setTextSize(26f);
         title.setTextColor(Color.parseColor("#FFD700"));
         title.setGravity(Gravity.CENTER);
         title.setPadding(0, 0, 0, dpToPx(24));
         inner.addView(title);
 
-        // ─── Section SON ───────────────────────────────────
-        addSettingsSectionHeader(inner, "🔊 Son");
+        addSettingsSectionHeader(inner, Strings.get("settings.section_sound"));
 
         LinearLayout soundRow = new LinearLayout(this);
         soundRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -253,7 +248,7 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         soundRow.setPadding(0, dpToPx(8), 0, dpToPx(8));
 
         TextView soundLabel = new TextView(this);
-        soundLabel.setText("Effets sonores");
+        soundLabel.setText(Strings.get("settings.label_sfx"));
         soundLabel.setTextColor(Color.WHITE);
         soundLabel.setTextSize(16f);
         soundLabel.setLayoutParams(new LinearLayout.LayoutParams(
@@ -261,7 +256,6 @@ public class MainActivity extends Activity implements GameView.GameStateListener
 
         Switch soundSwitch = new Switch(this);
         soundSwitch.setChecked(prefs.isSoundEnabled());
-        // ── Sauvegarde le choix son immédiatement ──
         soundSwitch.setOnCheckedChangeListener((btn, checked) ->
                 prefs.setSoundEnabled(checked));
 
@@ -271,73 +265,98 @@ public class MainActivity extends Activity implements GameView.GameStateListener
 
         addSettingsDivider(inner);
 
-        // ─── Section LANGUE ────────────────────────────────
-        addSettingsSectionHeader(inner, "🌍 Langue");
+        addSettingsSectionHeader(inner, Strings.get("settings.section_language"));
 
-        String[] langNames = {"Français", "English", "Español", "Deutsch", "日本語"};
-        String[] langCodes = {"fr", "en", "es", "de", "ja"};
+        final String[][] LANGUAGES = SettingsActivity.LANGUAGES;
+
+        LinearLayout langRow = new LinearLayout(this);
+        langRow.setOrientation(LinearLayout.HORIZONTAL);
+        langRow.setGravity(Gravity.CENTER_VERTICAL);
+        langRow.setPadding(dpToPx(16), dpToPx(14), dpToPx(16), dpToPx(14));
+        android.graphics.drawable.GradientDrawable langBg = new android.graphics.drawable.GradientDrawable();
+        langBg.setColor(Color.parseColor("#1A2A3A"));
+        langBg.setCornerRadius(dpToPx(8));
+        langBg.setStroke(dpToPx(1), Color.parseColor("#2A3A4A"));
+        langRow.setBackground(langBg);
+        LinearLayout.LayoutParams langRowLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        langRowLp.setMargins(0, dpToPx(4), 0, 0);
+        langRow.setLayoutParams(langRowLp);
+
         String currentLang = prefs.getLanguage();
+        String currentName = currentLang;
+        for (String[] l : LANGUAGES) { if (l[0].equals(currentLang)) { currentName = l[1]; break; } }
 
-        RadioGroup langGroup = new RadioGroup(this);
-        langGroup.setOrientation(RadioGroup.VERTICAL);
+        TextView langValueTv = new TextView(this);
+        langValueTv.setText(currentName);
+        langValueTv.setTextColor(Color.WHITE);
+        langValueTv.setTextSize(15f);
+        langValueTv.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
 
-        for (int i = 0; i < langNames.length; i++) {
-            RadioButton rb = new RadioButton(this);
-            rb.setText(langNames[i]);
-            rb.setTextColor(Color.WHITE);
-            rb.setTextSize(15f);
-            rb.setTag(langCodes[i]);
-            rb.setPadding(dpToPx(4), dpToPx(6), dpToPx(4), dpToPx(6));
-            if (langCodes[i].equals(currentLang)) rb.setChecked(true);
-            langGroup.addView(rb);
-        }
+        TextView langArrow = new TextView(this);
+        langArrow.setText("▾");
+        langArrow.setTextColor(Color.parseColor("#80DEEA"));
+        langArrow.setTextSize(16f);
 
-        langGroup.setOnCheckedChangeListener((group, checkedId) -> {
-            RadioButton selected = group.findViewById(checkedId);
-            if (selected != null) {
-                String code = (String) selected.getTag();
-                prefs.setLanguage(code);          // ── 4. Sauvegarde la langue ──
-                LocaleManager.applyLocale(this);  // applique immédiatement
-                recreate();                       // redémarre pour rafraîchir les textes
+        langRow.addView(langValueTv);
+        langRow.addView(langArrow);
+
+        langRow.setOnClickListener(v -> {
+            String[] names = new String[LANGUAGES.length];
+            int checked = 0;
+            String cur = prefs.getLanguage();
+            for (int i = 0; i < LANGUAGES.length; i++) {
+                names[i] = LANGUAGES[i][1];
+                if (LANGUAGES[i][0].equals(cur)) checked = i;
             }
+            new android.app.AlertDialog.Builder(this)
+                    .setTitle(Strings.get("settings.section_language"))
+                    .setSingleChoiceItems(names, checked, (dialog, which) -> {
+                        String selectedCode = LANGUAGES[which][0];
+                        dialog.dismiss();
+                        if (!selectedCode.equals(prefs.getLanguage())) {
+                            prefs.setLanguage(selectedCode);
+                            prefs.getRaw().edit().putBoolean("reopen_settings", true).apply();
+                            recreate();
+                        }
+                    })
+                    .show();
         });
 
-        inner.addView(langGroup);
+        inner.addView(langRow);
         addSettingsDivider(inner);
 
-        // ─── Section PROGRESSION ───────────────────────────
-        addSettingsSectionHeader(inner, "📊 Progression");
+        addSettingsSectionHeader(inner, Strings.get("settings.section_progress"));
 
         TextView recView = new TextView(this);
         float maxH = prefs.getMaxHeight();
         recView.setText(maxH > 0f
-                ? String.format("🏆 Meilleure hauteur : %.1f m", maxH)
-                : "Aucun record enregistré");
+                ? Strings.fmt("settings.record_best_fmt", maxH)
+                : Strings.get("settings.record_none"));
         recView.setTextColor(Color.parseColor("#00E676"));
         recView.setTextSize(15f);
         recView.setPadding(0, dpToPx(8), 0, dpToPx(4));
         inner.addView(recView);
 
         TextView goldView = new TextView(this);
-        goldView.setText("⬡ Or total : " + prefs.getGold());
+        goldView.setText(Strings.fmt("settings.gold_total_fmt", prefs.getGold()));
         goldView.setTextColor(Color.parseColor("#FFD700"));
         goldView.setTextSize(15f);
         goldView.setPadding(0, 0, 0, dpToPx(4));
         inner.addView(goldView);
 
         TextView diamView = new TextView(this);
-        diamView.setText("◆ Diamants : " + prefs.getDiamonds());
+        diamView.setText(Strings.fmt("settings.diamonds_fmt", prefs.getDiamonds()));
         diamView.setTextColor(Color.parseColor("#80DEEA"));
         diamView.setTextSize(15f);
         inner.addView(diamView);
 
         addSettingsDivider(inner);
 
-        // ─── Hard Reset ────────────────────────────────────
-        addSettingsSectionHeader(inner, "⚠️ Zone dangereuse");
+        addSettingsSectionHeader(inner, Strings.get("settings.section_danger"));
 
         Button resetBtn = new Button(this);
-        resetBtn.setText("🗑  Effacer toute la progression");
+        resetBtn.setText(Strings.get("settings.btn_reset"));
         resetBtn.setTextColor(Color.WHITE);
         resetBtn.setBackgroundColor(Color.parseColor("#7F0000"));
         LinearLayout.LayoutParams resetLp = new LinearLayout.LayoutParams(
@@ -345,22 +364,21 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         resetLp.setMargins(0, dpToPx(8), 0, 0);
         resetBtn.setLayoutParams(resetLp);
         resetBtn.setOnClickListener(v -> new android.app.AlertDialog.Builder(this)
-                .setTitle("Reset total")
-                .setMessage("Toute ta progression, tes achats in-app, tes cosmétiques et l'éclosion seront effacés. Cette action est irréversible.")
-                .setPositiveButton("Tout effacer", (d, w) -> {
+                .setTitle(Strings.get("settings.dialog_reset_title"))
+                .setMessage(Strings.get("settings.dialog_reset_msg"))
+                .setPositiveButton(Strings.get("settings.dialog_reset_yes"), (d, w) -> {
                     prefs.resetAll();
                     refreshRecordDisplay();
                     refreshEggButton();
                     hideOverlay(overlay);
-                    Toast.makeText(this, "Progression réinitialisée.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, Strings.get("settings.toast_reset_done"), Toast.LENGTH_SHORT).show();
                 })
-                .setNegativeButton("Annuler", null)
+                .setNegativeButton(Strings.get("common.btn_cancel"), null)
                 .show());
         inner.addView(resetBtn);
 
-        // ─── Bouton Retour ─────────────────────────────────
         Button backBtn = new Button(this);
-        backBtn.setText("← Retour");
+        backBtn.setText(Strings.get("common.btn_back"));
         backBtn.setTextColor(Color.WHITE);
         backBtn.setBackgroundColor(Color.parseColor("#1B5E20"));
         LinearLayout.LayoutParams backLp = new LinearLayout.LayoutParams(
@@ -431,13 +449,12 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         sheetLp.rightMargin  = dpToPx(12);
         overlay.addView(sheet, sheetLp);
 
-        // ── Barre d'onglets (1 rangée, 3 onglets) ──
         LinearLayout tabRow1 = new LinearLayout(this);
         tabRow1.setOrientation(LinearLayout.HORIZONTAL);
 
-        TextView upgradesTab  = makeTab("⚡ Upgrades");
-        TextView cosmeticsTab = makeTab("🎨 Cosmétiques");
-        TextView gachaTab     = makeTab("🎰 Gacha");
+        TextView upgradesTab  = makeTab(Strings.get("shop.tab_upgrades"));
+        TextView cosmeticsTab = makeTab(Strings.get("shop.tab_cosmetics"));
+        TextView gachaTab     = makeTab(Strings.get("shop.tab_gacha"));
 
         upgradesTab.setLayoutParams( new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
         cosmeticsTab.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
@@ -472,20 +489,20 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         upgradesPage.addView(currRow);
 
         Runnable refreshCurr = () -> runOnUiThread(() -> {
-            goldTv.setText("⬡ " + prefs.getGold() + " Or");
-            diamTv.setText("◆ " + prefs.getDiamonds() + " Diam");
+            goldTv.setText(Strings.fmt("common.currency_gold_fmt", prefs.getGold()));
+            diamTv.setText(Strings.fmt("common.currency_diam_fmt", prefs.getDiamonds()));
         });
         refreshCurr.run();
 
         Object[][] UPGRADES = {
-                {"Résistance à l'air",   "Réduit la traînée aérodynamique",       50,  5,  10, "upg_air"},
-                {"Élasticité",           "Trampoline plus rebondissant",           80,  8,  10, "upg_elastic"},
-                {"Boost Fusée",          "Double tap en montée pour booster",     150, 15,   5, "upg_boost"},
-                {"Recharge Boost",       "Recharge le boost plus vite",           100, 10,   5, "upg_boost_recharge"},
-                {"Réserve d'encre",      "Plus d'encre disponible par partie",     60,  6,  10, "upg_ink_reserve"},
-                {"Efficacité Encre",     "Consomme moins d'encre par pixel",       70,  7,  10, "upg_ink_eff"},
-                {"Multiplicateur d'or",  "×1.01 or par hauteur atteinte",         200, 20, 100, "upg_gold_mult"},
-                {"Warp",                 "Portails de téléportation vers le haut", 300, 30,   5, "upg_warp"},
+                {Strings.get("shop.upgrades.upg_air.name"),            Strings.get("shop.upgrades.upg_air.desc"),             50,  5,  10, "upg_air"},
+                {Strings.get("shop.upgrades.upg_elastic.name"),        Strings.get("shop.upgrades.upg_elastic.desc"),         80,  8,  10, "upg_elastic"},
+                {Strings.get("shop.upgrades.upg_boost.name"),          Strings.get("shop.upgrades.upg_boost.desc"),          150, 15,   5, "upg_boost"},
+                {Strings.get("shop.upgrades.upg_boost_recharge.name"), Strings.get("shop.upgrades.upg_boost_recharge.desc"), 100, 10,   5, "upg_boost_recharge"},
+                {Strings.get("shop.upgrades.upg_ink_reserve.name"),    Strings.get("shop.upgrades.upg_ink_reserve.desc"),     60,  6,  10, "upg_ink_reserve"},
+                {Strings.get("shop.upgrades.upg_ink_eff.name"),        Strings.get("shop.upgrades.upg_ink_eff.desc"),         70,  7,  10, "upg_ink_eff"},
+                {Strings.get("shop.upgrades.upg_gold_mult.name"),      Strings.get("shop.upgrades.upg_gold_mult.desc"),      200, 20, 100, "upg_gold_mult"},
+                {Strings.get("shop.upgrades.upg_warp.name"),           Strings.get("shop.upgrades.upg_warp.desc"),           300, 30,   5, "upg_warp"},
         };
         for (Object[] upg : UPGRADES) {
             upgradesPage.addView(buildUpgradeRow(upg, refreshCurr));
@@ -500,8 +517,6 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         cosmeticsPage.setVisibility(View.GONE);
         content.addView(cosmeticsPage, matchParentFl());
 
-        // ── Page Éclosion supprimée — onglet retiré du shop ──
-
         sheet.addView(content);
 
         LinearLayout bottomBar = new LinearLayout(this);
@@ -510,7 +525,7 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         bottomBar.setPadding(0, dpToPx(10), 0, dpToPx(14));
         bottomBar.setBackgroundColor(Color.parseColor("#0D1B2A"));
         Button retourBtn = new Button(this);
-        retourBtn.setText("Retour");
+        retourBtn.setText(Strings.get("common.btn_back"));
         retourBtn.setTextColor(Color.WHITE);
         retourBtn.setBackgroundColor(Color.parseColor("#1B3A1B"));
         retourBtn.setOnClickListener(v -> hideOverlay(overlay));
@@ -519,7 +534,6 @@ public class MainActivity extends Activity implements GameView.GameStateListener
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT));
 
-        // ── Logique de sélection des onglets ──
         TextView[] pageTabs = {upgradesTab, cosmeticsTab};
         View[]     pages    = {upgradesScroll, cosmeticsPage};
 
@@ -551,7 +565,6 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         upgradesTab.setOnClickListener(v -> activateUpgrades.run());
         cosmeticsTab.setOnClickListener(v -> activateCosmetics.run());
 
-        // Gacha → ouvre l'overlay séparé en superposition par-dessus le shop
         gachaTab.setOnClickListener(v -> {
             gachaTab.setBackgroundColor(Color.parseColor("#111E2C"));
             gachaTab.setTextColor(Color.parseColor("#FFD700"));
@@ -619,13 +632,13 @@ public class MainActivity extends Activity implements GameView.GameStateListener
             int lvl      = raw.getInt(key, 0);
             int goldCost = goldBase * (lvl + 1);
             int diamCost = (int) (diamBase * (lvl + 1) * 0.5f);
-            levelView.setText("Niveau: " + lvl + " / " + maxLvl);
+            levelView.setText(Strings.fmt("common.level_fmt", lvl, maxLvl));
             if (lvl >= maxLvl) {
-                goldBtn.setText("MAX"); goldBtn.setEnabled(false);
-                diamBtn.setText("MAX"); diamBtn.setEnabled(false);
+                goldBtn.setText(Strings.get("common.level_max")); goldBtn.setEnabled(false);
+                diamBtn.setText(Strings.get("common.level_max")); diamBtn.setEnabled(false);
             } else {
-                goldBtn.setText("⬡ " + goldCost + " Or");
-                diamBtn.setText("◆ " + diamCost + " Diam");
+                goldBtn.setText(Strings.fmt("common.currency_gold_fmt", goldCost));
+                diamBtn.setText(Strings.fmt("common.currency_diam_fmt", diamCost));
                 goldBtn.setEnabled(prefs.getGold() >= goldCost);
                 diamBtn.setEnabled(prefs.getDiamonds() >= diamCost);
             }
@@ -701,7 +714,7 @@ public class MainActivity extends Activity implements GameView.GameStateListener
 
     private Button makeRetourBtn(View.OnClickListener listener) {
         Button btn = new Button(this);
-        btn.setText("Retour");
+        btn.setText(Strings.get("common.btn_back"));
         btn.setTextColor(Color.WHITE);
         btn.setBackgroundColor(Color.parseColor("#1B3A1B"));
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
@@ -764,7 +777,7 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         layout.addView(eggTv);
 
         TextView hintTv = new TextView(this);
-        hintTv.setText("Atteins 1000 m\npour faire éclore l'œuf.");
+        hintTv.setText(Strings.get("egg.hint"));
         hintTv.setTextColor(Color.parseColor("#AAAAAA"));
         hintTv.setTextSize(18f);
         hintTv.setGravity(Gravity.CENTER);
@@ -776,7 +789,7 @@ public class MainActivity extends Activity implements GameView.GameStateListener
 
         float maxH = prefs.getMaxHeight();
         TextView progressTv = new TextView(this);
-        progressTv.setText(String.format("Record actuel : %.0f m / 1000 m", maxH));
+        progressTv.setText(Strings.fmt("egg.progress_fmt", maxH));
         progressTv.setTextColor(Color.parseColor("#FFD700"));
         progressTv.setTextSize(15f);
         progressTv.setGravity(Gravity.CENTER);
@@ -854,16 +867,17 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         alienTv.setGravity(Gravity.CENTER);
         layout.addView(alienTv);
 
+        android.graphics.drawable.GradientDrawable bubbleBgD = new android.graphics.drawable.GradientDrawable();
+        bubbleBgD.setColor(Color.parseColor("#0D2010"));
+        bubbleBgD.setCornerRadius(dpToPx(16));
+        bubbleBgD.setStroke(dpToPx(2), Color.parseColor("#00E676"));
+
         FrameLayout bubble = new FrameLayout(this);
-        GradientDrawable bubbleBg = new GradientDrawable();
-        bubbleBg.setColor(Color.parseColor("#0D2010"));
-        bubbleBg.setCornerRadius(dpToPx(16));
-        bubbleBg.setStroke(dpToPx(2), Color.parseColor("#00E676"));
-        bubble.setBackground(bubbleBg);
+        bubble.setBackground(bubbleBgD);
         bubble.setPadding(dpToPx(24), dpToPx(16), dpToPx(24), dpToPx(16));
 
         TextView dialogTv = new TextView(this);
-        dialogTv.setText("Bonjour.");
+        dialogTv.setText(Strings.get("egg.alien_dialog"));
         dialogTv.setTextColor(Color.WHITE);
         dialogTv.setTextSize(20f);
         dialogTv.setGravity(Gravity.CENTER);
@@ -876,10 +890,10 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         layout.addView(bubble);
 
         Button colonyBtn = new Button(this);
-        colonyBtn.setText("🌕  Construire la base");
+        colonyBtn.setText(Strings.get("egg.btn_build_colony"));
         colonyBtn.setTextSize(17f);
         colonyBtn.setTextColor(Color.parseColor("#0A0A0A"));
-        GradientDrawable colonyBg = new GradientDrawable();
+        android.graphics.drawable.GradientDrawable colonyBg = new android.graphics.drawable.GradientDrawable();
         colonyBg.setColor(Color.parseColor("#FFD700"));
         colonyBg.setCornerRadius(dpToPx(12));
         colonyBtn.setBackground(colonyBg);
