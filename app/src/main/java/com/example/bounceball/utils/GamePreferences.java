@@ -78,8 +78,7 @@ public class GamePreferences {
     // ─────────────────────────────────────────
     // LANGUE
     // ─────────────────────────────────────────
-    /** Retourne le code langue (ex: "fr", "en"). Par défaut : "fr". */
-    public String getLanguage() { return prefs.getString("language", "fr"); }
+    public String getLanguage() { return prefs.getString("language", "en"); }
 
     public void setLanguage(String langCode) {
         prefs.edit().putString("language", langCode).apply();

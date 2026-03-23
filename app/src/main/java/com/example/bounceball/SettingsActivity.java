@@ -1,25 +1,109 @@
 package com.example.bounceball;
 
 import android.app.Activity;
-import android.content.Intent;
+import android.app.AlertDialog;
 import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
-import android.widget.*;
 import android.view.Gravity;
 import android.view.ViewGroup;
-import android.widget.LinearLayout;
+import android.widget.*;
 import com.example.bounceball.utils.GamePreferences;
-import com.example.bounceball.utils.LocaleManager;
 import com.example.bounceball.utils.ImmersiveHelper;
+import com.example.bounceball.utils.LocaleManager;
+import com.example.bounceball.utils.Strings;
 
 public class SettingsActivity extends Activity {
 
+    // ── AJOUTER UNE LANGUE ──────────────────────────────────────────────
+    // 1. Ajouter une ligne {"code", "Nom natif"} dans ce tableau
+    // 2. Déposer assets/lang/<code>.json
+    // C'est tout — le menu se met à jour automatiquement.
+    public static final String[][] LANGUAGES = {
+
+            // Langues mondiales / marchés gaming majeurs
+            {"en", "English"},
+            {"zh", "中文(简体)"},
+            {"zh_tw", "中文(繁體)"},
+            {"es", "Español"},
+            {"hi", "हिन्दी"},
+            {"ar", "العربية"},
+            {"pt", "Português"},
+            {"fr", "Français"},
+            {"ru", "Русский"},
+            {"de", "Deutsch"},
+            {"ja", "日本語"},
+            {"ko", "한국어"},
+
+            // Grands marchés régionaux
+            {"id", "Bahasa Indonesia"},
+            {"vi", "Tiếng Việt"},
+            {"th", "ภาษาไทย"},
+            {"ms", "Bahasa Melayu"},
+            {"tr", "Türkçe"},
+            {"it", "Italiano"},
+            {"nl", "Nederlands"},
+            {"pl", "Polski"},
+            {"uk", "Українська"},
+            {"bn", "বাংলা"},
+            {"fa", "فارسی"},
+
+            // Europe secondaire
+            {"sv", "Svenska"},
+            {"no", "Norsk"},
+            {"da", "Dansk"},
+            {"fi", "Suomi"},
+            {"cs", "Čeština"},
+            {"ro", "Română"},
+            {"hu", "Magyar"},
+            {"el", "Ελληνικά"},
+            {"he", "עברית"},
+            {"sk", "Slovenčina"},
+            {"bg", "Български"},
+            {"sr", "Srpski"},
+            {"hr", "Hrvatski"},
+            {"ca", "Català"},
+            {"lt", "Lietuvių"},
+            {"sq", "Shqip"},
+            {"is", "Íslenska"},
+
+            // Asie du Sud / du Sud-Est secondaire
+            {"ta", "தமிழ்"},
+            {"te", "తెలుగు"},
+            {"mr", "मराठी"},
+            {"gu", "ગુજરાતી"},
+            {"pa", "ਪੰਜਾਬੀ"},
+            {"ml", "മലയാളം"},
+            {"kn", "ಕನ್ನಡ"},
+            {"ur", "اردو"},
+            {"my", "မြန်မာဘာသာ"},
+            {"km", "ភាសាខ្មែរ"},
+            {"lo", "ພາສາລາວ"},
+            {"si", "සිංහල"},
+            {"ne", "नेपाली"},
+            {"mn", "Монгол"},
+            {"tl", "Filipino"},
+
+            // Afrique & Asie centrale
+            {"sw", "Kiswahili"},
+            {"ha", "Hausa"},
+            {"am", "አማርኛ"},
+            {"yo", "Yorùbá"},
+            {"ig", "Igbo"},
+            {"af", "Afrikaans"},
+            {"uz", "O'zbek"},
+            {"kk", "Қазақша"},
+            {"az", "Azərbaycan"},
+            {"ps", "پښتو"},
+    };
+    // ────────────────────────────────────────────────────────────────────
+
     private GamePreferences prefs;
+    private TextView langValueTv;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // Applique la langue sauvegardée
         LocaleManager.applyLocale(this);
 
         prefs = new GamePreferences(this);
@@ -32,35 +116,31 @@ public class SettingsActivity extends Activity {
         root.setPadding(40, 80, 40, 60);
         root.setGravity(Gravity.TOP);
 
-        // ── Titre ──
         TextView title = new TextView(this);
-        title.setText(getString(R.string.settings_title));
+        title.setText(Strings.get("settings.title"));
         title.setTextColor(Color.parseColor("#FFD700"));
         title.setTextSize(28f);
         title.setPadding(0, 0, 0, 30);
         root.addView(title);
 
-        // ══════════════════════════════════════
-        // SECTION SON
-        // ══════════════════════════════════════
-        addSectionHeader(root, getString(R.string.settings_sound));
+        // ── Son ──────────────────────────────────────────────────────────
+        addSectionHeader(root, Strings.get("settings.section_sound"));
 
         LinearLayout soundRow = new LinearLayout(this);
         soundRow.setOrientation(LinearLayout.HORIZONTAL);
         soundRow.setGravity(Gravity.CENTER_VERTICAL);
 
         TextView soundLabel = new TextView(this);
-        soundLabel.setText(getString(R.string.settings_sound_toggle));
+        soundLabel.setText(Strings.get("settings.label_sfx"));
         soundLabel.setTextColor(Color.WHITE);
         soundLabel.setTextSize(18f);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
-        soundLabel.setLayoutParams(lp);
+        soundLabel.setLayoutParams(new LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
 
         Switch soundSwitch = new Switch(this);
         soundSwitch.setChecked(prefs.isSoundEnabled());
-        soundSwitch.setOnCheckedChangeListener((btn, checked) -> {
-            prefs.setSoundEnabled(checked);
-        });
+        soundSwitch.setOnCheckedChangeListener((btn, checked) ->
+                prefs.setSoundEnabled(checked));
 
         soundRow.addView(soundLabel);
         soundRow.addView(soundSwitch);
@@ -68,51 +148,15 @@ public class SettingsActivity extends Activity {
 
         addDivider(root);
 
-        // ══════════════════════════════════════
-        // SECTION LANGUE
-        // ══════════════════════════════════════
-        addSectionHeader(root, getString(R.string.settings_language));
+        // ── Langue ───────────────────────────────────────────────────────
+        addSectionHeader(root, Strings.get("settings.section_language"));
+        root.addView(buildLanguageDropdown());
 
-        String[] langNames = {"Français", "English", "Español", "Deutsch", "日本語"};
-        String[] langCodes = {"fr", "en", "es", "de", "ja"};
-
-        String currentLang = prefs.getLanguage();
-
-        RadioGroup langGroup = new RadioGroup(this);
-        langGroup.setOrientation(RadioGroup.VERTICAL);
-
-        for (int i = 0; i < langNames.length; i++) {
-            RadioButton rb = new RadioButton(this);
-            rb.setText(langNames[i]);
-            rb.setTextColor(Color.WHITE);
-            rb.setTextSize(16f);
-            rb.setTag(langCodes[i]);
-            rb.setPadding(10, 8, 10, 8);
-            if (langCodes[i].equals(currentLang)) {
-                rb.setChecked(true);
-            }
-            langGroup.addView(rb);
-        }
-
-        langGroup.setOnCheckedChangeListener((group, checkedId) -> {
-            RadioButton selected = group.findViewById(checkedId);
-            if (selected != null) {
-                String code = (String) selected.getTag();
-                prefs.setLanguage(code);
-                LocaleManager.applyLocale(this);
-                // Redémarre l'activité pour appliquer la nouvelle langue
-                recreate();
-            }
-        });
-
-        root.addView(langGroup);
         addDivider(root);
 
-        // ══════════════════════════════════════
-        // BOUTON RETOUR
-        // ══════════════════════════════════════
+        // ── Retour ───────────────────────────────────────────────────────
         Button backBtn = new Button(this);
-        backBtn.setText(getString(R.string.settings_back));
+        backBtn.setText(Strings.get("common.btn_back"));
         backBtn.setTextColor(Color.WHITE);
         backBtn.setBackgroundColor(Color.parseColor("#1B5E20"));
         LinearLayout.LayoutParams btnLp = new LinearLayout.LayoutParams(
@@ -126,6 +170,73 @@ public class SettingsActivity extends Activity {
         setContentView(scroll);
     }
 
+    // ── Menu déroulant langue ─────────────────────────────────────────────
+    private android.view.View buildLanguageDropdown() {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(24, 18, 24, 18);
+
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(Color.parseColor("#1A2A3A"));
+        bg.setCornerRadius(12f);
+        bg.setStroke(2, Color.parseColor("#2A3A4A"));
+        row.setBackground(bg);
+
+        LinearLayout.LayoutParams rowLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        rowLp.setMargins(0, 8, 0, 0);
+        row.setLayoutParams(rowLp);
+
+        langValueTv = new TextView(this);
+        langValueTv.setText(nativeNameFor(prefs.getLanguage()));
+        langValueTv.setTextColor(Color.WHITE);
+        langValueTv.setTextSize(16f);
+        langValueTv.setLayoutParams(new LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+
+        TextView arrow = new TextView(this);
+        arrow.setText("▾");
+        arrow.setTextColor(Color.parseColor("#80DEEA"));
+        arrow.setTextSize(18f);
+
+        row.addView(langValueTv);
+        row.addView(arrow);
+        row.setOnClickListener(v -> showLanguagePicker());
+        return row;
+    }
+
+    private void showLanguagePicker() {
+        String currentCode = prefs.getLanguage();
+
+        String[] names = new String[LANGUAGES.length];
+        int checkedIndex = 0;
+        for (int i = 0; i < LANGUAGES.length; i++) {
+            names[i] = LANGUAGES[i][1];
+            if (LANGUAGES[i][0].equals(currentCode)) checkedIndex = i;
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle(Strings.get("settings.section_language"))
+                .setSingleChoiceItems(names, checkedIndex, (dialog, which) -> {
+                    String selectedCode = LANGUAGES[which][0];
+                    dialog.dismiss();
+                    if (!selectedCode.equals(prefs.getLanguage())) {
+                        prefs.setLanguage(selectedCode);
+                        recreate();
+                    }
+                })
+                .show();
+    }
+
+    private String nativeNameFor(String code) {
+        for (String[] lang : LANGUAGES) {
+            if (lang[0].equals(code)) return lang[1];
+        }
+        return code;
+    }
+
+    // ── Helpers UI ────────────────────────────────────────────────────────
     @Override
     protected void onResume() {
         super.onResume();

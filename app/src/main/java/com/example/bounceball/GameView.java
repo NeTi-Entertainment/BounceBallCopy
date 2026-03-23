@@ -27,6 +27,7 @@ import android.graphics.CornerPathEffect;
 import android.graphics.Matrix;
 import android.graphics.PixelFormat;
 import com.example.bounceball.utils.SoundManager;
+import com.example.bounceball.utils.Strings;
 
 public class GameView extends SurfaceView implements SurfaceHolder.Callback, Runnable {
 
@@ -841,13 +842,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         paint.setColor(Color.BLACK);
         paint.setTextSize(60);
         paint.setTextAlign(Paint.Align.CENTER);
-        canvas.drawText(String.format(Locale.getDefault(), "%.1fm", totalHeightMeters), screenWidth / 2f, 100, paint);
+        canvas.drawText(Strings.fmt("hud.height_fmt", totalHeightMeters), screenWidth / 2f, 100, paint);
         paint.setTextSize(36);
         paint.setColor(COLOR_GREY_HUD);
-        canvas.drawText(String.format(Locale.getDefault(), "Record: %.1fm", prefs.getMaxHeight()), screenWidth / 2f, 150, paint);
+        canvas.drawText(Strings.fmt("hud.record_fmt", prefs.getMaxHeight()), screenWidth / 2f, 150, paint);
         paint.setColor(Color.BLACK);
         paint.setTextSize(40);
-        canvas.drawText("Or: " + prefs.getGold() + " (+" + (int)currentRunGold + ")", screenWidth / 2f, 200, paint);
+        canvas.drawText(Strings.fmt("hud.gold_fmt", prefs.getGold(), (int)currentRunGold), screenWidth / 2f, 200, paint);
         canvas.restore();
 
         // Notification colonie pleine
@@ -856,7 +857,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             if (elapsed < COLONY_NOTIF_DURATION_MS) {
                 float progress = (float) elapsed / COLONY_NOTIF_DURATION_MS;
                 int alpha = (int)(255 * (1f - Math.max(0f, (progress - 0.7f) / 0.3f)));
-                String msg = "👽 Colonie pleine — améliorez vos bâtiments !";
+                String msg = Strings.get("hud.colony_full");
                 notifPaint.setTextSize(32f);
                 notifPaint.setTextAlign(Paint.Align.CENTER);
                 float textW = notifPaint.measureText(msg);

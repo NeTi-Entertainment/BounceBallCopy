@@ -23,18 +23,9 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import com.example.bounceball.utils.GamePreferences;
+import com.example.bounceball.utils.Strings;
 import java.util.List;
 
-/**
- * Menu Gacha en superposition (FrameLayout overlay).
- * Appeler GachaPage.buildOverlay(context, prefs) → FrameLayout à ajouter au root.
- *
- * Visuel : roue ronde 10 camemberts, liseré jaune, aiguille rouge à 12h fixe.
- * Animation en 2 phases après clic sur Spin :
- *   1. Chaque balle atterrit en spirale dans son camembert (600 ms/balle, décalage 250 ms)
- *   2. Rotation de la roue avec décélération (ease-out cubic, ~2.8 s)
- * Résultat : +1 fragment du skin stoppé sous l'aiguille.
- */
 public class GachaPage {
 
     private static final String PREF_POOL = "gacha_pool";
@@ -60,7 +51,7 @@ public class GachaPage {
         boolean spinning       = false;
         int     filledCount    = 0;
         final GachaSystem.SkinEntry[] skins        = new GachaSystem.SkinEntry[GachaSystem.POOL_SIZE];
-        final float[]                 ballProgress = new float[GachaSystem.POOL_SIZE]; // 0=vide, 0..1=en vol, 1=posé
+        final float[]                 ballProgress = new float[GachaSystem.POOL_SIZE];
 
         private final Paint fillPaint   = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final Paint borderPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -92,15 +83,11 @@ public class GachaPage {
 
             RectF oval = new RectF(cx - radius, cy - radius, cx + radius, cy + radius);
 
-            // Appliquer la rotation de la roue via canvas.rotate()
-            // Tout le contenu tournant est dessiné à l'intérieur du save/restore
             canvas.save();
             canvas.rotate(wheelRotation, cx, cy);
 
-            // ── 1. Camemberts (fond + bordure) ──
             for (int i = 0; i < GachaSystem.POOL_SIZE; i++) {
                 float start = -90f + i * 36f;
-
                 fillPaint.setStyle(Paint.Style.FILL);
                 if (skins[i] != null) {
                     fillPaint.setColor(GachaSystem.getRarityBgColor(skins[i].rarity));
@@ -111,10 +98,8 @@ public class GachaPage {
                 canvas.drawArc(oval, start, 36f, true, borderPaint);
             }
 
-            // ── 2. Balles posées dans leur slot ──
             for (int i = 0; i < GachaSystem.POOL_SIZE; i++) {
                 if (ballProgress[i] < 1f || skins[i] == null) continue;
-
                 float start  = -90f + i * 36f;
                 float center = (float) Math.toRadians(start + 18f);
                 float circDist = radius * 0.58f;
@@ -139,17 +124,14 @@ public class GachaPage {
                 canvas.drawCircle(dotX, dotY, dpToPx(4f), dotPaint);
             }
 
-            // ── 3. Balles en vol (spirale d'atterrissage) ──
             for (int i = 0; i < GachaSystem.POOL_SIZE; i++) {
                 float p = ballProgress[i];
                 if (p <= 0f || p >= 1f || skins[i] == null) continue;
-
                 float start   = -90f + i * 36f;
                 float center  = (float) Math.toRadians(start + 18f);
                 float targetX = cx + radius * 0.58f * (float) Math.cos(center);
                 float targetY = cy + radius * 0.58f * (float) Math.sin(center);
                 float targetR = radius * 0.16f;
-
                 float frac        = 1f - p;
                 float spiralAngle = center + frac * (float) (1.2f * Math.PI);
                 float spiralR     = frac * radius * 2.2f;
@@ -168,16 +150,13 @@ public class GachaPage {
                 canvas.restore();
             }
 
-            // ── 4. Cercle central (tourne avec la roue) ──
             centerPaint.setColor(Color.parseColor("#0D1B2A"));
             canvas.drawCircle(cx, cy, radius * 0.16f, centerPaint);
             centerPaint.setColor(Color.parseColor("#182838"));
             canvas.drawCircle(cx, cy, radius * 0.12f, centerPaint);
 
-            // Fin de la zone tournante
             canvas.restore();
 
-            // ── 5. Liseré jaune (FIXE, hors rotation) ──
             Paint outlinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             outlinePaint.setStyle(Paint.Style.STROKE);
             outlinePaint.setStrokeWidth(dpToPx(14f));
@@ -190,7 +169,6 @@ public class GachaPage {
             rimPaint.setColor(Color.parseColor("#FFD700"));
             canvas.drawCircle(cx, cy, radius, rimPaint);
 
-            // ── 6. Aiguille rouge à 12h (FIXE, hors rotation) ──
             float tipY  = cy - radius + dpToPx(8f);
             float baseY = cy - radius - dpToPx(22f);
             float halfW = dpToPx(9f);
@@ -205,7 +183,6 @@ public class GachaPage {
             canvas.drawCircle(cx, baseY, halfW * 0.7f, needleFill);
             canvas.drawCircle(cx, baseY, halfW * 0.7f, needleRim);
 
-            // ── 7. Continuer le dessin uniquement si une animation est en cours ──
             boolean needsRedraw = spinning;
             for (float p : ballProgress) {
                 if (p > 0f && p < 1f) { needsRedraw = true; break; }
@@ -219,7 +196,7 @@ public class GachaPage {
     }
 
     // ──────────────────────────────────────────────────
-    // POINT D'ENTRÉE — retourne un FrameLayout overlay
+    // POINT D'ENTRÉE
     // ──────────────────────────────────────────────────
     public static FrameLayout buildOverlay(Context ctx, GamePreferences prefs) {
         SharedPreferences raw      = prefs.getRaw();
@@ -227,13 +204,11 @@ public class GachaPage {
         sPool      = loadOrBuildPool(raw, allSkins);
         sAnimating = false;
 
-        // ── Overlay ──
         FrameLayout overlay = new FrameLayout(ctx);
         overlay.setBackgroundColor(Color.argb(185, 0, 0, 0));
         overlay.setVisibility(View.GONE);
         overlay.setClickable(true);
 
-        // ── Colonne verticale pondérée : contenu au 2/3 ──
         LinearLayout outerCol = new LinearLayout(ctx);
         outerCol.setOrientation(LinearLayout.VERTICAL);
         outerCol.setGravity(Gravity.CENTER_HORIZONTAL);
@@ -277,9 +252,9 @@ public class GachaPage {
         currRow.addView(sDiamTv);
         container.addView(currRow);
 
-        // ── "Spin the wheel" — au-dessus de la roue, grand et clignotant ──
+        // ── Spin label ──
         sSpinLabel = new TextView(ctx);
-        sSpinLabel.setText("Spin the wheel");
+        sSpinLabel.setText(Strings.get("gacha.spin_label"));
         sSpinLabel.setTextColor(Color.parseColor("#FFD700"));
         sSpinLabel.setTextSize(26f);
         sSpinLabel.setGravity(Gravity.CENTER);
@@ -300,7 +275,7 @@ public class GachaPage {
         container.addView(sWheelView);
         sWheelView.setClipToOutline(false);
 
-        // ── Texte résultat ──
+        // ── Résultat ──
         sResultText = new TextView(ctx);
         sResultText.setText("");
         sResultText.setTextColor(Color.parseColor("#FFD700"));
@@ -322,12 +297,12 @@ public class GachaPage {
         btnRow.setLayoutParams(btnRowLp);
 
         sGoldBtn = new Button(ctx);
-        sGoldBtn.setText("⬡ " + GachaSystem.COST_GOLD + " Or");
+        sGoldBtn.setText(Strings.fmt("gacha.btn_gold_fmt", GachaSystem.COST_GOLD));
         sGoldBtn.setTextColor(Color.parseColor("#FFD700"));
         sGoldBtn.setBackgroundColor(Color.parseColor("#1B3A1B"));
 
         sDiamBtn = new Button(ctx);
-        sDiamBtn.setText("◆ " + GachaSystem.COST_DIAMONDS + " Diam");
+        sDiamBtn.setText(Strings.fmt("gacha.btn_diam_fmt", GachaSystem.COST_DIAMONDS));
         sDiamBtn.setTextColor(Color.parseColor("#80DEEA"));
         sDiamBtn.setBackgroundColor(Color.parseColor("#1A1A3A"));
         LinearLayout.LayoutParams dBtnLp = new LinearLayout.LayoutParams(
@@ -341,7 +316,7 @@ public class GachaPage {
 
         // ── Bouton Fermer ──
         Button closeBtn = new Button(ctx);
-        closeBtn.setText("✕  Fermer");
+        closeBtn.setText(Strings.get("gacha.btn_close"));
         closeBtn.setTextColor(Color.parseColor("#AAAAAA"));
         closeBtn.setBackgroundColor(Color.TRANSPARENT);
         LinearLayout.LayoutParams closeLp = new LinearLayout.LayoutParams(
@@ -352,7 +327,7 @@ public class GachaPage {
         closeBtn.setOnClickListener(v -> overlay.setVisibility(View.GONE));
         container.addView(closeBtn);
 
-        // ── Listeners Spin ──
+        // ── Listeners ──
         sGoldBtn.setOnClickListener(v -> {
             if (!sAnimating && prefs.getGold() >= GachaSystem.COST_GOLD) {
                 prefs.spendGold(GachaSystem.COST_GOLD);
@@ -368,7 +343,6 @@ public class GachaPage {
             }
         });
 
-        // ── Refresh runnable ──
         Runnable refreshOverlay = () -> {
             updateCurrencyDisplay(prefs);
             updateBtnStates(prefs);
@@ -380,7 +354,7 @@ public class GachaPage {
     }
 
     // ──────────────────────────────────────────────────
-    // ANIMATION DU LABEL "SPIN THE WHEEL"
+    // ANIMATION DU LABEL
     // ──────────────────────────────────────────────────
     private static void startSpinLabelPulse() {
         if (sSpinLabel == null) return;
@@ -399,8 +373,7 @@ public class GachaPage {
     }
 
     // ──────────────────────────────────────────────────
-    // PHASE 1 : atterrissage en spirale (un par un)
-    // PHASE 2 : rotation jusqu'au gagnant
+    // SPIN
     // ──────────────────────────────────────────────────
     private static void doSpin(GamePreferences prefs, SharedPreferences raw,
                                List<GachaSystem.SkinEntry> allSkins) {
@@ -411,7 +384,6 @@ public class GachaPage {
 
         int winner = GachaSystem.spin(sPool);
 
-        // Réinitialiser la roue
         if (sWheelView != null) {
             sWheelView.filledCount    = 0;
             sWheelView.spinning       = false;
@@ -425,21 +397,17 @@ public class GachaPage {
         }
 
         Handler h = new Handler(Looper.getMainLooper());
-        final int staggerMs = 250; // délai entre chaque balle
+        final int staggerMs = 250;
 
         for (int i = 0; i < GachaSystem.POOL_SIZE; i++) {
             final int idx = i;
             h.postDelayed(() -> {
                 if (sWheelView == null) return;
-
-                // Enregistrer le skin dès le début de l'animation (pour couleur de fond immédiate)
                 sWheelView.skins[idx] = sPool[idx];
 
                 ValueAnimator anim = ValueAnimator.ofFloat(0f, 1f);
                 anim.setDuration(580);
-                // Ease-out smooth : accélération initiale, freinage doux en fin
                 anim.setInterpolator(t -> {
-                    // smoothstep amélioré
                     float s = t * t * (3f - 2f * t);
                     return s;
                 });
@@ -461,7 +429,6 @@ public class GachaPage {
                     }
                 });
                 anim.start();
-                // Déclencher le premier frame immédiatement
                 sWheelView.invalidate();
 
             }, (long) staggerMs * i);
@@ -477,26 +444,19 @@ public class GachaPage {
         boolean isRare    = "rare".equals(rarity);
         boolean isLeg     = "legendary".equals(rarity);
 
-        // Near-miss : 28 % des tirages communs
-        // L'aiguille s'arrêtera juste après avoir traversé le bord du slice précédent
-        // (pour winner 3-5, ce bord est celui d'un slice rare — suspens maximal)
         boolean nearMiss = isCommon && (SPIN_RNG.nextFloat() < 0.28f);
 
-        // Position d'atterrissage dans le slice (offset en ° par rapport au centre)
-        // offset négatif = proche du bord entrant ("de quelques millimètres")
-        // offset positif = proche du bord sortant
         float sliceOffset;
         if (nearMiss) {
-            sliceOffset = -14f - SPIN_RNG.nextFloat() * 3f;   // −14° à −17° : bord entrant
+            sliceOffset = -14f - SPIN_RNG.nextFloat() * 3f;
         } else if (isLeg) {
-            sliceOffset = (SPIN_RNG.nextFloat() - 0.5f) * 10f; // ±5° : légèrement centré
+            sliceOffset = (SPIN_RNG.nextFloat() - 0.5f) * 10f;
         } else if (isRare) {
-            sliceOffset = (SPIN_RNG.nextFloat() - 0.5f) * 22f; // ±11° : bien réparti
+            sliceOffset = (SPIN_RNG.nextFloat() - 0.5f) * 22f;
         } else {
-            sliceOffset = (SPIN_RNG.nextFloat() - 0.5f) * 30f; // ±15° : presque tout le slice
+            sliceOffset = (SPIN_RNG.nextFloat() - 0.5f) * 30f;
         }
 
-        // Angle de rotation final : aiguille à -90° pointe le centre du slice + offset
         float base          = ((-winner * 36f - 18f - sliceOffset) % 360f + 360f) % 360f;
         int   rotations     = isLeg ? 6 + SPIN_RNG.nextInt(2)
                 : isRare ? 5 + SPIN_RNG.nextInt(2)
@@ -505,7 +465,6 @@ public class GachaPage {
         float startRotation = sWheelView.wheelRotation % 360f;
         float finalRotation = startRotation + base + rotations * 360f;
 
-        // Durée
         long duration = isLeg    ? 7000
                 : nearMiss ? 5500 + SPIN_RNG.nextInt(700)
                 : isRare   ? 4800 + SPIN_RNG.nextInt(400)
@@ -546,9 +505,8 @@ public class GachaPage {
         int frags  = prefs.getFragments(won.id);
         int thresh = GachaSystem.getFragmentThreshold(won.rarity);
 
-        String msg = "🧩 +1 fragment  " + won.name
-                + "  [" + GachaSystem.getRarityLabel(won.rarity) + "]"
-                + "  —  " + frags + " / " + thresh;
+        String msg = Strings.fmt("gacha.result_fmt",
+                won.name, GachaSystem.getRarityLabel(won.rarity), frags, thresh);
         if (sResultText != null) sResultText.setText(msg);
 
         updateCurrencyDisplay(prefs);
@@ -605,8 +563,8 @@ public class GachaPage {
     // HELPERS UI
     // ──────────────────────────────────────────────────
     private static void updateCurrencyDisplay(GamePreferences prefs) {
-        if (sGoldTv != null) sGoldTv.setText("⬡ " + prefs.getGold() + " Or");
-        if (sDiamTv != null) sDiamTv.setText("◆ " + prefs.getDiamonds() + " Diam");
+        if (sGoldTv != null) sGoldTv.setText(Strings.fmt("common.currency_gold_fmt", prefs.getGold()));
+        if (sDiamTv != null) sDiamTv.setText(Strings.fmt("common.currency_diam_fmt", prefs.getDiamonds()));
     }
 
     private static void updateBtnStates(GamePreferences prefs) {
