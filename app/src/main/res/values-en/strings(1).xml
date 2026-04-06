@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- res/values-en/strings.xml  — English -->
+<resources>
+    <string name="app_name">Bounce Ball</string>
+
+    <!-- Main menu -->
+    <string name="menu_play">▶ PLAY</string>
+    <string name="menu_shop">🏪 SHOP</string>
+    <string name="menu_settings">⚙ SETTINGS</string>
+    <string name="menu_record">🏆 Best: %.1f m</string>
+
+    <!-- HUD -->
+    <string name="hud_height">%.1f m</string>
+    <string name="hud_record">Best: %.1f m</string>
+    <string name="hud_gold">Gold: %d</string>
+
+    <!-- Game Over -->
+    <string name="gameover_title">GAME OVER</string>
+    <string name="gameover_height">Height: %.1f m</string>
+    <string name="gameover_gold">Gold earned: %d</string>
+    <string name="gameover_new_record">🏆 NEW RECORD!</string>
+    <string name="gameover_retry">PLAY AGAIN</string>
+
+    <!-- Shop / Upgrades -->
+    <string name="shop_title">SHOP</string>
+    <string name="shop_tab_upgrades">⚡ Upgrades</string>
+    <string name="shop_tab_diamonds">💎 Buy Diamonds</string>
+    <string name="shop_diamonds_desc">Diamonds let you purchase upgrades more efficiently (×2)!</string>
+    <string name="shop_buy">Buy</string>
+    <string name="shop_max">MAX</string>
+    <string name="shop_level">Level: %1$d / %2$d</string>
+    <string name="shop_legal">Purchases are final and non-refundable. Managed by Google Play.</string>
+    <string name="shop_unavailable">Purchase service unavailable</string>
+
+    <!-- Settings -->
+    <string name="settings_title">SETTINGS</string>
+    <string name="settings_sound">🔊 Sound</string>
+    <string name="settings_sound_toggle">Sound effects enabled</string>
+    <string name="settings_language">🌍 Language</string>
+    <string name="settings_back">← Back</string>
+</resources>
