@@ -74,11 +74,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private final Paint ballShinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     private String currentBallSkin = "ball_basic";
-    private Bitmap gaugeSprite;
-    private final RectF gaugeRect = new RectF();
+
     private static final int COLOR_GREY_HUD = 0xFF888888;
-    private float gaugeOffsetX = -500f;
-    private float statsOffsetY = -250f;
+    private float gaugeOffsetY = 200f;
+    private float statsOffsetY = -350f;
     private boolean hudShouldBeVisible = false;
     private static final float HUD_ANIM_SPEED = 1800f;
 
@@ -87,7 +86,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
     private BackgroundRenderer bgRenderer;
 
-    // ── Power-ups ──────────────────────────────────────
     private final ArrayList<float[]> inkBlobs  = new ArrayList<>();
     private final ArrayList<float[]> warps     = new ArrayList<>();
     private final ArrayList<float[]> rareMetals = new ArrayList<>();
@@ -103,13 +101,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private static final float METAL_RADIUS      = 22f;
     private static final float ALIEN_RADIUS      = 28f;
     private static final float METAL_SPAWN_CHANCE = 0.00035f;
-    private static final float ALIEN_SPAWN_CHANCE = 0.00012f;//change back to 0.00012f when testing is done
+    private static final float ALIEN_SPAWN_CHANCE = 0.00012f;
 
-    // ── Aimant ─────────────────────────────────────────
     private static final float MAGNET_RADIUS   = 220f;
     private static final float MAGNET_STRENGTH = 10f;
 
-    // ── Machine a etats warp ───────────────────────────
     private static final int WARP_NONE   = 0;
     private static final int WARP_ABSORB = 1;
     private static final int WARP_SCROLL = 2;
@@ -145,8 +141,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private static final long COLONY_NOTIF_DURATION_MS = 2500L;
     private final Paint notifPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-    // ──────────────────────────────────────────────────
-
     public void setHudVisible(boolean visible) { hudShouldBeVisible = visible; }
 
     public void loadBgSkin() {
@@ -169,14 +163,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         applyUpgrades();
         soundManager = new com.example.bounceball.utils.SoundManager(context, prefs);
         surfaceHolder = getHolder();
-        //surfaceHolder.setFormat(PixelFormat.RGBA_8888);
         surfaceHolder.addCallback(this);
         paint = new Paint();
         paint.setAntiAlias(false);
         loadBallSkin();
         ballShinePaint.setColor(Color.WHITE);
         ballShinePaint.setAlpha(120);
-        gaugeSprite = BitmapFactory.decodeResource(getResources(), R.drawable.gauge);
         currentInk        = maxInk;
         isGameStarted     = false;
         isGameOver        = false;
@@ -195,7 +187,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         int color;
         currentBallSkin = skinId;
         switch (skinId) {
-            // Classic
             case "ball_red":       color = Color.parseColor("#E82020"); break;
             case "ball_blue":      color = Color.parseColor("#2050E8"); break;
             case "ball_yellow":    color = Color.parseColor("#F5D800"); break;
@@ -211,7 +202,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             case "ball_black":     color = Color.parseColor("#1A1A1A"); break;
             case "ball_lightgray": color = Color.parseColor("#C0C0C0"); break;
             case "ball_darkgray":  color = Color.parseColor("#505050"); break;
-            // Metal
             case "ball_copper":    color = Color.parseColor("#BF6830"); break;
             case "ball_nickel":    color = Color.parseColor("#C8B87A"); break;
             case "ball_lead":      color = Color.parseColor("#707880"); break;
@@ -226,7 +216,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             case "ball_bismuth":   color = Color.parseColor("#C8A0C0"); break;
             case "ball_damascus":  color = Color.parseColor("#4A4A4A"); break;
             case "ball_meteorite": color = Color.parseColor("#7A7060"); break;
-            // Space
             case "ball_void":         color = Color.parseColor("#212121"); break;
             case "ball_nebula":       color = Color.parseColor("#7B1FA2"); break;
             case "ball_comet":        color = Color.parseColor("#A0825A"); break;
@@ -244,8 +233,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             case "ball_blue_giant":   color = Color.parseColor("#4488FF"); break;
             case "ball_black_hole":   color = Color.parseColor("#0A0010"); break;
             case "ball_pulsar":       color = Color.parseColor("#050520"); break;
-
-            // Sport
             case "ball_soccer":   color = Color.parseColor("#F5F5F5"); break;
             case "ball_basket":   color = Color.parseColor("#E65100"); break;
             case "ball_tennis":   color = Color.parseColor("#CDDC39"); break;
@@ -257,8 +244,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             case "ball_volleyball": color = Color.parseColor("#F5E6C8"); break;
             case "ball_baseball": color = Color.parseColor("#F5EED8"); break;
             case "ball_8ball": color = Color.parseColor("#111111"); break;
-
-            // Elemental
             case "ball_elem_fire":  color = Color.parseColor("#FF4400"); break;
             case "ball_elem_water": color = Color.parseColor("#0088CC"); break;
             case "ball_elem_earth": color = Color.parseColor("#6B4226"); break;
@@ -269,9 +254,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             case "ball_elem_lightning": color = Color.parseColor("#FFF176"); break;
             case "ball_elem_plasma": color = Color.parseColor("#E040FB"); break;
             case "ball_elem_lava": color = Color.parseColor("#FF3300"); break;
-
             case "ball_basic": color = Color.parseColor("#F5EDD0"); break;
-            // Défaut
             default:              color = Color.parseColor("#E53935"); break;
         }
         ballPaint.setColor(color);
@@ -399,29 +382,25 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         }
     }
 
-    // ══════════════════════════════════════════════════
-    // UPDATE
-    // ══════════════════════════════════════════════════
     private void update() {
 
-        // HUD slide animation (toujours active)
         float hudDt    = 0.016f;
-        float targetGX = hudShouldBeVisible ? 0f : -500f;
-        float targetSY = hudShouldBeVisible ? 0f : -250f;
-        if (gaugeOffsetX < targetGX)      gaugeOffsetX = Math.min(gaugeOffsetX + HUD_ANIM_SPEED * hudDt, targetGX);
-        else if (gaugeOffsetX > targetGX) gaugeOffsetX = Math.max(gaugeOffsetX - HUD_ANIM_SPEED * hudDt, targetGX);
+        float targetGY = hudShouldBeVisible ? 0f : 200f;
+        float targetSY = hudShouldBeVisible ? 0f : -350f;
+
+        if (gaugeOffsetY < targetGY)      gaugeOffsetY = Math.min(gaugeOffsetY + HUD_ANIM_SPEED * hudDt, targetGY);
+        else if (gaugeOffsetY > targetGY) gaugeOffsetY = Math.max(gaugeOffsetY - HUD_ANIM_SPEED * hudDt, targetGY);
+
         if (statsOffsetY < targetSY)      statsOffsetY = Math.min(statsOffsetY + HUD_ANIM_SPEED * hudDt, targetSY);
         else if (statsOffsetY > targetSY) statsOffsetY = Math.max(statsOffsetY - HUD_ANIM_SPEED * hudDt, targetSY);
 
         if (!isGameStarted || isGameOver) return;
 
-        // Machine a etats warp : suspend la physique normale
         if (warpState != WARP_NONE) {
             updateWarpAnimation();
             return;
         }
 
-        // Physique
         ballVelocityY += (GRAVITY * gravityMultiplier);
         ballVelocityY *= airResistance;
         ballVelocityX *= airResistance;
@@ -434,14 +413,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         if (ballX - ballRadius < 0) {
             ballX = ballRadius;
             ballVelocityX    = -ballVelocityX * 0.8f;
-            ballAngularSpeed = -ballAngularSpeed * 0.6f; // rebond inverse + amortissement
+            ballAngularSpeed = -ballAngularSpeed * 0.6f;
         } else if (ballX + ballRadius > screenWidth) {
             ballX = screenWidth - ballRadius;
             ballVelocityX    = -ballVelocityX * 0.8f;
             ballAngularSpeed = -ballAngularSpeed * 0.6f;
         }
 
-        // Camera (Lerp)
         float idealCameraY = screenHeight * 0.4f;
         if (ballY < idealCameraY) {
             float shift = (idealCameraY - ballY) * 0.1f;
@@ -456,7 +434,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             if (bgRenderer != null) bgRenderer.updateParallax(shift);
         }
 
-        // Rebond trampoline
         if (ballVelocityY > 0 && hasTrampoline) {
             float minX = Math.min(trampStartX, trampEndX);
             float maxX = Math.max(trampStartX, trampEndX);
@@ -476,7 +453,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 ballVelocityY = ny * bounceForce;
                 float tx = ny, ty = -nx;
                 float tangentialSpeed = ballVelocityX * tx + ballVelocityY * ty;
-// Spin proportionnel à la vitesse tangentielle et à l'angle d'inclinaison
                 ballAngularSpeed = (tangentialSpeed / ballRadius) * (180f / (float) Math.PI) * 0.8f;
 
                 if (currentBallSkin.startsWith("ball_elem_")) {
@@ -491,7 +467,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
         spawnPowerUps();
 
-        // Aimant + collecte billes
         Iterator<float[]> blobIt = inkBlobs.iterator();
         while (blobIt.hasNext()) {
             float[] blob = blobIt.next();
@@ -510,7 +485,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             }
         }
 
-        // Collision warp
         Iterator<float[]> warpIt = warps.iterator();
         while (warpIt.hasNext()) {
             float[] w = warpIt.next();
@@ -571,12 +545,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             alienDrops.removeIf(a -> a[1] > screenHeight + 100f);
         }
 
-        // Game Over
         if (ballY > screenHeight + ballRadius && !isGameOver) {
-            // 1. On coupe le son de l'élément en cours
             soundManager.stopElementalSound();
 
-            // 2. On coupe les sons du Warp s'ils étaient en train d'être joués
             if (warpInStreamId != -1) {
                 soundManager.stopSound(warpInStreamId);
                 warpInStreamId = -1;
@@ -586,7 +557,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 warpOutStreamId = -1;
             }
 
-            // 3. On joue le son de chute
             soundManager.playSound(com.example.bounceball.utils.SoundManager.SOUND_FALL);
 
             isGameOver = true;
@@ -606,10 +576,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             }
         }
     }
-
-    // ──────────────────────────────────────────────────
-    // WARP STATE MACHINE
-    // ──────────────────────────────────────────────────
 
     private void startWarp(float entryX) {
         warpStartTime = System.currentTimeMillis();
@@ -700,12 +666,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         }
     }
 
-    // ══════════════════════════════════════════════════
-    // DRAW
-    // ══════════════════════════════════════════════════
     private void draw() {
         if (!surfaceHolder.getSurface().isValid()) return;
-        //Canvas canvas = surfaceHolder.lockCanvas();
         Canvas canvas;
         if (android.os.Build.VERSION.SDK_INT >= 26) {
             canvas = surfaceHolder.lockHardwareCanvas();
@@ -716,7 +678,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         if (bgRenderer != null) bgRenderer.draw(canvas);
         else canvas.drawColor(Color.WHITE);
 
-        // Billes d'encre
         blobPaint.setStyle(Paint.Style.FILL);
         for (float[] blob : inkBlobs) {
             blobPaint.setColor(Color.BLACK);
@@ -729,7 +690,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                     INK_BLOB_RADIUS * 0.3f, blobPaint);
         }
 
-        // Métal rare
         if (prefs.hasHatched()) {
             metalPaint.setStyle(Paint.Style.FILL);
             for (float[] m : rareMetals) {
@@ -751,7 +711,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 metalPaint.setStyle(Paint.Style.FILL);
             }
 
-            // Alien drop
             alienPaint.setStyle(Paint.Style.FILL);
             for (float[] a : alienDrops) {
                 alienPaint.setColor(Color.parseColor("#1B5E20"));
@@ -774,16 +733,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             }
         }
 
-        // Warps en jeu
         warpPaint.setStyle(Paint.Style.FILL);
         for (float[] w : warps) drawWarpPortal(canvas, warpPaint, w[0], w[1], false);
 
-        // Portail de sortie (SCROLL + EJECT)
         if (warpState == WARP_SCROLL || warpState == WARP_EJECT) {
             drawWarpPortal(canvas, warpPaint, exitPortalX, exitPortalY, true);
         }
 
-        // Balle
         canvas.save();
         canvas.rotate(ballRotation, ballX, ballY);
         if (warpState == WARP_NONE || warpState == WARP_EJECT) {
@@ -792,7 +748,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             drawBall(canvas, ballX, ballY, ballRadius * warpBallScale);
         }
         canvas.restore();
-// Reflet statique hors rotation
+
         if (warpState != WARP_SCROLL) {
             float sr = (warpState == WARP_ABSORB) ? ballRadius * warpBallScale : ballRadius;
             if (!currentBallSkin.equals("ball_pulsar") && !currentBallSkin.equals("ball_blackhole")
@@ -801,57 +757,40 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 canvas.drawCircle(ballX - sr * 0.3f, ballY - sr * 0.3f, sr * 0.35f, ballShinePaint);
             }
         }
-        //if (warpState == WARP_NONE || warpState == WARP_EJECT) {
-        //    canvas.drawCircle(ballX, ballY, ballRadius, ballPaint);
-        //    canvas.drawCircle(ballX - ballRadius * 0.3f, ballY - ballRadius * 0.3f, ballRadius * 0.35f, ballShinePaint);
-        //} else if (warpState == WARP_ABSORB && warpBallScale > 0f) {
-        //    float sr = ballRadius * warpBallScale;
-        //    canvas.drawCircle(ballX, ballY, sr, ballPaint);
-        //    canvas.drawCircle(ballX - sr * 0.3f, ballY - sr * 0.3f, sr * 0.35f, ballShinePaint);
-        //}
 
-        // Jauge d'encre
         canvas.save();
-        canvas.translate(gaugeOffsetX, 0);
-        float gaugeH      = screenHeight * 0.6f;
-        float gaugeW      = gaugeH * (24f / 256f);
-        float gaugeLeft   = 40f;
-        float gaugeBottom = screenHeight * 0.95f;
-        float gaugeTop    = gaugeBottom - gaugeH;
-        float gaugeRight  = gaugeLeft + gaugeW;
-        float inkWidth    = gaugeW * (16f / 32f);
-        float inkLeft     = gaugeLeft + (gaugeW - inkWidth) / 2f;
-        float inkRight    = inkLeft + inkWidth;
-        float vMargin     = gaugeH * (6f / 256f);
-        float inkMaxTop   = gaugeTop  + vMargin;
-        float inkBottom2  = gaugeBottom - vMargin;
-        float inkH        = (inkBottom2 - inkMaxTop) * (currentInk / maxInk);
-        float inkTop      = inkBottom2 - inkH;
-        canvas.save();
-        canvas.clipRect(inkLeft, inkTop, inkRight, inkBottom2);
-        paint.setColor(Color.BLACK);
-        canvas.drawRoundRect(inkLeft, inkMaxTop, inkRight, inkBottom2, inkWidth / 2f, inkWidth / 2f, paint);
-        canvas.restore();
-        gaugeRect.set(gaugeLeft, gaugeTop, gaugeRight, gaugeBottom);
-        canvas.drawBitmap(gaugeSprite, null, gaugeRect, paint);
+        canvas.translate(0, gaugeOffsetY);
+        float barHeight = 30f;
+        float barWidth = screenWidth * 0.75f;
+        float barLeft = (screenWidth - barWidth) / 2f;
+        float barBottom = screenHeight - 40f;
+        float barTop = barBottom - barHeight;
+
+        paint.setColor(Color.parseColor("#44000000"));
+        canvas.drawRoundRect(barLeft, barTop, barLeft + barWidth, barBottom, barHeight/2f, barHeight/2f, paint);
+
+        float inkRatio = currentInk / maxInk;
+        if (inkRatio > 0) {
+            float inkWidth = barWidth * inkRatio;
+            paint.setColor(Color.parseColor("#1DE9B6"));
+            canvas.drawRoundRect(barLeft, barTop, barLeft + inkWidth, barBottom, barHeight/2f, barHeight/2f, paint);
+        }
         canvas.restore();
 
-        // HUD stats
         canvas.save();
         canvas.translate(0, statsOffsetY);
         paint.setColor(Color.BLACK);
         paint.setTextSize(60);
         paint.setTextAlign(Paint.Align.CENTER);
-        canvas.drawText(Strings.fmt("hud.height_fmt", totalHeightMeters), screenWidth / 2f, 100, paint);
+        canvas.drawText(Strings.fmt("hud.height_fmt", totalHeightMeters), screenWidth / 2f, 180, paint);
         paint.setTextSize(36);
         paint.setColor(COLOR_GREY_HUD);
-        canvas.drawText(Strings.fmt("hud.record_fmt", prefs.getMaxHeight()), screenWidth / 2f, 150, paint);
+        canvas.drawText(Strings.fmt("hud.record_fmt", prefs.getMaxHeight()), screenWidth / 2f, 230, paint);
         paint.setColor(Color.BLACK);
         paint.setTextSize(40);
-        canvas.drawText(Strings.fmt("hud.gold_fmt", prefs.getGold(), (int)currentRunGold), screenWidth / 2f, 200, paint);
+        canvas.drawText(Strings.fmt("hud.gold_fmt", prefs.getGold(), (int)currentRunGold), screenWidth / 2f, 280, paint);
         canvas.restore();
 
-        // Notification colonie pleine
         if (prefs.hasHatched() && colonyFullNotifTime > 0) {
             long elapsed = System.currentTimeMillis() - colonyFullNotifTime;
             if (elapsed < COLONY_NOTIF_DURATION_MS) {
@@ -880,7 +819,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             }
         }
 
-        // Trampoline
         if (isDrawingTrampoline || hasTrampoline) {
             paint.setColor(Color.BLUE);
             paint.setStrokeWidth(15f);
@@ -894,8 +832,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         BallRenderer.setAnimState(currentBallSkin, ballRotation, ballVelocityX, ballVelocityY);
         BallRenderer.draw(canvas, cx, cy, r, currentBallSkin);
     }
-
-
 
     private void drawWarpPortal(Canvas canvas, Paint wp, float cx, float cy, boolean flipped) {
         canvas.save();
@@ -912,7 +848,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         warpPaint.setAlpha(255);
         canvas.restore();
     }
-
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {

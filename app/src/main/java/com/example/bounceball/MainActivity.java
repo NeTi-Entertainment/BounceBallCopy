@@ -27,7 +27,7 @@ public class MainActivity extends Activity implements GameView.GameStateListener
     private GameView gameView;
     private GamePreferences prefs;
 
-    private TextView shopBtn, eggBtn;
+    private ImageView shopBtn, eggBtn, settingsBtn;
     private TextView tapText;
     private TextView recordText;
     private boolean inGame = false;
@@ -74,10 +74,13 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         colLp.gravity = Gravity.TOP | Gravity.END;
         root.addView(btnCol, colLp);
 
-        btnCol.addView(makeRoundBtn("⚙", v -> showOverlay(settingsOverlay)));
-        shopBtn = makeRoundBtn("🏪", v -> showOverlay(shopOverlay));
+        settingsBtn = makeImageBtn(R.drawable.ic_settings, v -> showOverlay(settingsOverlay));
+        btnCol.addView(settingsBtn);
+
+        shopBtn = makeImageBtn(R.drawable.ic_shop, v -> showOverlay(shopOverlay));
         btnCol.addView(shopBtn);
-        eggBtn = makeRoundBtn("🥚", v -> showEggOverlay());
+
+        eggBtn = makeImageBtn(R.drawable.ic_egg, v -> showEggOverlay());
         btnCol.addView(eggBtn);
 
         recordText = new TextView(this);
@@ -123,10 +126,6 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         }
     }
 
-    // ══════════════════════════════════════════════════════
-    // CALLBACKS JEU
-    // ══════════════════════════════════════════════════════
-
     @Override
     public void onGameStarted() {
         runOnUiThread(() -> {
@@ -137,6 +136,7 @@ public class MainActivity extends Activity implements GameView.GameStateListener
             recordText.setVisibility(View.GONE);
             shopBtn.setVisibility(View.GONE);
             eggBtn.setVisibility(View.GONE);
+            settingsBtn.setVisibility(View.GONE);
         });
     }
 
@@ -155,6 +155,7 @@ public class MainActivity extends Activity implements GameView.GameStateListener
             gameView.setHudVisible(false);
             shopBtn.setVisibility(View.VISIBLE);
             eggBtn.setVisibility(View.VISIBLE);
+            settingsBtn.setVisibility(View.VISIBLE);
             tapText.setVisibility(View.VISIBLE);
             recordText.setVisibility(View.VISIBLE);
             refreshRecordDisplay();
@@ -193,10 +194,6 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         }
     }
 
-    // ══════════════════════════════════════════════════════
-    // OVERLAYS
-    // ══════════════════════════════════════════════════════
-
     private void showOverlay(FrameLayout overlay) {
         tapText.clearAnimation();
         tapText.setVisibility(View.GONE);
@@ -219,7 +216,6 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         }
     }
 
-    // ── PARAMÈTRES ─────────────────────────────────────────
     private FrameLayout buildSettingsOverlay() {
         FrameLayout overlay = new FrameLayout(this);
         overlay.setVisibility(View.GONE);
@@ -415,7 +411,6 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         parent.addView(divider);
     }
 
-    // ── ŒUF ───────────────────────────────────────────────
     private FrameLayout buildEggOverlay() {
         FrameLayout overlay = new FrameLayout(this);
         overlay.setVisibility(View.GONE);
@@ -426,7 +421,6 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         return overlay;
     }
 
-    // ── SHOP ──────────────────────────────────────────────
     private FrameLayout buildShopOverlay() {
         FrameLayout overlay = new FrameLayout(this);
         overlay.setVisibility(View.GONE);
@@ -581,10 +575,6 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         return overlay;
     }
 
-    // ══════════════════════════════════════════════════════
-    // HELPERS UI
-    // ══════════════════════════════════════════════════════
-
     private View buildUpgradeRow(Object[] upg, Runnable refreshCurr) {
         String name    = (String) upg[0];
         String desc    = (String) upg[1];
@@ -694,12 +684,13 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         return tab;
     }
 
-    private TextView makeRoundBtn(String icon, View.OnClickListener listener) {
-        TextView btn = new TextView(this);
-        btn.setText(icon);
-        btn.setTextSize(28f);
-        btn.setGravity(Gravity.CENTER);
+    private ImageView makeImageBtn(int resId, View.OnClickListener listener) {
+        ImageView btn = new ImageView(this);
+        btn.setImageResource(resId);
+        btn.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
         int size = dpToPx(64);
+        int pad = dpToPx(14);
+        btn.setPadding(pad, pad, pad, pad);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(size, size);
         lp.topMargin = dpToPx(12);
         btn.setLayoutParams(lp);
@@ -743,10 +734,6 @@ public class MainActivity extends Activity implements GameView.GameStateListener
     private int dpToPx(int dp) {
         return (int) (dp * getResources().getDisplayMetrics().density);
     }
-
-    // ══════════════════════════════════════════════════════
-    // OVERLAY ŒUF — logique dynamique
-    // ══════════════════════════════════════════════════════
 
     private void showEggOverlay() {
         showOverlay(eggOverlay);
