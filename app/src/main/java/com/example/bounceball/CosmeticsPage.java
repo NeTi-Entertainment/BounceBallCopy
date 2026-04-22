@@ -199,25 +199,25 @@ public class CosmeticsPage {
         refreshCurr.run();
         scroll.setTag(R.id.tag_refresh, refreshCurr);
 
-        addSectionHeader(ctx, page, Strings.get("cosmetics.section_balls"));
+        LinearLayout ballsContainer = addCollapsibleSection(ctx, page, Strings.get("cosmetics.section_balls"));
         String lastSubCat = "";
         for (Object[] ball : BALLS) {
             String subCat = (String) ball[6];
             if (!subCat.equals(lastSubCat)) {
-                addSubSectionHeader(ctx, page, Strings.get("cosmetics.subcats." + subCat));
+                addSubSectionHeader(ctx, ballsContainer, Strings.get("cosmetics.subcats." + subCat));
                 lastSubCat = subCat;
             }
-            page.addView(buildCosmeticRow(ctx, prefs, raw, ball, "equipped_ball", refreshCurr));
+            ballsContainer.addView(buildCosmeticRow(ctx, prefs, raw, ball, "equipped_ball", refreshCurr));
         }
 
-        addSectionHeader(ctx, page, Strings.get("cosmetics.section_effects"));
+        LinearLayout fxContainer = addCollapsibleSection(ctx, page, Strings.get("cosmetics.section_effects"));
         for (Object[] fx : EFFECTS) {
-            page.addView(buildCosmeticRow(ctx, prefs, raw, fx, "equipped_fx", refreshCurr));
+            fxContainer.addView(buildCosmeticRow(ctx, prefs, raw, fx, "equipped_fx", refreshCurr));
         }
 
-        addSectionHeader(ctx, page, Strings.get("cosmetics.section_backgrounds"));
+        LinearLayout bgContainer = addCollapsibleSection(ctx, page, Strings.get("cosmetics.section_backgrounds"));
         for (Object[] bg : BACKGROUNDS) {
-            page.addView(buildCosmeticRow(ctx, prefs, raw, bg, "equipped_bg", refreshCurr));
+            bgContainer.addView(buildCosmeticRow(ctx, prefs, raw, bg, "equipped_bg", refreshCurr));
         }
 
         scroll.addView(page);
@@ -482,6 +482,55 @@ public class CosmeticsPage {
     // ──────────────────────────────────────────────────
     // HELPERS
     // ──────────────────────────────────────────────────
+
+    private static LinearLayout addCollapsibleSection(Context ctx, LinearLayout page, String label) {
+        boolean[] expanded = {true};
+
+        LinearLayout header = new LinearLayout(ctx);
+        header.setOrientation(LinearLayout.HORIZONTAL);
+        header.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout.LayoutParams hLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        hLp.setMargins(0, px(ctx, 18), 0, px(ctx, 2));
+        header.setLayoutParams(hLp);
+        header.setClickable(true);
+        header.setFocusable(true);
+
+        TextView arrow = new TextView(ctx);
+        arrow.setText("v");
+        arrow.setTextColor(Color.parseColor("#80DEEA"));
+        arrow.setTextSize(15f);
+        arrow.setPadding(0, 0, px(ctx, 8), 0);
+        header.addView(arrow);
+
+        TextView tv = new TextView(ctx);
+        tv.setText(label);
+        tv.setTextColor(Color.parseColor("#80DEEA"));
+        tv.setTextSize(17f);
+        tv.setPadding(0, 0, px(ctx, 10), 0);
+        header.addView(tv);
+
+        View line = new View(ctx);
+        LinearLayout.LayoutParams lineLp = new LinearLayout.LayoutParams(0, px(ctx, 1), 1f);
+        lineLp.gravity = Gravity.CENTER_VERTICAL;
+        line.setLayoutParams(lineLp);
+        line.setBackgroundColor(Color.parseColor("#2A3A4A"));
+        header.addView(line);
+
+        LinearLayout container = new LinearLayout(ctx);
+        container.setOrientation(LinearLayout.VERTICAL);
+        container.setVisibility(View.VISIBLE);
+
+        header.setOnClickListener(v -> {
+            expanded[0] = !expanded[0];
+            container.setVisibility(expanded[0] ? View.VISIBLE : View.GONE);
+            arrow.setText(expanded[0] ? "v" : ">");
+        });
+
+        page.addView(header);
+        page.addView(container);
+        return container;
+    }
 
     private static void addSectionHeader(Context ctx, LinearLayout parent, String label) {
         // Ligne séparatrice avec titre
