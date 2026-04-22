@@ -2852,31 +2852,44 @@ public class BallRenderer {
         canvas.save();
         canvas.rotate(-sBallRotation, cx, cy);
 
+        int numBubbles = 45;
+        float[] bx = new float[numBubbles];
+        float[] by = new float[numBubbles];
+        float[] br = new float[numBubbles];
+
+        for (int i = 0; i < numBubbles; i++) {
+            long cycle = 2500 + (i * 419 % 1500);
+            float phase = (float) ((t + i * 811) % cycle) / cycle;
+            double angle = (i * Math.PI * 2.0) / numBubbles + Math.sin(phase * Math.PI * 2.0) * 0.3;
+            float dist = phase * r * 0.90f;
+            float bubbleR = r * 0.20f + (phase * r * 0.20f);
+            if (phase > 0.85f) {
+                float popPhase = (phase - 0.85f) * (1.0f / 0.15f);
+                bubbleR *= (1.0f - popPhase);
+            }
+            bx[i] = cx + (float) Math.cos(angle) * dist;
+            by[i] = cy + (float) Math.sin(angle) * dist;
+            br[i] = bubbleR;
+        }
+
+        float strokeW = r * 0.09f;
+        Paint white = new Paint(Paint.ANTI_ALIAS_FLAG);
+        white.setStyle(Paint.Style.STROKE);
+        white.setColor(Color.WHITE);
+        white.setStrokeWidth(strokeW);
+
+        canvas.drawCircle(cx, cy, r * 0.70f, white);
+        for (int i = 0; i < numBubbles; i++) {
+            if (br[i] >= 0.5f) canvas.drawCircle(bx[i], by[i], br[i], white);
+        }
+
         Paint dark = new Paint(Paint.ANTI_ALIAS_FLAG);
         dark.setStyle(Paint.Style.FILL);
         dark.setColor(Color.parseColor("#050505"));
 
         canvas.drawCircle(cx, cy, r * 0.70f, dark);
-
-        int numBubbles = 45;
         for (int i = 0; i < numBubbles; i++) {
-            long cycle = 2500 + (i * 419 % 1500);
-            float phase = (float) ((t + i * 811) % cycle) / cycle;
-
-            double angle = (i * Math.PI * 2.0) / numBubbles + Math.sin(phase * Math.PI * 2.0) * 0.3;
-
-            float dist = phase * r * 0.90f;
-            float bubbleR = r * 0.20f + (phase * r * 0.20f);
-
-            if (phase > 0.85f) {
-                float popPhase = (phase - 0.85f) * (1.0f / 0.15f);
-                bubbleR *= (1.0f - popPhase);
-            }
-
-            float px = cx + (float) Math.cos(angle) * dist;
-            float py = cy + (float) Math.sin(angle) * dist;
-
-            canvas.drawCircle(px, py, bubbleR, dark);
+            if (br[i] >= 0.5f) canvas.drawCircle(bx[i], by[i], br[i], dark);
         }
 
         canvas.restore();
@@ -3403,7 +3416,7 @@ public class BallRenderer {
             case "ball_beach":        drawBeachBall(canvas, cx, cy, r);   break;
             case "ball_volleyball":   drawVolleyball(canvas, cx, cy, r);  break;
             case "ball_baseball":     drawBaseball(canvas, cx, cy, r);    break;
-            case "ball_8ball":        draw8Ball(canvas, cx, cy, r);       break;
+            case "ball_8ball": { draw8Ball(canvas, cx, cy, r); float bw = r * 0.09f; Paint whiteOutline = new Paint(Paint.ANTI_ALIAS_FLAG); whiteOutline.setStyle(Paint.Style.STROKE); whiteOutline.setColor(Color.WHITE); whiteOutline.setStrokeWidth(bw); canvas.drawCircle(cx, cy, r - bw / 2f, whiteOutline); break; }
             case "ball_gold": case "ball_silver": case "ball_copper":
             case "ball_chrome": case "ball_lead": case "ball_bronze":
             case "ball_titanium": case "ball_steel": case "ball_nickel":
@@ -3437,6 +3450,17 @@ public class BallRenderer {
             case "ball_elem_lightning":drawLightningBall(canvas, cx, cy, r); break;
             case "ball_elem_plasma":  drawPlasmaBall(canvas, cx, cy, r); break;
             case "ball_elem_lava":    drawLavaBall(canvas, cx, cy, r);  break;
+            case "ball_black": {
+                sBallPaint.setStyle(Paint.Style.FILL);
+                canvas.drawCircle(cx, cy, r, sBallPaint);
+                float bw = r * 0.09f;
+                Paint whiteOutline = new Paint(Paint.ANTI_ALIAS_FLAG);
+                whiteOutline.setStyle(Paint.Style.STROKE);
+                whiteOutline.setColor(Color.WHITE);
+                whiteOutline.setStrokeWidth(bw);
+                canvas.drawCircle(cx, cy, r - bw / 2f, whiteOutline);
+                break;
+            }
             default:
                 sBallPaint.setStyle(Paint.Style.FILL);
                 canvas.drawCircle(cx, cy, r, sBallPaint);

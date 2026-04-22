@@ -43,6 +43,7 @@ public class ColonyView extends View {
 
     private Bitmap bmpHub;
     private final Bitmap[] bmpBuildings = new Bitmap[ColonyManager.SLOT_COUNT];
+    private Bitmap bmpGround;
     private final RectF drawRect = new RectF();
     private final Paint alphaPaint       = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint decoPaint        = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -107,6 +108,7 @@ public class ColonyView extends View {
         maxRingPaint.setStrokeWidth(5f);
 
         bmpHub = BitmapFactory.decodeResource(context.getResources(), R.drawable.building_hub);
+        bmpGround = BitmapFactory.decodeResource(context.getResources(), R.drawable.lunar_ground);
 
         alphaPaint.setAlpha(110);
         decoPaint.setAlpha(210);
@@ -178,6 +180,11 @@ public class ColonyView extends View {
     protected void onDraw(Canvas canvas) {
         canvas.drawRect(0, 0, getWidth(), getHeight(), bgPaint);
 
+        if (bmpGround != null) {
+            canvas.drawBitmap(bmpGround, null,
+                    new RectF(0, 0, getWidth(), getHeight()), null);
+        }
+
         for (int i = 0; i < ColonyManager.SLOT_COUNT; i++) {
             drawDecoSlots(canvas, i);
         }
@@ -219,7 +226,6 @@ public class ColonyView extends View {
     }
 
     private void drawHub(Canvas canvas) {
-        canvas.drawCircle(centerX, centerY + hubRadius * 0.08f, hubRadius * 1.06f, shadowPaint);
         if (bmpHub != null) {
             drawRect.set(centerX - hubRadius, centerY - hubRadius,
                     centerX + hubRadius, centerY + hubRadius);

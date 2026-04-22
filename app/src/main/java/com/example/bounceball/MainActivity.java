@@ -5,8 +5,21 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import com.example.bounceball.colony.ColonyActivity;
 import android.graphics.Color;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.PixelFormat;
+import android.graphics.RectF;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.io.ByteArrayOutputStream;
 import android.view.*;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -861,45 +874,118 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         layout.setGravity(Gravity.CENTER);
         layout.setPadding(dpToPx(32), dpToPx(48), dpToPx(32), dpToPx(48));
 
-        TextView alienTv = new TextView(this);
-        alienTv.setText("👽");
-        alienTv.setTextSize(96f);
-        alienTv.setGravity(Gravity.CENTER);
-        layout.addView(alienTv);
+        int tailH = dpToPx(18);
+        int tailW = dpToPx(28);
+        int corner = dpToPx(16);
+        int stroke = dpToPx(2);
 
-        android.graphics.drawable.GradientDrawable bubbleBgD = new android.graphics.drawable.GradientDrawable();
-        bubbleBgD.setColor(Color.parseColor("#0D2010"));
-        bubbleBgD.setCornerRadius(dpToPx(16));
-        bubbleBgD.setStroke(dpToPx(2), Color.parseColor("#00E676"));
+        Drawable bubbleDrawable = new Drawable() {
+            private final Paint fillPaint  = new Paint(Paint.ANTI_ALIAS_FLAG);
+            private final Paint strokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            private final Path  path       = new Path();
+            private final RectF bodyRect   = new RectF();
+            { fillPaint.setStyle(Paint.Style.FILL);
+                fillPaint.setColor(Color.argb(220, 245, 255, 250));
+                strokePaint.setStyle(Paint.Style.STROKE);
+                strokePaint.setStrokeWidth(stroke);
+                strokePaint.setColor(Color.parseColor("#00E676"));
+                strokePaint.setStrokeJoin(Paint.Join.ROUND); }
+
+            @Override public void draw(Canvas canvas) {
+                android.graphics.Rect b = getBounds();
+                float half = stroke / 2f;
+                float cx = b.centerX();
+                float bodyBottom = b.bottom - tailH;
+                bodyRect.set(b.left + half, b.top + half, b.right - half, bodyBottom);
+                path.reset();
+                path.addRoundRect(bodyRect, corner, corner, Path.Direction.CW);
+                path.moveTo(cx - tailW / 2f, bodyBottom);
+                path.lineTo(cx,              b.bottom - half);
+                path.lineTo(cx + tailW / 2f, bodyBottom);
+                path.close();
+                canvas.drawPath(path, fillPaint);
+                canvas.drawPath(path, strokePaint);
+            }
+            @Override public void setAlpha(int a) {
+                fillPaint.setAlpha(a); strokePaint.setAlpha(a);
+            }
+            @Override public void setColorFilter(android.graphics.ColorFilter cf) {
+                fillPaint.setColorFilter(cf); strokePaint.setColorFilter(cf);
+            }
+            @Override public int getOpacity() { return PixelFormat.TRANSLUCENT; }
+        };
 
         FrameLayout bubble = new FrameLayout(this);
-        bubble.setBackground(bubbleBgD);
-        bubble.setPadding(dpToPx(24), dpToPx(16), dpToPx(24), dpToPx(16));
+        bubble.setBackground(bubbleDrawable);
+        bubble.setPadding(dpToPx(20), dpToPx(14), dpToPx(20), dpToPx(14) + tailH);
+        bubble.setVisibility(View.GONE);
+        bubble.setAlpha(0f);
 
         TextView dialogTv = new TextView(this);
-        dialogTv.setText(Strings.get("egg.alien_dialog"));
-        dialogTv.setTextColor(Color.WHITE);
-        dialogTv.setTextSize(20f);
+        dialogTv.setTextColor(Color.parseColor("#0A2010"));
+        dialogTv.setTextSize(16f);
         dialogTv.setGravity(Gravity.CENTER);
+        dialogTv.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        dialogTv.setTextDirection(View.TEXT_DIRECTION_LOCALE);
+        dialogTv.setLineSpacing(0f, 1.25f);
         bubble.addView(dialogTv);
 
         LinearLayout.LayoutParams bubbleLp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        bubbleLp.setMargins(0, dpToPx(24), 0, dpToPx(36));
+        bubbleLp.setMargins(0, 0, 0, 0);
         bubble.setLayoutParams(bubbleLp);
         layout.addView(bubble);
+
+        TextView alienTv = new TextView(this);
+        alienTv.setText("👽");
+        alienTv.setTextSize(96f);
+        alienTv.setGravity(Gravity.CENTER);
+        alienTv.setClickable(true);
+        alienTv.setFocusable(true);
+        layout.addView(alienTv);
+
+        String[] quotes = loadIdleQuotes();
+        Handler handler = new Handler(Looper.getMainLooper());
+        Runnable[] hideRunnable = {null};
+
+        alienTv.setOnClickListener(v -> {
+            String quote = quotes[(int) (Math.random() * quotes.length)];
+            dialogTv.setText(quote);
+
+            if (hideRunnable[0] != null) handler.removeCallbacks(hideRunnable[0]);
+
+            bubble.setVisibility(View.VISIBLE);
+            bubble.animate().cancel();
+            bubble.setAlpha(0f);
+            bubble.setScaleX(0.88f);
+            bubble.setScaleY(0.88f);
+            bubble.setPivotX(bubble.getWidth() / 2f);
+            bubble.setPivotY(bubble.getHeight());
+            bubble.animate()
+                    .alpha(1f).scaleX(1f).scaleY(1f)
+                    .setDuration(180)
+                    .setInterpolator(new android.view.animation.DecelerateInterpolator())
+                    .start();
+
+            hideRunnable[0] = () -> bubble.animate()
+                    .alpha(0f)
+                    .setDuration(300)
+                    .withEndAction(() -> bubble.setVisibility(View.GONE))
+                    .start();
+            handler.postDelayed(hideRunnable[0], 7000);
+        });
 
         Button colonyBtn = new Button(this);
         colonyBtn.setText(Strings.get("egg.btn_build_colony"));
         colonyBtn.setTextSize(17f);
         colonyBtn.setTextColor(Color.parseColor("#0A0A0A"));
-        android.graphics.drawable.GradientDrawable colonyBg = new android.graphics.drawable.GradientDrawable();
+        GradientDrawable colonyBg = new GradientDrawable();
         colonyBg.setColor(Color.parseColor("#FFD700"));
         colonyBg.setCornerRadius(dpToPx(12));
         colonyBtn.setBackground(colonyBg);
         LinearLayout.LayoutParams colLp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        colLp.setMargins(0, 0, 0, 0);
+        colLp.setMargins(0, dpToPx(24), 0, 0);
         colonyBtn.setLayoutParams(colLp);
         colonyBtn.setOnClickListener(v ->
                 startActivity(new Intent(this, ColonyActivity.class)));
@@ -913,6 +999,32 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         layout.addView(backBtn);
 
         container.addView(layout, matchParentFl());
+    }
+
+    private String[] loadIdleQuotes() {
+        String lang = prefs.getLanguage();
+        String[] result = tryLoadIdleQuotes(lang);
+        if (result == null && !lang.equals("en")) result = tryLoadIdleQuotes("en");
+        return result != null ? result : new String[]{"..."};
+    }
+
+    private String[] tryLoadIdleQuotes(String lang) {
+        try {
+            String path = "idle_quotes/" + lang + "_idle_quotes.json";
+            InputStream is = getAssets().open(path);
+            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+            byte[] chunk = new byte[1024];
+            int n;
+            while ((n = is.read(chunk)) != -1) buffer.write(chunk, 0, n);
+            is.close();
+            String json = buffer.toString(StandardCharsets.UTF_8.name());
+            JSONArray arr = new JSONObject(json).getJSONArray(lang + "_idle_quotes");
+            String[] out = new String[arr.length()];
+            for (int i = 0; i < arr.length(); i++) out[i] = arr.getString(i);
+            return out;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private void refreshEggButton() {
