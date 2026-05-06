@@ -6,6 +6,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.graphics.drawable.GradientDrawable;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -210,11 +211,6 @@ public class CosmeticsPage {
             ballsContainer.addView(buildCosmeticRow(ctx, prefs, raw, ball, "equipped_ball", refreshCurr));
         }
 
-        LinearLayout fxContainer = addCollapsibleSection(ctx, page, Strings.get("cosmetics.section_effects"));
-        for (Object[] fx : EFFECTS) {
-            fxContainer.addView(buildCosmeticRow(ctx, prefs, raw, fx, "equipped_fx", refreshCurr));
-        }
-
         LinearLayout bgContainer = addCollapsibleSection(ctx, page, Strings.get("cosmetics.section_backgrounds"));
         for (Object[] bg : BACKGROUNDS) {
             bgContainer.addView(buildCosmeticRow(ctx, prefs, raw, bg, "equipped_bg", refreshCurr));
@@ -230,11 +226,6 @@ public class CosmeticsPage {
             String rarity = (String) ball[ball.length - 1];
             if (rarity != null)
                 out.add(new GachaSystem.SkinEntry((String) ball[0], (String) ball[1], (String) ball[2], rarity));
-        }
-        for (Object[] fx : EFFECTS) {
-            String rarity = (String) fx[fx.length - 1];
-            if (rarity != null)
-                out.add(new GachaSystem.SkinEntry((String) fx[0], (String) fx[1], (String) fx[2], rarity));
         }
         for (Object[] bg : BACKGROUNDS) {
             String rarity = (String) bg[bg.length - 1];
@@ -259,10 +250,10 @@ public class CosmeticsPage {
         String id       = (String) data[0];
         String name     = skinName(id, (String) data[1]);
         String colorHex = (String) data[2];
-        int goldCost    = (int)    data[3];
-        int diamCost    = (int)    data[4];
-        boolean isFree  = goldCost == 0 && diamCost == 0;
         String rarity = (String) data[data.length - 1];
+        int goldCost    = EconomyBalance.cosmeticGoldCost(id, (int) data[3], (int) data[4], rarity);
+        int diamCost    = EconomyBalance.cosmeticDiamondCost(id, (int) data[3], (int) data[4], rarity);
+        boolean isFree  = goldCost == 0 && diamCost == 0;
         boolean isGacha = "common".equals(rarity) || "rare".equals(rarity) || "legendary".equals(rarity);
         int fragThreshold = isGacha ? GachaSystem.getFragmentThreshold(rarity) : 0;
 
@@ -270,7 +261,7 @@ public class CosmeticsPage {
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setPadding(px(ctx, 12), px(ctx, 10), px(ctx, 12), px(ctx, 10));
-        row.setBackgroundColor(Color.parseColor("#1A2A3A"));
+        setRoundedBackground(row, "#1A2A3A", 10);
         LinearLayout.LayoutParams rowLp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         rowLp.setMargins(0, px(ctx, 6), 0, 0);
@@ -383,14 +374,14 @@ public class CosmeticsPage {
             if (equipped) {
                 actionBtn.setText(Strings.get("cosmetics.btn_equipped"));
                 actionBtn.setTextColor(Color.parseColor("#00E676"));
-                actionBtn.setBackgroundColor(Color.parseColor("#0A2A0A"));
+                setRoundedBackground(actionBtn, "#0A2A0A", 8);
                 actionBtn.setEnabled(false);
                 diam2Btn.setVisibility(View.GONE);
                 fragRow.setVisibility(View.GONE);
             } else if (owned) {
                 actionBtn.setText(Strings.get("cosmetics.btn_equip"));
                 actionBtn.setTextColor(Color.WHITE);
-                actionBtn.setBackgroundColor(Color.parseColor("#1B3A5A"));
+                setRoundedBackground(actionBtn, "#1B3A5A", 8);
                 actionBtn.setEnabled(true);
                 diam2Btn.setVisibility(View.GONE);
                 actionBtn.setOnClickListener(v -> {
@@ -411,12 +402,12 @@ public class CosmeticsPage {
             } else {
                 actionBtn.setText(Strings.fmt("common.currency_gold_fmt", goldCost));
                 actionBtn.setTextColor(Color.parseColor("#FFD700"));
-                actionBtn.setBackgroundColor(Color.parseColor("#1B3A1B"));
+                setRoundedBackground(actionBtn, "#1B3A1B", 8);
                 actionBtn.setEnabled(prefs.getGold() >= goldCost);
                 diam2Btn.setText(Strings.fmt("common.currency_diam_fmt", diamCost));
                 diam2Btn.setTextColor(Color.parseColor("#80DEEA"));
-                diam2Btn.setBackgroundColor(Color.parseColor("#1A1A3A"));
-                diam2Btn.setEnabled(prefs.getDiamonds() >= diamCost);
+                setRoundedBackground(diam2Btn, "#1A1A3A", 8);
+                diam2Btn.setEnabled(true);
                 diam2Btn.setVisibility(View.VISIBLE);
                 actionBtn.setOnClickListener(v -> {
                     if (prefs.getGold() >= goldCost) {
@@ -454,6 +445,8 @@ public class CosmeticsPage {
                             }
                         }
                         refreshCurr.run();
+                    } else if (ctx instanceof MainActivity) {
+                        ((MainActivity) ctx).showInsufficientDiamondsPopup();
                     }
                 });
                 if (isGacha) {
@@ -462,9 +455,9 @@ public class CosmeticsPage {
                     fragBtn.setTextColor(frags >= fragThreshold
                             ? Color.parseColor("#FFD700")
                             : Color.parseColor("#666666"));
-                    fragBtn.setBackgroundColor(frags >= fragThreshold
-                            ? Color.parseColor("#2A1E00")
-                            : Color.parseColor("#1A1A1A"));
+                    setRoundedBackground(fragBtn, frags >= fragThreshold
+                            ? "#2A1E00"
+                            : "#1A1A1A", 8);
                     fragBtn.setEnabled(frags >= fragThreshold);
                     fragRow.setVisibility(View.VISIBLE);
                 } else {
@@ -563,6 +556,13 @@ public class CosmeticsPage {
         btn.setTextSize(11f);
         btn.setPadding(px(btn.getContext(), 10), px(btn.getContext(), 4),
                 px(btn.getContext(), 10), px(btn.getContext(), 4));
+    }
+
+    private static void setRoundedBackground(View view, String colorHex, int radiusDp) {
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(Color.parseColor(colorHex));
+        bg.setCornerRadius(px(view.getContext(), radiusDp));
+        view.setBackground(bg);
     }
 
     private static int px(Context ctx, int dp) {

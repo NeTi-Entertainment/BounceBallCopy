@@ -340,6 +340,8 @@ public class GachaPage {
                 prefs.spendDiamonds(GachaSystem.COST_DIAMONDS);
                 updateCurrencyDisplay(prefs);
                 doSpin(prefs, raw, allSkins);
+            } else if (!sAnimating && ctx instanceof MainActivity) {
+                ((MainActivity) ctx).showInsufficientDiamondsPopup();
             }
         });
 
@@ -571,7 +573,7 @@ public class GachaPage {
         if (sGoldBtn != null)
             sGoldBtn.setEnabled(!sAnimating && prefs.getGold() >= GachaSystem.COST_GOLD);
         if (sDiamBtn != null)
-            sDiamBtn.setEnabled(!sAnimating && prefs.getDiamonds() >= GachaSystem.COST_DIAMONDS);
+            sDiamBtn.setEnabled(!sAnimating);
     }
 
     private static void addLegendBadge(Context ctx, LinearLayout parent, String label, int color) {

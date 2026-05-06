@@ -9,8 +9,8 @@ import java.util.Random;
 
 public class GachaSystem {
 
-    public static final int COST_GOLD      = 1;
-    public static final int COST_DIAMONDS  = 50;
+    public static final int COST_GOLD      = EconomyBalance.GOLD_PER_DIAMOND;
+    public static final int COST_DIAMONDS  = 1;
 
     public static final int FRAGS_COMMON    =  30;
     public static final int FRAGS_RARE      =  90;

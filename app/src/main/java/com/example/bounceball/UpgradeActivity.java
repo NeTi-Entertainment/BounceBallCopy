@@ -24,10 +24,14 @@ public class UpgradeActivity extends Activity {
     private BillingClient billingClient;
 
     private static final String[] SKU_IDS = {
-            "diamonds_100", "diamonds_500", "diamonds_1200", "diamonds_2500"
+            "diamonds_25", "diamonds_80", "diamonds_230", "diamonds_480", "diamonds_1000"
     };
-    private static final int[] DIAMOND_AMOUNTS = {100, 500, 1200, 2500};
-    private static final String[] PRICE_FALLBACK = {"0,99 €", "3,99 €", "8,99 €", "17,99 €"};
+    private static final int[] DIAMOND_AMOUNTS = {25, 80, 230, 480, 1000};
+    private static final int[] DIAMOND_BONUS_PERCENT = {0, 10, 20, 35, 50};
+    private static final String[] DIAMOND_PRICE_KEYS = {
+            "shop.diamond_price_5", "shop.diamond_price_20", "shop.diamond_price_50",
+            "shop.diamond_price_100", "shop.diamond_price_1000"
+    };
 
     private LinearLayout upgradesContent;
     private LinearLayout shopContent;
@@ -213,8 +217,8 @@ public class UpgradeActivity extends Activity {
 
         Runnable refresh = () -> {
             int lvl      = prefs.getRaw().getInt(key, 0);
-            int goldCost = goldBase * (lvl + 1);
-            int diamCost = diamBase * (lvl + 1);
+            int goldCost = EconomyBalance.upgradeGoldCost(key, lvl, goldBase);
+            int diamCost = EconomyBalance.upgradeDiamondCost(key, lvl, goldBase);
             levelView.setText(Strings.fmt("common.level_fmt", lvl, maxLvl));
             if (lvl >= maxLvl) {
                 goldBtn.setText(Strings.get("common.level_max")); goldBtn.setEnabled(false);
@@ -233,7 +237,7 @@ public class UpgradeActivity extends Activity {
         goldBtn.setPadding(16, 8, 16, 8);
         goldBtn.setOnClickListener(v -> {
             int lvl = prefs.getRaw().getInt(key, 0);
-            int cost = goldBase * (lvl + 1);
+            int cost = EconomyBalance.upgradeGoldCost(key, lvl, goldBase);
             if (prefs.getGold() >= cost && lvl < maxLvl) {
                 prefs.spendGold(cost);
                 prefs.getRaw().edit().putInt(key, lvl + 1).apply();
@@ -250,7 +254,7 @@ public class UpgradeActivity extends Activity {
         diamBtn.setLayoutParams(diamLp);
         diamBtn.setOnClickListener(v -> {
             int lvl  = prefs.getRaw().getInt(key, 0);
-            int cost = (int)(diamBase * (lvl + 1) * 0.5f);
+            int cost = EconomyBalance.upgradeDiamondCost(key, lvl, goldBase);
             if (prefs.getDiamonds() >= cost && lvl < maxLvl) {
                 prefs.spendDiamonds(cost);
                 prefs.getRaw().edit().putInt(key, lvl + 1).apply();
@@ -277,21 +281,17 @@ public class UpgradeActivity extends Activity {
         info.setPadding(0, 0, 0, 20);
         layout.addView(info);
 
-        String[] labels = {
-                Strings.get("shop.gem_packs.pack_100"),
-                Strings.get("shop.gem_packs.pack_500"),
-                Strings.get("shop.gem_packs.pack_1200"),
-                Strings.get("shop.gem_packs.pack_2500")
-        };
-        String[] bonusLabels = {
-                Strings.get("shop.gem_packs.bonus_none"),
-                Strings.get("shop.gem_packs.bonus_5"),
-                Strings.get("shop.gem_packs.bonus_20"),
-                Strings.get("shop.gem_packs.bonus_50")
-        };
-
         for (int i = 0; i < SKU_IDS.length; i++) {
-            layout.addView(buildShopItem(i, labels[i], bonusLabels[i]));
+            int totalAmount = DIAMOND_AMOUNTS[i];
+            int bonusPercent = DIAMOND_BONUS_PERCENT[i];
+            int bonusAmount = bonusPercent > 0
+                    ? Math.round(totalAmount * bonusPercent / (100f + bonusPercent))
+                    : 0;
+            String label = Strings.fmt("shop.diamond_pack_title_fmt", totalAmount);
+            String bonus = bonusPercent > 0
+                    ? Strings.fmt("shop.diamond_pack_bonus_fmt", bonusPercent, bonusAmount, totalAmount)
+                    : Strings.fmt("shop.diamond_pack_total_fmt", totalAmount);
+            layout.addView(buildShopItem(i, label, bonus));
         }
 
         TextView legal = new TextView(this);
@@ -338,7 +338,7 @@ public class UpgradeActivity extends Activity {
         row.addView(textCol);
 
         Button buyBtn = new Button(this);
-        buyBtn.setText(PRICE_FALLBACK[index]);
+        buyBtn.setText(Strings.get(DIAMOND_PRICE_KEYS[index]));
         buyBtn.setTextColor(Color.WHITE);
         buyBtn.setBackgroundColor(Color.parseColor("#1565C0"));
         buyBtn.setPadding(24, 12, 24, 12);

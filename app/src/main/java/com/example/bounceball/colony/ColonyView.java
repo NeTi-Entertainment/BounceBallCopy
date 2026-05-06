@@ -11,6 +11,8 @@ import android.view.MotionEvent;
 import android.view.View;
 import com.example.bounceball.R;
 
+import java.util.Random;
+
 public class ColonyView extends View {
 
     interface OnSlotTappedListener {
@@ -43,7 +45,6 @@ public class ColonyView extends View {
 
     private Bitmap bmpHub;
     private final Bitmap[] bmpBuildings = new Bitmap[ColonyManager.SLOT_COUNT];
-    private Bitmap bmpGround;
     private final RectF drawRect = new RectF();
     private final Paint alphaPaint       = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint decoPaint        = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -52,15 +53,20 @@ public class ColonyView extends View {
     private final Paint timerStrokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF ringRect         = new RectF();
 
-    // Positions des bâtiments décoratifs : [slotIndex][decoIndex] = angle en degrés math
-    // Angles math : 0=droite, -90=haut, 90=bas, 180=gauche
-    private static final float[][] DECO_ANGLES_DEG = {
-            {-130f,  -55f, -160f},   // slot 0 HOUSE   (main à -90°)
-            { -35f,   35f,    8f},   // slot 1 WATER   (main à   0°)
-            { 125f,   55f,   95f},   // slot 2 OXYGEN  (main à  90°)
-            { 148f, -155f,  172f},   // slot 3 FOOD    (main à 180°)
-    };
-    private static final float[] DECO_RADII = {0.44f, 0.43f, 0.52f};
+    // ── Paramètres de placement pseudo-aléatoire des copies décoratives ─────
+    // Cône angulaire autour du bâtiment parent dans lequel on tire les décos.
+    // Offset min évite qu'une déco tombe sur son bâtiment parent.
+    // Offset max < (sectorDeg / 2) pour éviter d'empiéter sur le slot voisin.
+    private static final float DECO_MIN_OFFSET_DEG   = 18f;
+    private static final float DECO_MAX_OFFSET_DEG   = 48f;
+    private static final float DECO_MIN_RADIUS_FRAC  = 0.42f;
+    private static final float DECO_MAX_RADIUS_FRAC  = 0.55f;
+    // Distance minimale (en fraction de minDim) entre deux décos d'un même slot.
+    private static final float DECO_MIN_SEPARATION   = 0.13f;
+    // Seed de base. Changer cette valeur = regénérer entièrement tous les patterns.
+    private static final long  DECO_SEED_BASE        = 0xB00BEEF5CA1AB1EL;
+    // Nombre max de tirages avant d'accepter faute de mieux.
+    private static final int   DECO_MAX_TRIES        = 40;
 
     private float[][] decoX;
     private float[][] decoY;
@@ -108,7 +114,6 @@ public class ColonyView extends View {
         maxRingPaint.setStrokeWidth(5f);
 
         bmpHub = BitmapFactory.decodeResource(context.getResources(), R.drawable.building_hub);
-        bmpGround = BitmapFactory.decodeResource(context.getResources(), R.drawable.lunar_ground);
 
         alphaPaint.setAlpha(110);
         decoPaint.setAlpha(210);
@@ -165,13 +170,65 @@ public class ColonyView extends View {
             slotY[i] = centerY + (float)(orbitRadius * Math.sin(angle));
         }
 
-        decoX = new float[ColonyManager.SLOT_COUNT][3];
-        decoY = new float[ColonyManager.SLOT_COUNT][3];
-        for (int i = 0; i < ColonyManager.SLOT_COUNT && i < DECO_ANGLES_DEG.length; i++) {
+        computeDecoPositions(minDim);
+    }
+
+    private void computeDecoPositions(float minDim) {
+        int slotCount = ColonyManager.SLOT_COUNT;
+        decoX = new float[slotCount][3];
+        decoY = new float[slotCount][3];
+
+        float sectorDeg = 360f / slotCount;
+
+        float[] chosenAngles = new float[3];
+        float[] chosenRadii  = new float[3];
+
+        for (int i = 0; i < slotCount; i++) {
+            float mainAngleDeg = -90f + i * sectorDeg;
+
+            // Un seed distinct par slot casse toute symétrie rotationnelle
+            // entre slots : chaque bâtiment a son propre pattern unique.
+            Random rng = new Random(DECO_SEED_BASE
+                    ^ ((long)(i + 1) * 0x9E3779B97F4A7C15L));
+
             for (int d = 0; d < 3; d++) {
-                double a = Math.toRadians(DECO_ANGLES_DEG[i][d]);
-                decoX[i][d] = centerX + (float)(DECO_RADII[d] * minDim * Math.cos(a));
-                decoY[i][d] = centerY + (float)(DECO_RADII[d] * minDim * Math.sin(a));
+                float relAngle = 0f;
+                float r = 0f;
+
+                for (int tries = 0; tries < DECO_MAX_TRIES; tries++) {
+                    float sign = rng.nextBoolean() ? 1f : -1f;
+                    float mag  = DECO_MIN_OFFSET_DEG
+                            + rng.nextFloat() * (DECO_MAX_OFFSET_DEG - DECO_MIN_OFFSET_DEG);
+                    relAngle = sign * mag;
+                    r = DECO_MIN_RADIUS_FRAC
+                            + rng.nextFloat() * (DECO_MAX_RADIUS_FRAC - DECO_MIN_RADIUS_FRAC);
+
+                    // Vérifie la séparation avec les décos déjà placées du même slot.
+                    double a = Math.toRadians(mainAngleDeg + relAngle);
+                    float xNorm = (float)(r * Math.cos(a));
+                    float yNorm = (float)(r * Math.sin(a));
+
+                    boolean ok = true;
+                    for (int j = 0; j < d; j++) {
+                        double aj = Math.toRadians(mainAngleDeg + chosenAngles[j]);
+                        float xj = (float)(chosenRadii[j] * Math.cos(aj));
+                        float yj = (float)(chosenRadii[j] * Math.sin(aj));
+                        float dx = xNorm - xj;
+                        float dy = yNorm - yj;
+                        if (dx * dx + dy * dy < DECO_MIN_SEPARATION * DECO_MIN_SEPARATION) {
+                            ok = false;
+                            break;
+                        }
+                    }
+                    if (ok) break;
+                }
+
+                chosenAngles[d] = relAngle;
+                chosenRadii[d]  = r;
+
+                double a = Math.toRadians(mainAngleDeg + relAngle);
+                decoX[i][d] = centerX + (float)(r * minDim * Math.cos(a));
+                decoY[i][d] = centerY + (float)(r * minDim * Math.sin(a));
             }
         }
     }
@@ -179,11 +236,6 @@ public class ColonyView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         canvas.drawRect(0, 0, getWidth(), getHeight(), bgPaint);
-
-        if (bmpGround != null) {
-            canvas.drawBitmap(bmpGround, null,
-                    new RectF(0, 0, getWidth(), getHeight()), null);
-        }
 
         for (int i = 0; i < ColonyManager.SLOT_COUNT; i++) {
             drawDecoSlots(canvas, i);
@@ -226,6 +278,7 @@ public class ColonyView extends View {
     }
 
     private void drawHub(Canvas canvas) {
+        canvas.drawCircle(centerX, centerY + hubRadius * 0.08f, hubRadius * 1.06f, shadowPaint);
         if (bmpHub != null) {
             drawRect.set(centerX - hubRadius, centerY - hubRadius,
                     centerX + hubRadius, centerY + hubRadius);

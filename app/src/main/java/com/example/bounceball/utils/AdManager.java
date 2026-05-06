@@ -10,31 +10,20 @@ import com.google.android.gms.ads.LoadAdError;
 import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.interstitial.InterstitialAd;
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
+import com.google.android.gms.ads.rewarded.RewardedAd;
+import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback;
 
-/**
- * Gère les publicités interstitielles Google Ads.
- * Affiche une pub toutes les 3 à 5 parties (aléatoire).
- *
- * IMPORTANT: Remplacez AD_UNIT_ID par votre vrai ID AdMob avant publication.
- * Pour les tests, utilisez : "ca-app-pub-3940256099942544/1033173712"
- *
- * Ajout dans build.gradle (app) :
- *   implementation 'com.google.android.gms:play-services-ads:23.0.0'
- *
- * Ajout dans AndroidManifest.xml (dans <application>) :
- *   <meta-data
- *       android:name="com.google.android.gms.ads.APPLICATION_ID"
- *       android:value="ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX"/>
- */
 public class AdManager {
 
     private static final String TAG = "AdManager";
-    // ID de test Google — remplacez par votre vrai ID en production
-    private static final String AD_UNIT_ID = "ca-app-pub-3940256099942544/1033173712";
+    private static final String INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-3940256099942544/1033173712";
+    private static final String REWARDED_AD_UNIT_ID = "ca-app-pub-3940256099942544/5224354917";
 
     private static AdManager instance;
 
     private InterstitialAd interstitialAd;
+    private RewardedAd rewardedAd;
+    private boolean isRewardedLoading = false;
     private int gameCount = 0;
     private int nextAdAt;
     private boolean isInitialized = false;
@@ -50,30 +39,30 @@ public class AdManager {
         return instance;
     }
 
-    /** Initialise le SDK AdMob. À appeler une fois depuis MainActivity. */
     public void initialize(Context context) {
         if (isInitialized) return;
         MobileAds.initialize(context, initializationStatus -> {
             isInitialized = true;
-            Log.d(TAG, "AdMob initialisé");
+            Log.d(TAG, "AdMob initialized");
             loadInterstitial(context);
+            loadRewarded(context);
         });
     }
 
-    /** Charge une nouvelle pub interstitielle en avance. */
     public void loadInterstitial(Context context) {
         AdRequest adRequest = new AdRequest.Builder().build();
-        InterstitialAd.load(context, AD_UNIT_ID, adRequest, new InterstitialAdLoadCallback() {
+        InterstitialAd.load(context, INTERSTITIAL_AD_UNIT_ID, adRequest, new InterstitialAdLoadCallback() {
             @Override
             public void onAdLoaded(InterstitialAd ad) {
                 interstitialAd = ad;
-                Log.d(TAG, "Interstitielle chargée");
+                Log.d(TAG, "Interstitial loaded");
                 interstitialAd.setFullScreenContentCallback(new FullScreenContentCallback() {
                     @Override
                     public void onAdDismissedFullScreenContent() {
                         interstitialAd = null;
-                        loadInterstitial(context); // précharge la suivante
+                        loadInterstitial(context);
                     }
+
                     @Override
                     public void onAdFailedToShowFullScreenContent(AdError adError) {
                         interstitialAd = null;
@@ -81,18 +70,15 @@ public class AdManager {
                     }
                 });
             }
+
             @Override
             public void onAdFailedToLoad(LoadAdError loadAdError) {
-                Log.w(TAG, "Échec chargement pub : " + loadAdError.getMessage());
+                Log.w(TAG, "Interstitial load failed: " + loadAdError.getMessage());
                 interstitialAd = null;
             }
         });
     }
 
-    /**
-     * À appeler à chaque fin de partie.
-     * Affiche une pub si le seuil est atteint.
-     */
     public void onGameOver(Activity activity) {
         gameCount++;
         if (gameCount >= nextAdAt) {
@@ -104,14 +90,73 @@ public class AdManager {
 
     public void showIfReady(Activity activity) {
         if (interstitialAd != null) {
-            activity.runOnUiThread(() -> {
-                interstitialAd.show(activity);
-            });
+            activity.runOnUiThread(() -> interstitialAd.show(activity));
         }
     }
 
-    /** Seuil aléatoire entre 3 et 5 parties. */
+    public boolean isRewardedReady() {
+        return rewardedAd != null;
+    }
+
+    public void loadRewarded(Context context) {
+        if (isRewardedLoading || rewardedAd != null) return;
+        isRewardedLoading = true;
+        AdRequest adRequest = new AdRequest.Builder().build();
+        RewardedAd.load(context, REWARDED_AD_UNIT_ID, adRequest, new RewardedAdLoadCallback() {
+            @Override
+            public void onAdLoaded(RewardedAd ad) {
+                rewardedAd = ad;
+                isRewardedLoading = false;
+                Log.d(TAG, "Rewarded loaded");
+            }
+
+            @Override
+            public void onAdFailedToLoad(LoadAdError loadAdError) {
+                rewardedAd = null;
+                isRewardedLoading = false;
+                Log.w(TAG, "Rewarded load failed: " + loadAdError.getMessage());
+            }
+        });
+    }
+
+    public void showRewarded(Activity activity, RewardedCallback callback) {
+        activity.runOnUiThread(() -> {
+            if (rewardedAd == null) {
+                loadRewarded(activity);
+                if (callback != null) callback.onUnavailable();
+                return;
+            }
+
+            RewardedAd adToShow = rewardedAd;
+            rewardedAd = null;
+            final boolean[] earnedReward = {false};
+            adToShow.setFullScreenContentCallback(new FullScreenContentCallback() {
+                @Override
+                public void onAdDismissedFullScreenContent() {
+                    loadRewarded(activity);
+                    if (callback == null) return;
+                    if (earnedReward[0]) callback.onRewardEarned();
+                    else callback.onClosedWithoutReward();
+                }
+
+                @Override
+                public void onAdFailedToShowFullScreenContent(AdError adError) {
+                    loadRewarded(activity);
+                    if (callback != null) callback.onUnavailable();
+                }
+            });
+
+            adToShow.show(activity, rewardItem -> earnedReward[0] = true);
+        });
+    }
+
+    public interface RewardedCallback {
+        void onRewardEarned();
+        void onUnavailable();
+        void onClosedWithoutReward();
+    }
+
     private void resetNextAdThreshold() {
-        nextAdAt = 3 + (int)(Math.random() * 3); // 3, 4 ou 5
+        nextAdAt = 3 + (int)(Math.random() * 3);
     }
 }

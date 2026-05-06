@@ -44,7 +44,7 @@ public class GameActivity extends Activity {
             }
 
             @Override
-            public void onGameOver(float heightReached) {
+            public void onGameOver(float heightReached, long durationMillis) {
                 // 1. Sauvegarde le record d'ascension
                 boolean newRecord = prefs.updateMaxHeight(heightReached);
 
