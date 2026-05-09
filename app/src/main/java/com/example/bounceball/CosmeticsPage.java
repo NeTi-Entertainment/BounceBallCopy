@@ -572,11 +572,18 @@ public class CosmeticsPage {
     public static void refreshAll(ScrollView scroll) {
         Object currRefresh = scroll.getTag(R.id.tag_refresh);
         if (currRefresh instanceof Runnable) ((Runnable) currRefresh).run();
-        LinearLayout page = (LinearLayout) scroll.getChildAt(0);
-        for (int i = 0; i < page.getChildCount(); i++) {
-            View child = page.getChildAt(i);
+        ViewGroup page = (ViewGroup) scroll.getChildAt(0);
+        refreshRecursively(page);
+    }
+
+    private static void refreshRecursively(ViewGroup parent) {
+        for (int i = 0; i < parent.getChildCount(); i++) {
+            View child = parent.getChildAt(i);
             Object r = child.getTag(R.id.tag_refresh);
             if (r instanceof Runnable) ((Runnable) r).run();
+            if (child instanceof ViewGroup) {
+                refreshRecursively((ViewGroup) child);
+            }
         }
     }
 

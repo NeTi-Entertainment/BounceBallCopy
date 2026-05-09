@@ -741,7 +741,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             canvas = surfaceHolder.lockCanvas();
         }
         if (canvas == null) return;
-        if (bgRenderer != null) bgRenderer.draw(canvas);
+        if (bgRenderer != null) bgRenderer.draw(canvas, totalHeightMeters);
         else canvas.drawColor(Color.WHITE);
 
         blobPaint.setStyle(Paint.Style.FILL);

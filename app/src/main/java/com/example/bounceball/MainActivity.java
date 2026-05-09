@@ -258,13 +258,27 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         tapText.clearAnimation();
         tapText.setVisibility(View.GONE);
         recordText.setVisibility(View.GONE);
-        if (overlay == settingsOverlay) {
-            Object r = overlay.getTag(R.id.tag_refresh);
-            if (r instanceof Runnable) ((Runnable) r).run();
-        }
+        Object r = overlay.getTag(R.id.tag_refresh);
+        if (r instanceof Runnable) ((Runnable) r).run();
         overlay.setVisibility(View.VISIBLE);
-        if (overlay == shopOverlay && cosmeticsScrollView != null) {
-            CosmeticsPage.refreshAll(cosmeticsScrollView);
+
+    //    tapText.clearAnimation();
+    //    tapText.setVisibility(View.GONE);
+    //    recordText.setVisibility(View.GONE);
+    //    if (overlay == settingsOverlay) {
+    //        Object r = overlay.getTag(R.id.tag_refresh);
+    //        if (r instanceof Runnable) ((Runnable) r).run();
+    //    }
+    //    overlay.setVisibility(View.VISIBLE);
+    //    if (overlay == shopOverlay && cosmeticsScrollView != null) {
+    //        CosmeticsPage.refreshAll(cosmeticsScrollView);
+    //    }
+    }
+
+    public void refreshShopUI() {
+        if (shopOverlay != null) {
+            Object r = shopOverlay.getTag(R.id.tag_refresh);
+            if (r instanceof Runnable) ((Runnable) r).run();
         }
     }
 
@@ -1052,6 +1066,19 @@ public class MainActivity extends Activity implements GameView.GameStateListener
 
         activateUpgrades.run();
 
+        Runnable refreshShop = () -> {
+            refreshCurr.run();
+            for (int i = 0; i < upgradesPage.getChildCount(); i++) {
+                View child = upgradesPage.getChildAt(i);
+                Object r = child.getTag(R.id.tag_refresh);
+                if (r instanceof Runnable) ((Runnable) r).run();
+            }
+            if (cosmeticsScrollView != null) {
+                CosmeticsPage.refreshAll(cosmeticsScrollView);
+            }
+        };
+        overlay.setTag(R.id.tag_refresh, refreshShop);
+
         return overlay;
     }
 
@@ -1250,6 +1277,7 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         btnRow.addView(goldBtn);
         btnRow.addView(diamBtn);
         row.addView(btnRow);
+        row.setTag(R.id.tag_refresh, refresh);
         refresh.run();
         return row;
     }
@@ -1631,10 +1659,11 @@ public class MainActivity extends Activity implements GameView.GameStateListener
                 FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT);
         controlsLp.gravity = Gravity.CENTER;
 
-        TextView alienTv = new TextView(this);
-        alienTv.setText("👽");
-        alienTv.setTextSize(96f);
-        alienTv.setGravity(Gravity.CENTER);
+        ImageView alienTv = new ImageView(this);
+        alienTv.setImageResource(R.drawable.alien_head);
+        LinearLayout.LayoutParams alienLp = new LinearLayout.LayoutParams(dpToPx(120), dpToPx(120));
+        alienLp.gravity = Gravity.CENTER;
+        alienTv.setLayoutParams(alienLp);
         alienTv.setClickable(true);
         alienTv.setFocusable(true);
         alienControls.addView(alienTv);

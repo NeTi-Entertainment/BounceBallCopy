@@ -263,6 +263,19 @@ public class BackgroundRenderer {
     }
 
     public void draw(Canvas canvas) {
+        draw(canvas, 0f);
+    }
+
+//    public void draw(Canvas canvas) {
+//        String pending = pendingSkinId;
+//        if (pending != null) {
+//            pendingSkinId = null;
+//            currentBgSkin = pending;
+//            bgParallaxY   = 0f;
+//            resetAllState();
+//        }
+
+    public void draw(Canvas canvas, float currentHeight) {
         String pending = pendingSkinId;
         if (pending != null) {
             pendingSkinId = null;
@@ -292,7 +305,7 @@ public class BackgroundRenderer {
             case "bg_grad_galaxy":  drawBgGrad(canvas, 8); break;
             case "bg_grad_toxic":   drawBgGrad(canvas, 9); break;
             default:
-                canvas.drawColor(Color.WHITE);
+                drawDefaultBackground(canvas, currentHeight);
                 break;
         }
     }
@@ -1521,5 +1534,33 @@ public class BackgroundRenderer {
             eqBarPaint.setColor(Color.argb((int)(180 + hNorm * 75), capR, capG, capB));
             canvas.drawRect(x, topY, x + barW, topY + capH, eqBarPaint);
         }
+    }
+
+    private void drawDefaultBackground(Canvas canvas, float currentHeight) {
+        int skyBlue   = Color.parseColor("#87CEEB"); // Départ (0m)
+        int darkBlue  = Color.parseColor("#00008B"); // 1000m
+        int spaceBlack = Color.parseColor("#000000"); // 3000m et +
+
+        int finalColor;
+
+        if (currentHeight <= 1000f) {
+            float ratio = currentHeight / 1000f;
+            finalColor = interpolateColor(skyBlue, darkBlue, ratio);
+        } else if (currentHeight <= 3000f) {
+            float ratio = (currentHeight - 1000f) / 2000f;
+            finalColor = interpolateColor(darkBlue, spaceBlack, ratio);
+        } else {
+            finalColor = spaceBlack;
+        }
+
+        canvas.drawColor(finalColor);
+    }
+
+    private int interpolateColor(int color1, int color2, float ratio) {
+        float invRatio = 1f - ratio;
+        float r = (Color.red(color1) * invRatio) + (Color.red(color2) * ratio);
+        float g = (Color.green(color1) * invRatio) + (Color.green(color2) * ratio);
+        float b = (Color.blue(color1) * invRatio) + (Color.blue(color2) * ratio);
+        return Color.rgb((int)r, (int)g, (int)b);
     }
 }

@@ -324,7 +324,13 @@ public class GachaPage {
         closeLp.setMargins(0, px(ctx, 10), 0, 0);
         closeLp.gravity = Gravity.CENTER_HORIZONTAL;
         closeBtn.setLayoutParams(closeLp);
-        closeBtn.setOnClickListener(v -> overlay.setVisibility(View.GONE));
+    //    closeBtn.setOnClickListener(v -> overlay.setVisibility(View.GONE));
+        closeBtn.setOnClickListener(v -> {
+            overlay.setVisibility(View.GONE);
+            if (ctx instanceof MainActivity) {
+                ((MainActivity) ctx).refreshShopUI();
+            }
+        });
         container.addView(closeBtn);
 
         // ── Listeners ──
