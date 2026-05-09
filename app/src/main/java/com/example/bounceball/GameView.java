@@ -1018,5 +1018,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         return true;
     }
 
+    public void reloadUpgrades() {
+        this.upgrades = UpgradeStats.fromPrefs(prefs.getRaw());
+        applyUpgrades();
+    }
+
     @Override public boolean performClick() { super.performClick(); return true; }
 }

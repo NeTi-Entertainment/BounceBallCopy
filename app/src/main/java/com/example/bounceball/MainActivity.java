@@ -1249,6 +1249,7 @@ public class MainActivity extends Activity implements GameView.GameStateListener
             if (prefs.getGold() >= cost && lvl < maxLvl) {
                 prefs.spendGold(cost);
                 raw.edit().putInt(key, lvl + 1).apply();
+                gameView.reloadUpgrades();
                 refresh.run();
             }
         });
@@ -1268,6 +1269,7 @@ public class MainActivity extends Activity implements GameView.GameStateListener
             if (prefs.getDiamonds() >= cost && lvl < maxLvl) {
                 prefs.spendDiamonds(cost);
                 raw.edit().putInt(key, lvl + 1).apply();
+                gameView.reloadUpgrades();
                 refresh.run();
             } else if (lvl < maxLvl) {
                 showInsufficientDiamondsPopup();

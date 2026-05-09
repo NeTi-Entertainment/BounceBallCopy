@@ -69,6 +69,7 @@ public class GameActivity extends Activity {
     protected void onResume() {
         super.onResume();
         ImmersiveHelper.enable(getWindow());
+        gameView.reloadUpgrades();
         upgrades = UpgradeStats.fromPrefs(prefs.getRaw());
         gameView.loadBallSkin();
         gameView.loadBgSkin();
