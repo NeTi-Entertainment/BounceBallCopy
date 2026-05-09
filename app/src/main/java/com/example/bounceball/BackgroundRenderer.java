@@ -157,6 +157,20 @@ public class BackgroundRenderer {
     private int     gradTblW, gradTblH;
     private float[] gradWavePhases = null;
 
+    // ── bg_default : sol, nuages, étoiles ──────────────────
+    // Nuages : { x, y, largeur, hauteur, vitesse, alpha, modèle }
+    private ArrayList<float[]> bgClouds     = null;
+    private long               lastCloudSpawnMs = 0L;
+
+    // Étoiles : { x, y, timerActuel, timerMax }
+    private ArrayList<float[]> bgStars      = null;
+    private long               lastStarSpawnMs  = 0L;
+
+    private final Paint defaultBgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint cloudPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint cloudLayerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint starPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
     private static final int[][] GRAD_COLORS = {
             // 0: Rainbow
             { 0xFFDD0040, 0xFFFF8800, 0xFFEEDD00, 0xFF00BB44, 0xFF2266FF, 0xFF9900DD },
@@ -256,6 +270,10 @@ public class BackgroundRenderer {
             gradOffscreen.recycle();
             gradOffscreen = null;
         }
+        bgClouds         = null;
+        lastCloudSpawnMs = 0L;
+        bgStars          = null;
+        lastStarSpawnMs  = 0L;
     }
 
     public void updateParallax(float cameraShift) {
@@ -1537,23 +1555,222 @@ public class BackgroundRenderer {
     }
 
     private void drawDefaultBackground(Canvas canvas, float currentHeight) {
-        int skyBlue   = Color.parseColor("#87CEEB"); // Départ (0m)
-        int darkBlue  = Color.parseColor("#00008B"); // 1000m
-        int spaceBlack = Color.parseColor("#000000"); // 3000m et +
+        int skyBlue    = Color.parseColor("#87CEEB");
+        int darkBlue   = Color.parseColor("#00008B");
+        int spaceBlack = Color.parseColor("#000000");
 
         int finalColor;
-
         if (currentHeight <= 1000f) {
-            float ratio = currentHeight / 1000f;
-            finalColor = interpolateColor(skyBlue, darkBlue, ratio);
+            finalColor = interpolateColor(skyBlue, darkBlue, currentHeight / 1000f);
         } else if (currentHeight <= 3000f) {
-            float ratio = (currentHeight - 1000f) / 2000f;
-            finalColor = interpolateColor(darkBlue, spaceBlack, ratio);
+            finalColor = interpolateColor(darkBlue, spaceBlack, (currentHeight - 1000f) / 2000f);
         } else {
             finalColor = spaceBlack;
         }
-
         canvas.drawColor(finalColor);
+
+        drawDefaultGround(canvas, currentHeight);
+        drawDefaultClouds(canvas, currentHeight);
+        drawDefaultStars(canvas, currentHeight);
+    }
+
+    private void drawDefaultGround(Canvas canvas, float currentHeight) {
+        if (currentHeight > 40f) return;
+        float groundH = screenHeight * 0.06f;
+        float alpha255 = Math.max(0f, 1f - currentHeight / 40f) * 255f;
+        defaultBgPaint.setStyle(Paint.Style.FILL);
+        defaultBgPaint.setColor(Color.argb((int) alpha255,
+                34, 139, 34));
+        canvas.drawRect(0, screenHeight - groundH, screenWidth, screenHeight, defaultBgPaint);
+    }
+
+    private void drawDefaultClouds(Canvas canvas, float currentHeight) {
+        if (currentHeight < 100f || currentHeight > 900f) return;
+
+        if (bgClouds == null) bgClouds = new ArrayList<>();
+
+        long now = System.currentTimeMillis();
+
+        if (now - lastCloudSpawnMs > 3200L && bgClouds.size() < 6) {
+            lastCloudSpawnMs = now;
+
+            float w = screenWidth * (0.24f + (float) Math.random() * 0.22f);
+            float h = w * (0.30f + (float) Math.random() * 0.08f);
+
+            float y = screenHeight * (0.14f + (float) Math.random() * 0.58f);
+
+            float speed = 0.35f + (float) Math.random() * 0.45f;
+            if ((float) Math.random() < 0.5f) speed = -speed;
+
+            float startX = speed > 0 ? -w * 1.2f : screenWidth + w * 0.2f;
+
+            // Beaucoup moins transparent qu’avant.
+            // L’alpha est appliqué une seule fois au nuage entier.
+            float alpha = 215f + (float) Math.random() * 35f;
+
+            int shape = (int) (Math.random() * 3f);
+
+            bgClouds.add(new float[]{ startX, y, w, h, speed, alpha, shape });
+        }
+
+        java.util.Iterator<float[]> it = bgClouds.iterator();
+
+        while (it.hasNext()) {
+            float[] c = it.next();
+
+            c[0] += c[4];
+
+            if ((c[4] > 0 && c[0] > screenWidth + c[2] * 1.3f)
+                    || (c[4] < 0 && c[0] < -c[2] * 1.3f)) {
+                it.remove();
+                continue;
+            }
+
+            drawCloud(canvas, c[0], c[1], c[2], c[3], (int) c[5], (int) c[6]);
+        }
+    }
+
+    private void drawCloud(Canvas canvas, float x, float y, float w, float h,
+                           int alpha, int shape) {
+        cloudLayerPaint.setAlpha(alpha);
+
+        float left   = x - w * 0.08f;
+        float top    = y - h * 0.85f;
+        float right  = x + w * 1.08f;
+        float bottom = y + h * 0.75f;
+
+        int save = canvas.saveLayer(left, top, right, bottom, cloudLayerPaint);
+
+        // Ombre douce interne, opaque dans le layer.
+        // Elle ne s'accumulera pas avec l'alpha global du nuage.
+        cloudPaint.setStyle(Paint.Style.FILL);
+        cloudPaint.setColor(Color.rgb(225, 235, 245));
+
+        canvas.drawOval(
+                x + w * 0.08f,
+                y - h * 0.04f,
+                x + w * 0.92f,
+                y + h * 0.58f,
+                cloudPaint
+        );
+
+        // Corps principal du nuage.
+        cloudPaint.setColor(Color.WHITE);
+
+        if (shape == 0) {
+            canvas.drawOval(x + w * 0.02f, y - h * 0.02f, x + w * 0.34f, y + h * 0.48f, cloudPaint);
+            canvas.drawOval(x + w * 0.20f, y - h * 0.45f, x + w * 0.58f, y + h * 0.42f, cloudPaint);
+            canvas.drawOval(x + w * 0.48f, y - h * 0.35f, x + w * 0.86f, y + h * 0.46f, cloudPaint);
+            canvas.drawOval(x + w * 0.68f, y - h * 0.02f, x + w * 1.00f, y + h * 0.48f, cloudPaint);
+
+            canvas.drawRoundRect(
+                    x + w * 0.08f,
+                    y + h * 0.08f,
+                    x + w * 0.92f,
+                    y + h * 0.58f,
+                    h * 0.28f,
+                    h * 0.28f,
+                    cloudPaint
+            );
+        } else if (shape == 1) {
+            canvas.drawOval(x + w * 0.00f, y + h * 0.05f, x + w * 0.28f, y + h * 0.45f, cloudPaint);
+            canvas.drawOval(x + w * 0.18f, y - h * 0.30f, x + w * 0.46f, y + h * 0.40f, cloudPaint);
+            canvas.drawOval(x + w * 0.36f, y - h * 0.55f, x + w * 0.70f, y + h * 0.38f, cloudPaint);
+            canvas.drawOval(x + w * 0.62f, y - h * 0.22f, x + w * 0.94f, y + h * 0.44f, cloudPaint);
+            canvas.drawOval(x + w * 0.78f, y + h * 0.08f, x + w * 1.06f, y + h * 0.45f, cloudPaint);
+
+            canvas.drawRoundRect(
+                    x + w * 0.07f,
+                    y + h * 0.07f,
+                    x + w * 0.98f,
+                    y + h * 0.57f,
+                    h * 0.30f,
+                    h * 0.30f,
+                    cloudPaint
+            );
+        } else {
+            canvas.drawOval(x + w * 0.04f, y + h * 0.04f, x + w * 0.30f, y + h * 0.42f, cloudPaint);
+            canvas.drawOval(x + w * 0.20f, y - h * 0.28f, x + w * 0.50f, y + h * 0.38f, cloudPaint);
+            canvas.drawOval(x + w * 0.42f, y - h * 0.42f, x + w * 0.76f, y + h * 0.40f, cloudPaint);
+            canvas.drawOval(x + w * 0.68f, y - h * 0.08f, x + w * 1.02f, y + h * 0.46f, cloudPaint);
+
+            canvas.drawRoundRect(
+                    x + w * 0.08f,
+                    y + h * 0.10f,
+                    x + w * 0.96f,
+                    y + h * 0.56f,
+                    h * 0.32f,
+                    h * 0.32f,
+                    cloudPaint
+            );
+        }
+
+        canvas.restoreToCount(save);
+    }
+
+    private void drawDefaultStars(Canvas canvas, float currentHeight) {
+        if (currentHeight < 2500f) return;
+
+        if (bgStars == null) bgStars = new ArrayList<>();
+
+        float density = Math.min(1f, (currentHeight - 2500f) / 3500f);
+
+        long now = System.currentTimeMillis();
+
+        long spawnInterval = (long) (700f - density * 520f);
+        int maxStars = (int) (6 + density * 18f);
+
+        if (now - lastStarSpawnMs > spawnInterval && bgStars.size() < maxStars) {
+            lastStarSpawnMs = now;
+
+            float sx = (float) Math.random() * screenWidth;
+            float sy = (float) Math.random() * screenHeight;
+
+            int maxTimer = 45 + (int) (Math.random() * 55); // durée plus douce
+
+            float size = 0.8f + (float) Math.random() * 1.8f;
+            float sparkle = (float) Math.random() < 0.22f ? 1f : 0f;
+
+            bgStars.add(new float[]{ sx, sy, 0f, maxTimer, size, sparkle });
+        }
+
+        java.util.Iterator<float[]> it = bgStars.iterator();
+
+        while (it.hasNext()) {
+            float[] s = it.next();
+
+            s[2]++;
+
+            if (s[2] >= s[3]) {
+                it.remove();
+                continue;
+            }
+
+            float progress = s[2] / s[3];
+
+            // Sinus : apparition/disparition plus naturelle qu’un triangle linéaire.
+            float alphaF = (float) Math.sin(progress * Math.PI);
+            int alpha = (int) (alphaF * 220f);
+
+            float radius = s[4] * (0.65f + alphaF * 0.45f);
+
+            starPaint.setStyle(Paint.Style.FILL);
+            starPaint.setColor(Color.argb(alpha, 255, 250, 220));
+            canvas.drawCircle(s[0], s[1], radius, starPaint);
+
+            // Quelques étoiles seulement ont une petite croix.
+            if (s[5] > 0.5f) {
+                starPaint.setStyle(Paint.Style.STROKE);
+                starPaint.setStrokeWidth(1f);
+                starPaint.setStrokeCap(Paint.Cap.ROUND);
+                starPaint.setColor(Color.argb((int) (alpha * 0.75f), 255, 250, 220));
+
+                float len = radius * 3.2f;
+
+                canvas.drawLine(s[0] - len, s[1], s[0] + len, s[1], starPaint);
+                canvas.drawLine(s[0], s[1] - len, s[0], s[1] + len, starPaint);
+            }
+        }
     }
 
     private int interpolateColor(int color1, int color2, float ratio) {
