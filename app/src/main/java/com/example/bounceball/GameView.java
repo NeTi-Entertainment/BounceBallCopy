@@ -42,6 +42,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private float boostCharge        = 0f;   // 0..1 (0=vide, 1=plein)
     private float boostChargeRate;           // calculé dans applyUpgrades()
     private float boostPowerPxPerFrame;      // vitesse montée pendant le boost
+    private float boostPowerActive = 0f; // vitesse effective au moment de l'activation
     private int   boostDurationFrames;       // ~180 frames = 3s à 60fps
     private int   boostTimer         = 0;    // frames restantes de boost actif
     private boolean boostActive      = false;
@@ -478,7 +479,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         // ── Boost actif ───────────────────────────────────────────────
         if (boostActive) {
             ballVelocityX = 0f;
-            ballVelocityY = -boostPowerPxPerFrame;
+            ballVelocityY = -boostPowerActive;
             boostTimer--;
             if (boostTimer <= 0) {
                 boostActive = false;
@@ -788,6 +789,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
         blobPaint.setStyle(Paint.Style.FILL);
         for (float[] blob : inkBlobs) {
+            blobPaint.setStyle(Paint.Style.STROKE);
+            blobPaint.setStrokeWidth(3f);
+            blobPaint.setColor(Color.WHITE);
+            blobPaint.setAlpha(200);
+            canvas.drawCircle(blob[0], blob[1], INK_BLOB_RADIUS, blobPaint);
+            blobPaint.setStyle(Paint.Style.FILL);
             blobPaint.setColor(Color.BLACK);
             blobPaint.setAlpha(255);
             canvas.drawCircle(blob[0], blob[1], INK_BLOB_RADIUS, blobPaint);
@@ -908,6 +915,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
         canvas.save();
         canvas.translate(0, statsOffsetY);
+        paint.setShadowLayer(8f, 0f, 0f, Color.WHITE);
         paint.setColor(Color.BLACK);
         paint.setTextSize(60);
         paint.setTextAlign(Paint.Align.CENTER);
@@ -919,6 +927,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         paint.setTextSize(40);
         int displayedGold = prefs.getGold() + (int) currentRunGold;
         canvas.drawText(Strings.fmt("common.currency_gold_fmt", displayedGold), screenWidth / 2f, 280, paint);
+        paint.clearShadowLayer();
         canvas.restore();
 
         if (prefs.hasHatched() && colonyFullNotifTime > 0) {
@@ -1059,6 +1068,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                     if (now - lastTapTimeMs <= DOUBLE_TAP_WINDOW_MS) {
                         boostActive    = true;
                         boostTimer     = boostDurationFrames;
+                        float naturalSpeed = Math.abs(Math.min(ballVelocityY, 0f));
+                        float minSpeed     = boostPowerPxPerFrame; // le minimum calculé dans applyUpgrades()
+                        boostPowerActive   = Math.max(naturalSpeed, minSpeed) * (1f + upgrades.boostLevel * 0.4f);
                         lastTapTimeMs  = 0L;
                     } else {
                         lastTapTimeMs = now;

@@ -147,6 +147,7 @@ public class MainActivity extends Activity implements GameView.GameStateListener
         tapText.setText(Strings.get("main.tap_to_play"));
         tapText.setTextColor(Color.parseColor("#222222"));
         tapText.setTextSize(22f);
+        tapText.setShadowLayer(8f, 0f, 0f, Color.WHITE);
         tapText.setGravity(Gravity.CENTER);
         FrameLayout.LayoutParams tapLp = new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
