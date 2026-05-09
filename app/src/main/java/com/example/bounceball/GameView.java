@@ -38,6 +38,18 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private float currentInk;
     private float inkConsumptionRate;
 
+    // ── Rocket Boost ──────────────────────────────────────────────
+    private float boostCharge        = 0f;   // 0..1 (0=vide, 1=plein)
+    private float boostChargeRate;           // calculé dans applyUpgrades()
+    private float boostPowerPxPerFrame;      // vitesse montée pendant le boost
+    private int   boostDurationFrames;       // ~180 frames = 3s à 60fps
+    private int   boostTimer         = 0;    // frames restantes de boost actif
+    private boolean boostActive      = false;
+    private float boostShimmerPhase  = 0f;  // pour l'animation scintillement
+    private long  lastTapTimeMs      = 0L;
+    private static final long DOUBLE_TAP_WINDOW_MS = 350L;
+    private static final float BOOST_PX_PER_METER  = 65f; // à ajuster si besoin
+
     private Thread gameThread;
     private boolean isRunning;
     private SurfaceHolder surfaceHolder;
@@ -208,6 +220,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         trampElasticity    = 25f   + upgrades.elasticity    * 3f;
         maxInk             = 1000f + upgrades.inkReserve     * 150f;
         inkConsumptionRate = Math.max(0.1f, 0.4f - upgrades.inkEfficiency * 0.03f);
+
+        float rechargeSeconds = 30f - upgrades.boostRecharge * 2f;
+        boostChargeRate    = 1f / (rechargeSeconds * 60f);
+        float boostMeters  = upgrades.boostLevel * 50f;
+        boostPowerPxPerFrame = (boostMeters * BOOST_PX_PER_METER) / 180f;
+        boostDurationFrames  = 180;
     }
 
     public void loadBallSkin() {
@@ -371,6 +389,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         warps.clear();
         rareMetals.clear();
         alienDrops.clear();
+        boostCharge = 0f;
+        boostActive = false;
+        boostTimer  = 0;
     }
 
     public void prepareContinueFrom(float heightMeters, long accumulatedDurationMillis) {
@@ -442,6 +463,27 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         if (warpState != WARP_NONE) {
             updateWarpAnimation();
             return;
+        }
+
+        // ── Boost recharge ────────────────────────────────────────────
+        if (upgrades.boostLevel > 0 && isGameStarted && !isGameOver) {
+            if (!boostActive && boostCharge < 1f) {
+                boostCharge = Math.min(1f, boostCharge + boostChargeRate);
+            }
+            if (boostCharge >= 1f) {
+                boostShimmerPhase += 0.15f;
+            }
+        }
+
+        // ── Boost actif ───────────────────────────────────────────────
+        if (boostActive) {
+            ballVelocityX = 0f;
+            ballVelocityY = -boostPowerPxPerFrame;
+            boostTimer--;
+            if (boostTimer <= 0) {
+                boostActive = false;
+                boostCharge = 0f;
+            }
         }
 
         ballVelocityY += (GRAVITY * gravityMultiplier);
@@ -836,6 +878,32 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             paint.setColor(Color.parseColor("#1DE9B6"));
             canvas.drawRoundRect(barLeft, barTop, barLeft + inkWidth, barBottom, barHeight/2f, barHeight/2f, paint);
         }
+
+        // ── Jauge Rocket Boost (visible uniquement si boostLevel >= 1) ──
+        if (upgrades.boostLevel > 0) {
+            float boostBarBottom = barTop - 10f;
+            float boostBarTop    = boostBarBottom - barHeight;
+
+            // Fond
+            paint.setColor(Color.parseColor("#44000000"));
+            canvas.drawRoundRect(barLeft, boostBarTop, barLeft + barWidth, boostBarBottom,
+                    barHeight / 2f, barHeight / 2f, paint);
+
+            // Remplissage orange
+            if (boostCharge > 0) {
+                float fillWidth = barWidth * boostCharge;
+                if (boostCharge >= 1f) {
+                    // Scintillement : alpha oscillant entre 180 et 255
+                    int alpha = (int)(217f + 38f * (float)Math.sin(boostShimmerPhase));
+                    paint.setColor(Color.argb(alpha, 255, 140, 0));
+                } else {
+                    paint.setColor(Color.parseColor("#FF8C00"));
+                }
+                canvas.drawRoundRect(barLeft, boostBarTop, barLeft + fillWidth, boostBarBottom,
+                        barHeight / 2f, barHeight / 2f, paint);
+            }
+        }
+
         canvas.restore();
 
         canvas.save();
@@ -983,6 +1051,20 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 performClick();
+
+                // ── Détection double-tap pour Rocket Boost ────────────────
+                if (upgrades.boostLevel > 0 && boostCharge >= 1f
+                        && !boostActive && isGameStarted && ballVelocityY < 0) {
+                    long now = System.currentTimeMillis();
+                    if (now - lastTapTimeMs <= DOUBLE_TAP_WINDOW_MS) {
+                        boostActive    = true;
+                        boostTimer     = boostDurationFrames;
+                        lastTapTimeMs  = 0L;
+                    } else {
+                        lastTapTimeMs = now;
+                    }
+                }
+
                 if (currentInk > 0) {
                     if (!isGameStarted) {
                         isGameStarted      = true;
